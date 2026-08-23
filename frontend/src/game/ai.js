@@ -1,5 +1,5 @@
 import { SUIT_KEYS, TRICK_RANK, COUNTER_RANKS } from './constants';
-import { legalPlays, currentWinnerIndex, trickBooks } from './trick';
+import { legalPlays, currentWinnerIndex } from './trick';
 
 function bySuit(hand) {
   const m = { S: [], H: [], D: [], C: [] };
@@ -82,15 +82,19 @@ export function laydownChallenge(hand, trump) {
 function lowest(cards) {
   return [...cards].sort((a, b) => TRICK_RANK[a.rank] - TRICK_RANK[b.rank])[0];
 }
+function highest(cards) {
+  return [...cards].sort((a, b) => TRICK_RANK[b.rank] - TRICK_RANK[a.rank])[0];
+}
 function wouldWin(card, trick, trump, seat) {
   const t = [...trick, { seat, card }];
   return currentWinnerIndex(t, trump) === t.length - 1;
 }
 
-// AI card selection during trick play.
-export function aiPlay(seat, hand, trick, trump) {
+// AI card selection during trick play. Defenders cooperate against the bidder.
+export function aiPlay(seat, hand, trick, trump, bidWinner) {
   const legal = legalPlays(hand, trick, trump);
   if (legal.length === 1) return legal[0];
+  const isDefender = bidWinner != null && seat !== bidWinner;
 
   if (trick.length === 0) {
     // Leading: cash an off-suit Ace to grab counters, else lead a low card.
@@ -100,14 +104,26 @@ export function aiPlay(seat, hand, trick, trump) {
     return lowest(nonCounter.length ? nonCounter : legal);
   }
 
+  const winIdx = currentWinnerIndex(trick, trump);
+  const winnerSeat = trick[winIdx].seat;
   const winners = legal.filter((c) => wouldWin(c, trick, trump, seat));
-  const pot = trickBooks(trick);
+  const nonWinning = legal.filter((c) => !wouldWin(c, trick, trump, seat));
+
+  // Cooperative defence: my partner (the other defender) is currently taking the book.
+  // If the rules let me play a non-winning card, feed the biggest counter into their book.
+  const partnerWinning = isDefender && winnerSeat !== seat && winnerSeat !== bidWinner;
+  if (partnerWinning && nonWinning.length) {
+    const counters = nonWinning.filter((c) => COUNTER_RANKS.has(c.rank));
+    if (counters.length) return highest(counters);
+    return lowest(nonWinning);
+  }
+
   if (winners.length) {
-    // Win cheaply when there are counters at stake or trick is about to close.
-    if (pot > 0 || trick.length === 2) return lowest(winners);
+    // Take the book with the cheapest winning card (defenders aggressively cut the bidder).
     return lowest(winners);
   }
-  // Can't win: dump lowest, avoid throwing counters.
+
+  // Can't win: never feed counters to whoever is winning — throw the lowest non-counter.
   const nonCounter = legal.filter((c) => !COUNTER_RANKS.has(c.rank));
   return lowest(nonCounter.length ? nonCounter : legal);
 }

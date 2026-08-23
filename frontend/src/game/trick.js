@@ -59,3 +59,8 @@ export function legalPlays(hand, trick, trump) {
 export function trickBooks(trick) {
   return trick.reduce((n, p) => n + (COUNTER_RANKS.has(p.card.rank) ? 1 : 0), 0);
 }
+
+// Public alias — enforces the strict Cutthroat trick hierarchy:
+// 1) follow suit (and head the trick if able), 2) if void must trump & overtrump if able,
+// 3) may only slough an off-suit card when void in BOTH the led suit and trump.
+export const getPlayableCards = legalPlays;

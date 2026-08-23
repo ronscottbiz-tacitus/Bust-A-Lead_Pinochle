@@ -75,7 +75,7 @@ function drive(s, dispatch, sound) {
       }
       if (s.turn && s.turn !== 'P') {
         return setTimeout(() => {
-          const card = aiPlay(s.turn, s.hands[s.turn], s.trick, s.trump);
+          const card = aiPlay(s.turn, s.hands[s.turn], s.trick, s.trump, s.bidWinner);
           sound.play();
           dispatch({ type: 'PLAY_CARD', seat: s.turn, card });
         }, d.think);
@@ -94,8 +94,8 @@ export function useGame() {
   const prevPhase = useRef(state.phase);
 
   useEffect(() => {
-    saveGame({ bankrolls: state.bankrolls, settings: state.settings, dealer: state.dealer });
-  }, [state.bankrolls, state.settings, state.dealer]);
+    saveGame({ bankrolls: state.bankrolls, settings: state.settings, dealer: state.dealer, stats: state.stats });
+  }, [state.bankrolls, state.settings, state.dealer, state.stats]);
 
   useEffect(() => {
     soundRef.current.setEnabled(state.settings.sound);

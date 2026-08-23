@@ -150,7 +150,7 @@ export function ActionBar({ state, act }) {
   // PLAY hint
   if (s.phase === 'play' && s.turn === 'P' && !s.trickPending) {
     return (
-      <Wrap hint={s.trick.length === 0 ? 'Your lead — pick any highlighted card' : 'Follow suit · head the trick if able'}>
+      <Wrap hint={s.trick.length === 0 ? 'Your lead — pick any highlighted card' : 'Follow suit · head the book if able'}>
         <span className="text-xs font-sub text-slate-400">Tap a glowing card to play</span>
       </Wrap>
     );

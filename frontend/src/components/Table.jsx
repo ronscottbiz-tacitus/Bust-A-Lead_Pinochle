@@ -2,9 +2,11 @@ import { Card } from './Card';
 import { SEAT_LABEL, SUIT_BY_KEY, SEATS } from '../game/constants';
 import { legalPlays } from '../game/trick';
 import { sortHand } from '../game/deck';
-import { Volume2, VolumeX, BookOpen, Coins, Layers } from 'lucide-react';
+import { saveTarget, booksToMake } from '../game/scoring';
+import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3 } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
+const STAKE_LABEL = { 1: '$1/$2', 2: '$2/$4', 5: '$5/$10' };
 
 function liveMultiplier(s) {
   let m = 1;
@@ -43,11 +45,13 @@ function TrumpBadge({ trump }) {
   );
 }
 
-export function Header({ state, onToggleSound, onOpenRules }) {
+export function Header({ state, onToggleSound, onOpenRules, onOpenStats }) {
   const s = state;
   const mult = liveMultiplier(s);
+  const meldTotal = s.meld[s.bidWinner]?.total || 0;
   const bidderBooks = s.phase === 'play' || s.phase === 'settlement' ? s.books[s.bidWinner] + s.buriedBooks : 0;
-  const bench = s.goingDouble ? 31 : 20;
+  const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
+  const stakes = s.settings.stakesBase || 1;
   return (
     <header className="fixed top-0 inset-x-0 z-40 h-16 glass px-3 sm:px-6 flex items-center justify-between">
       <div className="flex items-center gap-2 sm:gap-4">
@@ -85,12 +89,12 @@ export function Header({ state, onToggleSound, onOpenRules }) {
               data-testid="trick-counter"
               className="px-2 py-1 rounded-md text-[11px] font-mono-stat font-bold bg-slate-800/70 border border-slate-700 text-slate-200"
             >
-              Trick {Math.min(s.trickNo, 25)}/25
+              Book {Math.min(s.trickNo, 25)}/25
             </span>
             <span
               data-testid="book-tracker"
               className="px-2 py-1 rounded-md text-[11px] font-mono-stat font-bold bg-emerald-500/10 border border-emerald-500/40 text-emerald-300"
-              title="Bidder books / save benchmark"
+              title="Bidder books won / books to save"
             >
               Books {bidderBooks}/{bench}
             </span>
@@ -102,8 +106,15 @@ export function Header({ state, onToggleSound, onOpenRules }) {
             mult > 1 ? 'bg-fuchsia-500/10 border-fuchsia-400/60 text-fuchsia-300' : 'bg-slate-800/70 border-slate-700 text-slate-400'
           }`}
         >
-          <Layers size={12} /> ×{mult}
+          <Layers size={12} /> {STAKE_LABEL[stakes] || `$${stakes}`} ×{mult}
         </span>
+        <button
+          data-testid="stats-btn"
+          onClick={onOpenStats}
+          className="p-2 rounded-md bg-slate-800/70 border border-slate-700 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/50 transition-colors"
+        >
+          <BarChart3 size={16} />
+        </button>
         <button
           data-testid="rules-btn"
           onClick={onOpenRules}
@@ -138,6 +149,8 @@ function statusText(s, seat) {
 
 function Seat({ state, seat, corner }) {
   const s = state;
+  const meldTotal = s.meld[s.bidWinner]?.total || 0;
+  const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
   const isTurn =
     (s.phase === 'auction' && s.currentBidder === seat) ||
     (s.phase === 'play' && s.turn === seat && !s.trickPending);
@@ -164,6 +177,12 @@ function Seat({ state, seat, corner }) {
         <div className="leading-tight">
           <div className="text-xs font-sub font-semibold text-slate-200">{SEAT_LABEL[seat]}</div>
           <div className="text-[10px] font-mono-stat text-emerald-300">{money(s.bankrolls[seat])}</div>
+          {(s.phase === 'play' || s.phase === 'settlement') && (
+            <div data-testid={`seat-books-${seat}`} className="text-[10px] font-mono-stat text-cyan-300">
+              {SEAT_LABEL[seat]} Books: {s.books[seat]}
+              {seat === s.bidWinner ? ` / ${bench}` : ''}
+            </div>
+          )}
         </div>
         {status && (
           <span
@@ -206,7 +225,7 @@ function TrickCard({ play }) {
 
 function CenterArea({ state }) {
   const s = state;
-  const showKitty = ['dealing', 'auction', 'trump', 'discard', 'laydown'].includes(s.phase);
+  const showKitty = ['auction', 'trump', 'discard', 'laydown'].includes(s.phase);
   return (
     <div className="relative w-[240px] h-[190px] sm:w-[300px] sm:h-[210px] rounded-[40%] border border-white/5 bg-white/[0.02] flex items-center justify-center">
       {showKitty && (
@@ -230,7 +249,7 @@ function CenterArea({ state }) {
       {s.phase === 'play' && s.trick.map((p) => <TrickCard key={p.card.id} play={p} />)}
       {s.phase === 'play' && s.trick.length === 0 && s.lastTrickWinner && (
         <div className="text-center text-[11px] font-sub text-slate-500">
-          <div className="uppercase tracking-widest text-[9px]">Last trick</div>
+          <div className="uppercase tracking-widest text-[9px]">Last book</div>
           <div className="text-cyan-300 font-bold">{SEAT_LABEL[s.lastTrickWinner]} won</div>
         </div>
       )}
@@ -287,12 +306,124 @@ export function HandTray({ state, onCardClick }) {
   );
 }
 
+export function SaveHUD({ state }) {
+  const s = state;
+  if (!['play', 'settlement'].includes(s.phase) || !s.bidWinner) return null;
+  const meldTotal = s.meld[s.bidWinner]?.total || 0;
+  const needed = booksToMake({ bid: s.bid, meldTotal });
+  const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
+  const won = s.books[s.bidWinner] + s.buriedBooks;
+  const pct = Math.min(100, Math.round((won / Math.max(bench, 1)) * 100));
+  return (
+    <div
+      data-testid="save-hud"
+      className="fixed top-[68px] left-1/2 -translate-x-1/2 z-30 glass rounded-xl px-3 py-2 flex flex-col items-center gap-1.5 w-[min(94vw,540px)]"
+    >
+      <div className="flex items-center gap-2 sm:gap-3 text-[11px] font-mono-stat flex-wrap justify-center">
+        <span className="text-slate-300">
+          Bid <b className="text-yellow-300">{s.bid}</b>
+        </span>
+        <span className="text-slate-600">|</span>
+        <span className="text-slate-300">
+          Meld <b className="text-cyan-300">{meldTotal}</b>
+        </span>
+        <span className="text-slate-600">|</span>
+        <span className="text-slate-300">
+          Books to Make <b className="text-emerald-300">{needed}</b>
+        </span>
+        <span className="text-slate-600">|</span>
+        <span
+          data-testid="books-to-save"
+          className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/50 text-emerald-200 font-bold"
+        >
+          Books to Save: {bench}
+        </span>
+      </div>
+      <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-300"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div data-testid="bidder-books-won" className="text-[10px] font-mono-stat text-slate-400">
+        {SEAT_LABEL[s.bidWinner]} Books Won: {won} / {bench}
+      </div>
+    </div>
+  );
+}
+
+export function MeldRack({ state }) {
+  const s = state;
+  if (!s.bidWinner || !s.meld[s.bidWinner]) return null;
+  if (!['play', 'laydown', 'settlement'].includes(s.phase)) return null;
+  const cards = s.meld[s.bidWinner].allCards || [];
+  if (!cards.length) return null;
+  return (
+    <div
+      data-testid="meld-rack"
+      className="fixed top-[142px] left-1/2 -translate-x-1/2 z-20 glass rounded-xl px-3 py-2 max-w-[94vw]"
+    >
+      <div className="text-[10px] font-sub uppercase tracking-widest text-yellow-300/80 mb-1 text-center">
+        {SEAT_LABEL[s.bidWinner]}'s Meld Rack · {s.meld[s.bidWinner].total} pts
+      </div>
+      <div className="flex flex-wrap justify-center gap-1 max-w-[540px]">
+        {cards.map((c) => (
+          <Card key={c.id} card={c} size="sm" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function DealAnimation({ state }) {
+  const s = state;
+  if (s.phase !== 'dealing') return null;
+  const targets = {
+    W: { x: '-38vw', y: '-28vh' },
+    E: { x: '38vw', y: '-28vh' },
+    P: { x: '0px', y: '34vh' },
+    K: { x: '0px', y: '0px' },
+  };
+  return (
+    <div className="fixed inset-0 z-30 pointer-events-none flex items-center justify-center" data-testid="deal-animation">
+      <div className="text-[10px] font-sub uppercase tracking-widest text-cyan-300/70 absolute top-24">Dealing…</div>
+      {s.packets.map((p, i) => {
+        const t = targets[p.seat] || targets.K;
+        return (
+          <div
+            key={i}
+            className="absolute deal-fly"
+            style={{ '--tx': t.x, '--ty': t.y, animationDelay: `${i * 0.09}s` }}
+          >
+            <Card size="sm" faceDown />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Table({ state }) {
+  const s = state;
+  const meldTotal = s.meld[s.bidWinner]?.total || 0;
+  const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
+  const showBooks = s.phase === 'play' || s.phase === 'settlement';
   return (
     <div className="absolute inset-0 top-16 bottom-28 flex flex-col items-center justify-center">
       <Seat state={state} seat="W" corner="top-2 left-2 sm:top-4 sm:left-6" />
       <Seat state={state} seat="E" corner="top-2 right-2 sm:top-4 sm:right-6" />
       <CenterArea state={state} />
+      <SaveHUD state={state} />
+      <MeldRack state={state} />
+      {showBooks && (
+        <div
+          data-testid="seat-books-P"
+          className="absolute bottom-2 left-2 sm:left-6 glass rounded-lg px-3 py-1.5 text-[11px] font-mono-stat text-cyan-300 z-20"
+        >
+          You Books: {s.books.P}
+          {s.bidWinner === 'P' ? ` / ${bench}` : ''}
+        </div>
+      )}
     </div>
   );
 }

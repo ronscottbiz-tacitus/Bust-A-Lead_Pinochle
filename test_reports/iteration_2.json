@@ -1,0 +1,33 @@
+{
+  "summary": "Frontend-only UI smoke + targeted test of Bust a Lead (iteration 2) completed via Playwright against public URL. 20/22 assertions PASS. All new critical features work: config screen exposes cfg-stakes-1/2/5 with cyan selection style; cfg-speed-fast selects and speeds up AI turns; deal-btn leads to a valid 25-card player-hand; auction/bid/trump/discard/soft-set flows are all functional. Settlement modal opens on Soft Set (Conceded), uses 'Books Won' + 'Books to Save' terminology, shows Multiplier + scaled Transfers ($5/$10 stakes -> $5 base transfers each, x1 multiplier), and next-hand-btn cycles to next hand. During trick play the save-hud shows 'Bid 90 | Meld 39 | Books to Make 51 | Books to Save: 51' and bidder-books-won line ('East Books Won: 0/51'). meld-rack renders with the bidder's exact meld cards ('EAST'S MELD RACK · 39 PTS'). book-tracker in header reads 'Books 4/51' and top badge 'Book 3/25' (correct 'Book' terminology). seat-books-W and seat-books-E both render with running counts. Stats modal opens with Hands Played / Hands Made / Soft Sets / Hard Sets / Biggest Pot Won / Lifetime Net P&L rows; reset-stats-btn and close-stats-btn work. Rulebook modal opens and closes. Most importantly, NO false 'BUSTED A LEAD' alert appeared during ~20 automated card plays and multi-AI turns — the strict legal-move engine held up.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "DealAnimation (Table.jsx:378)", "issue": "Deal animation overlay renders during phase==='dealing' but has NO data-testid='deal-animation' attribute, so automated tests cannot detect it. Also with cfg-speed-fast the packets deal so fast the overlay was not visible in polling; add the testid so tests can grab it, and consider a minimum display duration.", "selector": "[data-testid='deal-animation']", "priority": "LOW"},
+      {"component": "HandTray / Player seat (Table.jsx)", "issue": "seat-books-P testid missing. seat-books-W and seat-books-E render (inside Seat component) but the human player uses HandTray/player-hand, which never renders a data-testid='seat-books-P' element. Review request explicitly required all three (W, E, P).", "selector": "[data-testid='seat-books-P']", "priority": "MEDIUM"},
+      {"component": "ActionBar hint (ActionBar.jsx:153)", "issue": "User-visible hint still uses 'trick' word: 'Follow suit · head the trick if able'. Terminology rename to 'book' is incomplete on this string.", "selector": "action-bar hint text", "priority": "MEDIUM"},
+      {"component": "CenterArea 'Last trick' label (Table.jsx:252)", "issue": "Visible label 'Last trick' still uses 'trick'. Should be 'Last book' per terminology rename.", "selector": "CenterArea header", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Add data-testid='deal-animation' to the fixed overlay div in DealAnimation() (Table.jsx line 388).",
+    "Add a data-testid='seat-books-P' element next to the human player-hand (e.g. inside HandTray) showing 'You Books: N' (and '/ target' if bidder). This keeps parity with seat-books-W/E.",
+    "Rename remaining user-visible 'trick' strings to 'book': ActionBar.jsx L153 hint 'head the trick if able' -> 'head the book if able'; Table.jsx L252 'Last trick' -> 'Last book'. (Internal identifiers like trickNo/trickPending can stay.)"
+  ],
+  "critical_code_review_comments": [
+    "Trick engine + AI cooperative-defender behavior looked correct during interactive play — no illegal-play alerts triggered across many AI turns.",
+    "Save HUD math checked out: Bid 90, Meld 39 -> Books to Make 51 -> Books to Save 51 (matches Max(20, Bid-Meld); >=31 not needed because not Going Double). Meld rack correctly reflects bidder's exact meld total (39 pts).",
+    "Stakes scaling verified end-to-end: $5/$10 stakes produce $5 transfers (base) with x1 multiplier on a Soft Set — settlement transfers displayed correctly.",
+    "Minor terminology inconsistency (see UI bugs) — the codebase still uses 'trick' in user-facing strings in two places despite the rename claim."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "~91% (20/22 assertions passed; 4 minor testid/terminology gaps)"},
+  "seed_data_creation": "None (localStorage cleared before test).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "App is frontend-only. Fastest path to settlement: pass all bids until AI wins, or (if human wins) click concede-preplay-btn after picking trump for a Soft-Set settlement. Testids to rely on: cfg-stakes-1/2/5, cfg-speed-fast, deal-btn, bid-btn, pass-btn, trump-S/H/D/C, concede-preplay-btn, confirm-discard-btn, save-hud, books-to-save, bidder-books-won, meld-rack, book-tracker, seat-books-W, seat-books-E (NO seat-books-P currently), stats-btn/stats-modal/reset-stats-btn/close-stats-btn, rules-btn/rulebook-modal/close-rules-btn, settlement-modal/next-hand-btn.",
+  "rca of the issue": "N/A - only minor missing testids and residual 'trick' UI copy identified; core game logic and new HUD/stakes/meld-rack features all work."
+}

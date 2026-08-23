@@ -2,10 +2,20 @@ import { SEATS, nextSeat, leftOf, isCounter } from './constants';
 import { dealDeck } from './deck';
 import { computeMeld, acesAround, suitsWithMarriage } from './meld';
 import { legalPlays, currentWinnerIndex, trickBooks } from './trick';
+import { saveTarget } from './scoring';
 import { loadSave } from './storage';
 
 const clone = (o) =>
   typeof structuredClone === 'function' ? structuredClone(o) : JSON.parse(JSON.stringify(o));
+
+const EMPTY_STATS = {
+  handsPlayed: 0,
+  handsMade: 0,
+  softSets: 0,
+  hardSets: 0,
+  biggestPot: 0,
+  net: { W: 0, E: 0, P: 0 },
+};
 
 function emptyRound() {
   return {
@@ -51,9 +61,17 @@ export function initState() {
   const saved = loadSave();
   return {
     phase: 'config',
-    settings: saved?.settings || { bidBase: 60, sortMode: 'suit', animSpeed: 'normal', sound: true },
+    settings: {
+      bidBase: 60,
+      sortMode: 'suit',
+      animSpeed: 'normal',
+      sound: true,
+      stakesBase: 1,
+      ...(saved?.settings || {}),
+    },
     bankrolls: saved?.bankrolls || { W: 100, E: 100, P: 100 },
     dealer: saved?.dealer || 'P',
+    stats: saved?.stats || clone(EMPTY_STATS),
     ...emptyRound(),
   };
 }
@@ -134,6 +152,7 @@ function beginPlay(s) {
 
 function computeSettlement(s) {
   const seats = SEATS;
+  const stakes = s.settings.stakesBase || 1;
   let mult = 1;
   const parts = [];
   if (s.goingDouble) {
@@ -154,15 +173,16 @@ function computeSettlement(s) {
   let label = '';
   let unit = 0;
   const bidder = s.bidWinner;
+  const meldTotal = s.meld[bidder]?.total || 0;
   const bidderBooks = s.books[bidder] + s.buriedBooks;
-  const benchmark = s.goingDouble ? 31 : 20;
+  const benchmark = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
 
   if (s.result === 'busted') {
     const off = s.busted.seat;
     const others = seats.filter((x) => x !== off);
     label = 'BUSTED A LEAD — Hard Set';
     for (const o of others) {
-      const amt = 2 * mult;
+      const amt = 2 * mult * stakes;
       bank[off] -= amt;
       bank[o] += amt;
       transfers.push({ from: off, to: o, amount: amt });
@@ -179,7 +199,7 @@ function computeSettlement(s) {
       unit = -2;
       label = 'Hard Set';
     }
-    const per = unit * mult;
+    const per = unit * mult * stakes;
     for (const d of defenders) {
       bank[bidder] += per;
       bank[d] -= per;
@@ -195,8 +215,11 @@ function computeSettlement(s) {
     label,
     mult,
     multParts: parts,
+    stakes,
     unit,
     benchmark,
+    meldTotal,
+    bid: s.bid,
     bidderBooks,
     bidder,
     result: s.result,
@@ -207,8 +230,22 @@ function computeSettlement(s) {
   };
 }
 
+function updateStats(s, res) {
+  const st = s.stats;
+  st.handsPlayed += 1;
+  if (res.result === 'made') st.handsMade += 1;
+  else if (res.result === 'soft') st.softSets += 1;
+  else st.hardSets += 1; // 'hard' or 'busted'
+  for (const t of res.transfers) {
+    st.net[t.to] += t.amount;
+    st.net[t.from] -= t.amount;
+    if (t.amount > st.biggestPot) st.biggestPot = t.amount;
+  }
+}
+
 function settle(s) {
   const res = computeSettlement(s);
+  updateStats(s, res);
   s.settlement = res;
   s.bankrolls = res.newBankrolls;
   s.gameOver = res.gameOver;
@@ -232,8 +269,13 @@ export function reducer(state, action) {
     case 'NEW_GAME':
       s.bankrolls = { W: 100, E: 100, P: 100 };
       s.dealer = 'P';
+      s.stats = clone(EMPTY_STATS);
       s.phase = 'config';
       Object.assign(s, emptyRound());
+      return s;
+
+    case 'RESET_STATS':
+      s.stats = clone(EMPTY_STATS);
       return s;
 
     case 'START_ROUND':
@@ -348,8 +390,9 @@ export function reducer(state, action) {
       s.lastTrick = s.trick;
       s.lastTrickWinner = winner;
       if (s.trickNo >= 25) {
+        const meldTotal = s.meld[s.bidWinner]?.total || 0;
         const bidderBooks = s.books[s.bidWinner] + s.buriedBooks;
-        const bench = s.goingDouble ? 31 : 20;
+        const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
         s.result = bidderBooks >= bench ? 'made' : 'hard';
         return settle(s);
       }

@@ -30,7 +30,7 @@ function stepAI(s) {
     case 'play': {
       if (s.trickPending) return { type: 'RESOLVE_TRICK' };
       if (s.humanAcesPending) return { type: 'DECLARE_ACES', seat: 'P' };
-      const card = aiPlay(s.turn, s.hands[s.turn], s.trick, s.trump);
+      const card = aiPlay(s.turn, s.hands[s.turn], s.trick, s.trump, s.bidWinner);
       return { type: 'PLAY_CARD', seat: s.turn, card };
     }
     default:
@@ -88,5 +88,46 @@ test('multiple consecutive hands rotate dealer and never crash', () => {
   if (!s.gameOver) {
     expect(s.phase).toBe('dealing');
     expect(s.dealer).not.toBe(firstDealer);
+  }
+});
+
+test('save benchmark is Max(floor, bid - meld) and stats + stakes scale settlement', () => {
+  // High stakes hand: verify transfers scale and stats accrue
+  let s = initState();
+  s = reducer(s, { type: 'UPDATE_SETTINGS', settings: { stakesBase: 5 } });
+  s = playHand(s);
+  expect(s.phase).toBe('settlement');
+  const r = s.settlement;
+  // benchmark must respect the 20 (or 31) floor
+  const floor = s.goingDouble ? 31 : 20;
+  expect(r.benchmark).toBeGreaterThanOrEqual(floor);
+  // and must be at least bid - meld
+  expect(r.benchmark).toBeGreaterThanOrEqual((s.bid || 0) - (r.meldTotal || 0));
+  // stats recorded exactly one hand
+  expect(s.stats.handsPlayed).toBe(1);
+  // non-busted transfers are multiples of stakesBase(5)
+  if (r.result !== 'busted') {
+    for (const t of r.transfers) expect(t.amount % 5).toBe(0);
+  }
+});
+
+test('AI never sloughs off-suit while holding the led suit or trump (strict legality)', () => {
+  const { legalPlays } = require('../trick');
+  const { aiPlay } = require('../ai');
+  // build a contrived mid-trick situation many times via full sims and assert every AI play is legal
+  for (let i = 0; i < 20; i++) {
+    let s = reducer(initState(), { type: 'START_ROUND' });
+    let guard = 0;
+    while (s.phase !== 'settlement' && guard < 5000) {
+      if (s.phase === 'play' && !s.trickPending && s.turn) {
+        const card = aiPlay(s.turn, s.hands[s.turn], s.trick, s.trump, s.bidWinner);
+        const legal = legalPlays(s.hands[s.turn], s.trick, s.trump);
+        expect(legal.some((c) => c.id === card.id)).toBe(true);
+      }
+      const a = stepAI(s);
+      if (!a) break;
+      s = reducer(s, a);
+      guard++;
+    }
   }
 });

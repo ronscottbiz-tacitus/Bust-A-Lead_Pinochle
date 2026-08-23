@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useGame } from './hooks/useGame';
-import { Header, Table, HandTray } from './components/Table';
+import { Header, Table, HandTray, DealAnimation } from './components/Table';
 import { ActionBar, MeldBoard } from './components/ActionBar';
-import { ConfigScreen, SettlementModal, RulebookModal } from './components/Modals';
+import { ConfigScreen, SettlementModal, RulebookModal, StatsModal } from './components/Modals';
 import { legalPlays } from './game/trick';
 
 export default function BustALead() {
   const { state, act } = useGame();
   const [showRules, setShowRules] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const s = state;
 
   const onCardClick = (card) => {
@@ -27,17 +28,26 @@ export default function BustALead() {
             state={s}
             onToggleSound={() => act({ type: 'UPDATE_SETTINGS', settings: { sound: !s.settings.sound } })}
             onOpenRules={() => setShowRules(true)}
+            onOpenStats={() => setShowStats(true)}
           />
           <Table state={s} />
           <MeldBoard state={s} />
           <HandTray state={s} onCardClick={onCardClick} />
           <ActionBar state={s} act={act} />
+          <DealAnimation state={s} />
         </>
       )}
 
       {s.phase === 'config' && <ConfigScreen state={s} act={act} />}
       {s.phase === 'settlement' && <SettlementModal state={s} act={act} />}
       {showRules && <RulebookModal onClose={() => setShowRules(false)} />}
+      {showStats && (
+        <StatsModal
+          stats={s.stats}
+          onClose={() => setShowStats(false)}
+          onReset={() => act({ type: 'RESET_STATS' })}
+        />
+      )}
     </div>
   );
 }

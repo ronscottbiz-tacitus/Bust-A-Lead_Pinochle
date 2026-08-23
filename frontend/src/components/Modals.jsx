@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { SEAT_LABEL, SUITS } from '../game/constants';
-import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw } from 'lucide-react';
+import { SEAT_LABEL, SEATS } from '../game/constants';
+import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3 } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 
@@ -90,6 +90,17 @@ export function ConfigScreen({ state, act }) {
               { value: 'off', label: 'Off' },
             ]}
           />
+          <Choice
+            label="Table Stakes"
+            testidPrefix="cfg-stakes"
+            value={s.stakesBase || 1}
+            onChange={(v) => set({ stakesBase: v })}
+            options={[
+              { value: 1, label: 'Low $1/$2' },
+              { value: 2, label: 'Mid $2/$4' },
+              { value: 5, label: 'High $5/$10' },
+            ]}
+          />
         </div>
         <button
           data-testid="deal-btn"
@@ -142,12 +153,16 @@ export function SettlementModal({ state, act }) {
         </div>
 
         {!busted && (
-          <div className="bg-black/30 rounded-xl p-3 mb-3 text-sm">
+          <div className="bg-black/30 rounded-xl p-3 mb-3 text-sm space-y-1">
             <div className="flex justify-between text-slate-300">
-              <span>Bidder ({SEAT_LABEL[r.bidder]}) books</span>
-              <span className="font-mono-stat">
+              <span>Bidder ({SEAT_LABEL[r.bidder]}) Books Won</span>
+              <span className="font-mono-stat text-emerald-300">
                 {r.bidderBooks} / {r.benchmark}
               </span>
+            </div>
+            <div className="flex justify-between text-slate-400 text-xs">
+              <span>Bid {r.bid ?? ''} · Meld {r.meldTotal ?? 0}</span>
+              <span className="font-mono-stat">Books to Save: {r.benchmark}</span>
             </div>
           </div>
         )}
@@ -231,19 +246,74 @@ const MELD_REF = [
 
 const RULES = [
   'Deck: 80 cards (two pinochle decks, 9s removed). 4 copies of 10-J-Q-K-A in every suit.',
-  'Trick rank high→low: A > 10 > K > Q > J.',
+  'Book (card) rank high→low: A > 10 > K > Q > J.',
   'Each player is dealt 25 cards; 5 go to the Kitty. Everyone starts with $100.',
   'Bidding opens left of the dealer in $5 steps. If both opponents pass, the bid drops on the dealer at base.',
   'The winning bidder must expose a Marriage (K+Q) to name trump before touching the kitty. No marriage = Soft Set.',
   'Bidder takes the 5-card kitty (30 cards) then buries exactly 5 before card 1.',
   'Defenders score no meld but MUST declare Aces Around before their first card or Bust a Lead.',
-  'Follow suit and head the trick if able; if void, trump and overtrump if able; else discard.',
-  'Counters: every Ace, 10 and King captured = 1 book (48 total). Winner of trick 25 gets +2 (50 max).',
-  'Bidder needs 20 books to save the hand (31 if Going Double), or it is a Hard Set.',
+  'Follow suit and head the book if able; if void, trump and overtrump if able; else you may only slough off-suit.',
+  'Counters: every Ace, 10 and King captured = 1 book (48 total). Winner of book 25 gets +2 (50 max).',
+  'Books to Save = Max(20, Bid − Meld) — 31 floor if Going Double. Fewer books = Hard Set.',
   'Busting a lead (out of turn / renege / undeclared aces) = immediate Hard Set on the offender.',
-  'Settlement: Made +$1/defender · Soft Set −$1/defender · Hard Set −$2/defender.',
+  'Settlement (scaled by table stakes): Made +1/defender · Soft Set −1/defender · Hard Set −2/defender.',
   'Multipliers compound: Going Double ×2 · Lay-Down Challenged ×2 · Spades Trump ×2.',
 ];
+
+export function StatsModal({ stats, onClose, onReset }) {
+  const st = stats || { handsPlayed: 0, handsMade: 0, softSets: 0, hardSets: 0, biggestPot: 0, net: { W: 0, E: 0, P: 0 } };
+  const rows = [
+    ['Hands Played', st.handsPlayed],
+    ['Hands Made', st.handsMade],
+    ['Soft Sets', st.softSets],
+    ['Hard Sets', st.hardSets],
+    ['Biggest Pot Won', `$${(st.biggestPot || 0).toFixed(2)}`],
+  ];
+  return (
+    <Overlay testid="stats-modal">
+      <div className="glass rounded-3xl p-5 sm:p-6 w-full max-w-md pop-in relative">
+        <button
+          data-testid="close-stats-btn"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white"
+        >
+          <X size={16} />
+        </button>
+        <div className="font-display font-bold text-xl text-cyan-300 mb-4 flex items-center gap-2">
+          <BarChart3 size={20} /> Session Stats
+        </div>
+        <div className="space-y-1.5 mb-4">
+          {rows.map(([label, val]) => (
+            <div key={label} className="flex justify-between text-sm border-b border-white/5 pb-1">
+              <span className="text-slate-300">{label}</span>
+              <span data-testid={`stat-${label.replace(/\s+/g, '-').toLowerCase()}`} className="font-mono-stat font-bold text-emerald-300">
+                {val}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="text-[11px] uppercase tracking-widest text-slate-500 mb-1">Lifetime Net P&amp;L</div>
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {SEATS.map((k) => (
+            <div key={k} className="bg-black/30 rounded-lg p-2 text-center">
+              <div className="text-[10px] text-slate-400">{SEAT_LABEL[k]}</div>
+              <div className={`font-mono-stat font-bold text-sm ${st.net[k] >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                {st.net[k] >= 0 ? '+' : '−'}${Math.abs(st.net[k]).toFixed(2)}
+              </div>
+            </div>
+          ))}
+        </div>
+        <button
+          data-testid="reset-stats-btn"
+          onClick={onReset}
+          className="w-full py-2 rounded-xl bg-slate-800/60 border border-slate-600 text-slate-300 font-sub font-semibold text-sm hover:bg-slate-700/60 flex items-center justify-center gap-2"
+        >
+          <RotateCcw size={14} /> Reset Stats
+        </button>
+      </div>
+    </Overlay>
+  );
+}
 
 export function RulebookModal({ onClose }) {
   const [tab, setTab] = useState('rules');
