@@ -1,7 +1,14 @@
-// Core constants for Bust a Lead (3-player Cutthroat Pinochle variant)
+// Core constants for Bus' a Lead (3-player Cutthroat Pinochle variant)
 
 export const SEATS = ['W', 'E', 'P'];
-export const SEAT_LABEL = { W: 'West', E: 'East', P: 'You' };
+export const SEAT_LABEL = { W: 'Them', E: "Ya'll", P: 'You' };
+// Avatar image assets per seat (E has no portrait -> null, falls back to initial)
+export const SEAT_AVATAR = {
+  W: '/assets/avatar_them.png',
+  E: null,
+  P: '/assets/avatar_g2.png',
+};
+export const CARD_BACK_IMG = '/assets/get2_cardback.png';
 // Clockwise seating order used for dealing and turn rotation
 export const CLOCKWISE = ['W', 'E', 'P'];
 

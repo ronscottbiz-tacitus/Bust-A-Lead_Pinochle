@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card } from './Card';
-import { SEAT_LABEL, SUIT_BY_KEY, SEATS, SUIT_KEYS } from '../game/constants';
+import { SEAT_LABEL, SUIT_BY_KEY, SEATS, SUIT_KEYS, SEAT_AVATAR } from '../game/constants';
 import { legalPlays } from '../game/trick';
 import { sortHand } from '../game/deck';
 import { saveTarget, booksToMake } from '../game/scoring';
@@ -67,7 +67,7 @@ export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGa
     <header className="fixed top-0 inset-x-0 z-40 h-16 glass px-3 sm:px-6 flex items-center justify-between">
       <div className="flex items-center gap-2 sm:gap-4">
         <div className="font-display font-black text-sm sm:text-lg tracking-tight text-cyan-300 leading-none">
-          BUST<span className="text-fuchsia-400">·</span>A<span className="text-fuchsia-400">·</span>LEAD
+          BUS'<span className="text-fuchsia-400">·</span>A<span className="text-fuchsia-400">·</span>LEAD
         </div>
         <div className="hidden sm:flex items-center gap-3 font-mono-stat text-xs">
           {SEATS.map((k) => (
@@ -210,11 +210,15 @@ function Seat({ state, seat, corner }) {
         } ${s.bidWinner === seat ? 'border-yellow-400/50' : ''}`}
       >
         <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center font-display font-bold text-xs ${
+          className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center font-display font-bold text-xs ${
             seat === 'W' ? 'bg-fuchsia-500/20 text-fuchsia-300' : 'bg-cyan-500/20 text-cyan-300'
           }`}
         >
-          {SEAT_LABEL[seat][0]}
+          {SEAT_AVATAR[seat] ? (
+            <img src={SEAT_AVATAR[seat]} alt={SEAT_LABEL[seat]} className="w-full h-full object-cover" />
+          ) : (
+            SEAT_LABEL[seat][0]
+          )}
         </div>
         <div className="leading-tight">
           <div className="text-xs font-sub font-semibold text-slate-200">{SEAT_LABEL[seat]}</div>
@@ -585,12 +589,21 @@ export function Table({ state, onOpenHistory }) {
       <MeldRack state={state} />
       {showBooks && (
         <div className="absolute bottom-2 left-2 sm:left-6 flex items-center gap-2 z-40">
-          <div
-            data-testid="seat-books-P"
-            className="glass rounded-lg px-3 py-1.5 text-[11px] font-mono-stat text-cyan-300"
-          >
-            You Books: {s.books.P}
-            {s.bidWinner === 'P' ? ` / ${bench}` : ''}
+          <div className="glass rounded-lg pl-1.5 pr-3 py-1 flex items-center gap-2">
+            <img
+              src={SEAT_AVATAR.P}
+              alt="You"
+              data-testid="player-avatar"
+              className="w-9 h-9 rounded-full object-cover border border-cyan-400/40"
+            />
+            <div
+              data-testid="seat-books-P"
+              className="text-[11px] font-mono-stat text-cyan-300 leading-tight"
+            >
+              <div className="text-slate-200 font-sub font-semibold">You</div>
+              Books: {s.books.P}
+              {s.bidWinner === 'P' ? ` / ${bench}` : ''}
+            </div>
           </div>
           {(s.defenderAces.P === 'single' || s.defenderAces.P === 'double') && (
             <div

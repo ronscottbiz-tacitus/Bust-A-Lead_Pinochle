@@ -1,4 +1,4 @@
-import { SUIT_BY_KEY } from '../game/constants';
+import { SUIT_BY_KEY, CARD_BACK_IMG } from '../game/constants';
 
 const SIZES = {
   sm: 'w-9 h-[52px] text-[10px] rounded-md',
@@ -21,14 +21,10 @@ export const Card = ({
   if (faceDown || !card) {
     return (
       <div
-        style={style}
+        style={{ ...style, backgroundImage: `url(${CARD_BACK_IMG})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
         data-testid={testid}
-        className={`${SIZES[size]} shrink-0 bg-gradient-to-br from-slate-800 to-slate-950 border border-cyan-500/25 shadow-lg flex items-center justify-center ${className}`}
-      >
-        <div className="w-5 h-5 rounded-full border border-cyan-400/40 flex items-center justify-center">
-          <div className="w-1.5 h-1.5 rounded-full bg-cyan-400/60" />
-        </div>
-      </div>
+        className={`${SIZES[size]} shrink-0 border border-cyan-500/25 shadow-lg overflow-hidden ${className}`}
+      />
     );
   }
   const suit = SUIT_BY_KEY[card.suit];

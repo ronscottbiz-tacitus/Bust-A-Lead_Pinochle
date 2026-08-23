@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend-only rebrand/asset verification for Bus' a Lead. All 6 requested checks passed: title rebrand, seat labels (Them / Ya'll / You), bankroll chips, avatar images (avatar_them.png, avatar_g2.png), card-back image (get2_cardback.png), Book X/25 tracker, and New Game modal. Game deals and progresses through auction/play/settlement without errors or false BUSTED alerts.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "rebrand_title": "PASS - Config screen and header both show BUS'·A·LEAD; no BUST·A·LEAD found; no false BUSTED text.",
+    "seat_labels": "PASS - seat-W='Them', seat-E=\"Ya'll\", bankroll-W='Them $100.00', bankroll-E=\"Ya'll $100.00\", bankroll-P='You $100.00', dealer-badge='Dealer: You'.",
+    "player_avatar": "PASS - <img data-testid='player-avatar'> renders in play/settlement phase with src=/assets/avatar_g2.png, naturalWidth=1024. (Not rendered in auction phase by design.)",
+    "them_avatar": "PASS - seat-W contains <img> src=/assets/avatar_them.png, naturalWidth=1024.",
+    "card_backs": "PASS - 24 elements have background-image url(/assets/get2_cardback.png); asset fetch returns HTTP 200.",
+    "regression": "PASS - Deal works, auction progresses (Pass button), trump selection appears, settlement modal ('BOARD SET') renders with correct new labels ('Bidder (Them) Books Won', transfers to Ya'll/You). trick-counter shows 'Book 0/25' during play phase. new-game-header-btn opens new-game-modal."
+  },
+  "test_report_links": ["/app/test_reports/after_deal.png", "/app/test_reports/after_auction.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Table.jsx is 630 lines - close to the 700-line threshold; consider splitting Header, Seat, PlayerDock into separate files for maintainability.",
+    "player-avatar and trick-counter data-testids only mount in 'play'/'settlement' phases; if tests need them during auction, add lightweight placeholders or expose phase via a data-testid='phase' attribute for easier automation."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100%"},
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Player-avatar & Book X/25 trick-counter render only in play/settlement phase. To reach play phase in Fast speed: click cfg-speed-fast, deal-btn, wait ~2.5s, click Pass (human turn in auction), wait, click first trump-* button. Assets confirmed reachable at /assets/avatar_g2.png, /assets/avatar_them.png, /assets/get2_cardback.png."
+}

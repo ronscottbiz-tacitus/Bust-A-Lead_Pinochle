@@ -43,7 +43,7 @@ export function ConfigScreen({ state, act }) {
       <div className="glass rounded-3xl p-6 sm:p-8 w-full max-w-md pop-in">
         <div className="text-center mb-5">
           <div className="font-display font-black text-3xl sm:text-4xl tracking-tight text-cyan-300">
-            BUST<span className="text-fuchsia-400">·</span>A<span className="text-fuchsia-400">·</span>LEAD
+            BUS'<span className="text-fuchsia-400">·</span>A<span className="text-fuchsia-400">·</span>LEAD
           </div>
           <div className="text-xs font-sub uppercase tracking-[0.3em] text-slate-500 mt-1">
             Cutthroat Pinochle · 3 Seats
