@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;800;900&family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --felt-0: #04080b;
+  --felt-1: #081118;
+  --felt-2: #0f1e29;
+  --cyan: #00f0ff;
+  --gold: #ffc700;
+  --magenta: #ff007a;
+  --alert: #ff2a6d;
+}
+
+body {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--felt-0);
+  color: #e2e8f0;
+  overflow-x: hidden;
+}
+
+.font-display { font-family: 'Unbounded', sans-serif; }
+.font-sub { font-family: 'Outfit', sans-serif; }
+.font-mono-stat { font-family: 'JetBrains Mono', monospace; }
+
+.felt-bg {
+  background:
+    radial-gradient(ellipse at 50% 35%, #123243 0%, #0c1c27 45%, #060d13 78%, #04080b 100%);
+  position: relative;
+}
+.felt-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 4px 4px;
+  pointer-events: none;
+}
+
+.glass {
+  background: rgba(12, 22, 33, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+.neon-cyan { box-shadow: 0 0 18px rgba(0, 240, 255, 0.35); }
+.neon-gold { box-shadow: 0 0 22px rgba(255, 199, 0, 0.55); }
+
+@keyframes goldPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 199, 0, 0.5); }
+  50% { box-shadow: 0 0 26px rgba(255, 199, 0, 0.95); }
+}
+.gold-pulse { animation: goldPulse 1.4s ease-in-out infinite; }
+
+@keyframes dealIn {
+  from { opacity: 0; transform: translateY(-40px) scale(0.7) rotate(-8deg); }
+  to { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+}
+.deal-in { animation: dealIn 0.4s ease-out both; }
+
+@keyframes floatUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.float-up { animation: floatUp 0.35s ease-out both; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  40% { transform: translateX(10px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+.shake { animation: shake 0.5s ease-in-out; }
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+.pop-in { animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+.card-lift { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+
+::-webkit-scrollbar { height: 8px; width: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.3); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@layer base {
+  * { border-color: rgba(255, 255, 255, 0.08); }
+}

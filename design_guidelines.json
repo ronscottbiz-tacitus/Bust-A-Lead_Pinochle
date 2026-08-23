@@ -1,0 +1,119 @@
+{
+  "project_name": "Bust a Lead - Cutthroat Pinochle",
+  "archetype": "Modern Sleek Dark Neon Casino Felt",
+  "theme": "dark",
+  "typography": {
+    "headline_font": "Unbounded, sans-serif",
+    "subheading_font": "Outfit, sans-serif",
+    "body_font": "Plus Jakarta Sans, sans-serif",
+    "stat_counter_font": "JetBrains Mono, monospace",
+    "hierarchy": {
+      "h1_hero": "text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight",
+      "h2_section": "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight",
+      "h3_card_title": "text-lg sm:text-xl font-semibold tracking-wide",
+      "h4_label": "text-xs sm:text-sm font-medium uppercase tracking-widest",
+      "body_text": "text-sm sm:text-base leading-relaxed",
+      "mono_digits": "font-mono font-bold tracking-wider"
+    }
+  },
+  "colors": {
+    "table_felt_background": "#070D12",
+    "table_felt_inner": "radial-gradient(ellipse at center, #0F1E29 0%, #081118 70%, #04080B 100%)",
+    "surface_card": "rgba(15, 25, 36, 0.85)",
+    "surface_glass": "rgba(18, 30, 44, 0.75)",
+    "surface_overlay": "rgba(6, 11, 17, 0.90)",
+    "borders": {
+      "subtle": "rgba(255, 255, 255, 0.10)",
+      "accent_cyan": "#00F0FF",
+      "accent_gold": "#FFC700",
+      "accent_magenta": "#FF007A",
+      "accent_orange": "#FF6B00",
+      "accent_emerald": "#00E676",
+      "accent_alert": "#FF2A6D"
+    },
+    "suits": {
+      "spades": {
+        "primary": "#38BDF8",
+        "glow": "rgba(56, 189, 248, 0.6)",
+        "badge": "bg-sky-950/80 text-sky-400 border-sky-500/50"
+      },
+      "hearts": {
+        "primary": "#F43F5E",
+        "glow": "rgba(244, 63, 94, 0.6)",
+        "badge": "bg-rose-950/80 text-rose-400 border-rose-500/50"
+      },
+      "diamonds": {
+        "primary": "#FB923C",
+        "glow": "rgba(251, 146, 60, 0.6)",
+        "badge": "bg-amber-950/80 text-amber-400 border-amber-500/50"
+      },
+      "clubs": {
+        "primary": "#34D399",
+        "glow": "rgba(52, 211, 153, 0.6)",
+        "badge": "bg-emerald-950/80 text-emerald-400 border-emerald-500/50"
+      }
+    },
+    "spades_trump_special": {
+      "border": "#FFD700",
+      "animation": "animate-pulse shadow-[0_0_20px_rgba(255,215,0,0.8)]"
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphism": "backdrop-blur-xl bg-slate-900/80 border border-slate-700/50 shadow-[0_8px_32px_rgba(0,0,0,0.37)]",
+    "card_face": "bg-slate-900 border border-slate-700/80 shadow-2xl rounded-xl transition-all duration-200",
+    "legal_card_highlight": "ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-900 shadow-[0_0_15px_rgba(0,240,255,0.7)] cursor-pointer hover:-translate-y-4 hover:scale-105",
+    "illegal_card_dim": "opacity-40 grayscale-[60%] cursor-not-allowed pointer-events-none",
+    "busted_lead_banner": "bg-red-950/90 border-2 border-red-500 text-red-200 shadow-[0_0_40px_rgba(239,68,68,0.8)] animate-bounce"
+  },
+  "component_styles": {
+    "persistent_header": {
+      "container": "fixed top-0 left-0 right-0 z-40 h-16 bg-slate-950/85 backdrop-blur-md border-b border-slate-800 px-4 sm:px-8 flex items-center justify-between shadow-lg",
+      "bankrolls_display": "flex items-center gap-4 sm:gap-6 text-sm font-mono",
+      "trump_badge": "px-3 py-1.5 rounded-full border text-xs font-bold uppercase flex items-center gap-2 transition-all",
+      "trick_counter": "text-xs font-mono uppercase bg-slate-800/80 px-3 py-1 rounded-md text-slate-300"
+    },
+    "fanned_hand_tray": {
+      "container": "fixed bottom-2 left-1/2 -translate-x-1/2 z-30 flex items-end justify-center px-4 max-w-full overflow-x-auto py-2",
+      "fanned_arc_formula": "transform: rotate(calc((var(--card-index) - (var(--total-cards) - 1) / 2) * 3deg)) translateY(calc(abs(var(--card-index) - (var(--total-cards) - 1) / 2) * 4px))"
+    },
+    "auction_bar": {
+      "container": "bg-slate-900/90 border border-cyan-500/40 p-4 rounded-2xl shadow-[0_0_25px_rgba(0,240,255,0.2)] flex flex-wrap items-center gap-3 animate-in fade-in zoom-in-95"
+    },
+    "busted_lead_modal": {
+      "container": "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md animate-in zoom-in-90",
+      "dialog": "bg-gradient-to-b from-red-950 to-slate-950 border-2 border-red-500 p-8 rounded-3xl max-w-md w-full text-center shadow-[0_0_50px_rgba(239,68,68,0.6)]"
+    }
+  },
+  "web_audio_procedural_sfx": {
+    "enabled_by_default": true,
+    "sounds": {
+      "card_deal": "Short white noise burst with exponentially decaying gain envelope (0.05s)",
+      "card_play": "Mid-frequency sine click with subtle resonant filter sweep (0.08s)",
+      "chip_bet": "High metallic ping using dual sine oscillators at 1200Hz & 1800Hz (0.12s)",
+      "busted_lead": "Sawtooth drop sweep with heavy 50Hz sub bass pulse (0.6s)",
+      "trump_declare": "Major triad chord arpeggio with high chime harmonics (0.4s)",
+      "settlement_win": "Ascending pitch sequence (4 notes) with smooth reverb tail (0.8s)"
+    }
+  },
+  "image_urls": {
+    "felt_texture": "https://images.unsplash.com/photo-1601370690183-1c7796ecec61?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxwb2tlciUyMHRhYmxlJTIwY2FzaW5vJTIwZGFyayUyMGZlbHQlMjBiYWNrZ3JvdW5kJTIwdGV4dHVyZXxlbnwwfHx8fDE3ODc0NTI1OTF8MA&ixlib=rb-4.1.0&q=85",
+    "avatars": {
+      "west_ai": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "east_ai": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "player": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Build 'Bust a Lead' single-player Cutthroat Pinochle in React using pure Tailwind CSS, Lucide React icons, and Web Audio API.",
+    "Ensure game state (bankrolls, game phase, settings, stats) persists in localStorage.",
+    "Implement full Cutthroat Pinochle logic: 48-card deck (double A, 10, K, Q, J, 9), 15 cards per player + 3 kitty cards.",
+    "Bidding phase: minimum bid 250 (or configurable 200-300), 10-point increments, pass option.",
+    "Kitty & Discard phase: Bid winner picks up 3-card kitty, declares trump, declares marriages if any, and discards 5 cards before meld phase.",
+    "Meld evaluation phase: evaluate A-Run (150), Royal Marriage (40), Common Marriage (20), Dix (10), 100 Aces (100), 80 Kings (80), 60 Queens (60), 40 Jacks (40), Pinochle (40), Double Pinochle (300). Defender Aces declaration panel included.",
+    "Trick phase (25 tricks or 15 tricks depending on Pinochle deck rules, 15 tricks for 48 card deck 15 cards each): strict lead-following and trumping rules. Highlights legal playable cards.",
+    "Bust a Lead alert: Trigger dramatic neon modal/sound when a player fails to follow suit when holding led suit, or fails to beat high card when required (Cutthroat Pinochle rule violation).",
+    "Settlement phase: animated math breakdown showing Bid vs Meld + Trick counters, multiplier applied, and bankrolls transfer.",
+    "All interactive elements MUST include data-testid attributes (e.g., data-testid='bid-btn', data-testid='card-spades-ace', data-testid='sound-toggle').",
+    "Provide a Rulebook & Meld Reference Modal and Pre-game Settings Modal (Bid base, Sort order, Speed, Audio toggle)."
+  ]
+}
