@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useGame } from './hooks/useGame';
 import { Header, Table, HandTray, DealAnimation } from './components/Table';
 import { ActionBar, MeldBoard } from './components/ActionBar';
-import { ConfigScreen, SettlementModal, RulebookModal, StatsModal } from './components/Modals';
+import { ConfigScreen, SettlementModal, RulebookModal, StatsModal, BookReplayModal } from './components/Modals';
 import { legalPlays } from './game/trick';
 
 export default function BustALead() {
   const { state, act } = useGame();
   const [showRules, setShowRules] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const s = state;
 
   const onCardClick = (card) => {
@@ -30,7 +31,7 @@ export default function BustALead() {
             onOpenRules={() => setShowRules(true)}
             onOpenStats={() => setShowStats(true)}
           />
-          <Table state={s} />
+          <Table state={s} onOpenHistory={() => setShowHistory(true)} />
           <MeldBoard state={s} />
           <HandTray state={s} onCardClick={onCardClick} />
           <ActionBar state={s} act={act} />
@@ -48,6 +49,7 @@ export default function BustALead() {
           onReset={() => act({ type: 'RESET_STATS' })}
         />
       )}
+      {showHistory && <BookReplayModal completedBooks={s.completedBooks} onClose={() => setShowHistory(false)} />}
     </div>
   );
 }

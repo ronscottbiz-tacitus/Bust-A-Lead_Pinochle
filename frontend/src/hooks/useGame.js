@@ -75,7 +75,7 @@ function drive(s, dispatch, sound) {
       }
       if (s.turn && s.turn !== 'P') {
         return setTimeout(() => {
-          const card = aiPlay(s.turn, s.hands[s.turn], s.trick, s.trump, s.bidWinner);
+          const card = aiPlay(s.turn, s.hands[s.turn], s.trick, s.trump, s.bidWinner, s.signals?.[s.turn]);
           sound.play();
           dispatch({ type: 'PLAY_CARD', seat: s.turn, card });
         }, d.think);

@@ -50,6 +50,10 @@ function emptyRound() {
     trickPending: false,
     lastTrick: null,
     lastTrickWinner: null,
+    signals: { W: null, E: null, P: null },
+    playedIds: [],
+    completedBooks: [],
+    boardSet: false,
     busted: null,
     result: null,
     settlement: null,
@@ -119,6 +123,13 @@ function finalizeDiscard(s) {
   s.buriedBooks = buried.filter(isCounter).length;
   s.hands[s.bidWinner] = hand.filter((c) => !set.has(c.id));
   s.meld[s.bidWinner] = computeMeld(s.hands[s.bidWinner], s.trump);
+  // BOARD SET guardrail: only 50 books exist. If Bid - Meld > 50 the contract is impossible.
+  const meldTotal = s.meld[s.bidWinner].total;
+  if (s.bid - meldTotal > 50) {
+    s.boardSet = true;
+    s.result = 'hard';
+    return settle(s);
+  }
   if (s.laydown) {
     s.phase = 'laydown';
     s.laydownResp = {};
@@ -227,6 +238,7 @@ function computeSettlement(s) {
     newBankrolls: bank,
     gameOver,
     busted: s.busted,
+    boardSet: !!s.boardSet,
   };
 }
 
@@ -374,8 +386,22 @@ export function reducer(state, action) {
         return bust(s, 'P', 'Failed to declare Aces before playing card 1');
       const legal = legalPlays(s.hands[seat], s.trick, s.trump);
       if (!legal.some((c) => c.id === card.id)) return bust(s, seat, 'Reneged — illegal card played');
+      const wasLeading = s.trick.length === 0;
+      const winnerBefore = s.trick.length ? s.trick[currentWinnerIndex(s.trick, s.trump)].seat : null;
       s.hands[seat] = s.hands[seat].filter((c) => c.id !== card.id);
       s.trick = [...s.trick, { seat, card }];
+      s.playedIds.push(card.id);
+      // Consume a come-back signal when this seat leads.
+      if (wasLeading && s.signals[seat]) s.signals[seat] = null;
+      // Record a come-back signal: a defender throws a high card (A/J) onto their partner's winning book.
+      if (!wasLeading) {
+        const isDef = seat !== s.bidWinner;
+        const partnerWinning = isDef && winnerBefore && winnerBefore !== seat && winnerBefore !== s.bidWinner;
+        const thisWins = currentWinnerIndex(s.trick, s.trump) === s.trick.length - 1;
+        if (partnerWinning && !thisWins && (card.rank === 'A' || card.rank === 'J')) {
+          s.signals[winnerBefore] = card.suit;
+        }
+      }
       if (s.trick.length < 3) s.turn = nextSeat(seat);
       else s.trickPending = true;
       return s;
@@ -389,6 +415,13 @@ export function reducer(state, action) {
       s.books[winner] += pts;
       s.lastTrick = s.trick;
       s.lastTrickWinner = winner;
+      s.completedBooks.push({
+        book: s.trickNo,
+        leader: s.leader,
+        winner,
+        pts,
+        plays: s.trick.map((p) => ({ seat: p.seat, card: p.card })),
+      });
       if (s.trickNo >= 25) {
         const meldTotal = s.meld[s.bidWinner]?.total || 0;
         const bidderBooks = s.books[s.bidWinner] + s.buriedBooks;

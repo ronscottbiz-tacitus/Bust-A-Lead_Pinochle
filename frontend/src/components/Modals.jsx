@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { SEAT_LABEL, SEATS } from '../game/constants';
-import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3 } from 'lucide-react';
+import { Card } from './Card';
+import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 
@@ -132,7 +133,15 @@ export function SettlementModal({ state, act }) {
         }`}
       >
         <div className="text-center mb-4">
-          {busted ? (
+          {r.boardSet ? (
+            <div data-testid="board-set-banner" className="shake">
+              <Skull size={40} className="mx-auto text-orange-400 mb-2" />
+              <div className="font-display font-black text-2xl text-orange-300">BOARD SET</div>
+              <div className="text-xs text-orange-200/80 mt-1">
+                Impossible Contract — Books Needed ({(r.bid ?? 0) - (r.meldTotal ?? 0)}) exceed 50. Automatic Hard Set.
+              </div>
+            </div>
+          ) : busted ? (
             <div className="shake">
               <Skull size={40} className="mx-auto text-red-400 mb-2" />
               <div className="font-display font-black text-2xl text-red-300">BUSTED A LEAD</div>
@@ -361,6 +370,68 @@ export function RulebookModal({ onClose }) {
               </li>
             ))}
           </ul>
+        )}
+      </div>
+    </Overlay>
+  );
+}
+
+
+export function BookReplayModal({ completedBooks, onClose }) {
+  const books = completedBooks || [];
+  const [sel, setSel] = useState(books.length ? books.length - 1 : 0);
+  const book = books[sel];
+  return (
+    <Overlay testid="book-replay-modal">
+      <div className="glass rounded-3xl p-5 sm:p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto pop-in relative">
+        <button
+          data-testid="close-history-btn"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white"
+        >
+          <X size={16} />
+        </button>
+        <div className="font-display font-bold text-xl text-cyan-300 mb-3 flex items-center gap-2">
+          <History size={20} /> Book History
+        </div>
+        {books.length === 0 ? (
+          <div className="text-sm text-slate-400">No books played yet.</div>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {books.map((b, i) => (
+                <button
+                  key={i}
+                  data-testid={`book-chip-${b.book}`}
+                  onClick={() => setSel(i)}
+                  className={`w-8 h-8 rounded-lg text-xs font-mono-stat font-bold border transition-all ${
+                    sel === i ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 neon-cyan' : 'bg-slate-800/60 border-slate-700 text-slate-400'
+                  }`}
+                >
+                  {b.book}
+                </button>
+              ))}
+            </div>
+            {book && (
+              <div data-testid="book-replay-detail" className="bg-black/30 rounded-xl p-4">
+                <div className="text-xs text-slate-400 mb-3 flex justify-between">
+                  <span>Book {book.book} · Led by {SEAT_LABEL[book.leader]}</span>
+                  <span className="text-emerald-300 font-bold">{SEAT_LABEL[book.winner]} won (+{book.pts})</span>
+                </div>
+                <div className="flex justify-center gap-4">
+                  {book.plays.map((p, i) => (
+                    <div key={i} className="flex flex-col items-center gap-1">
+                      <div className={`text-[10px] font-mono-stat ${p.seat === book.winner ? 'text-emerald-300 font-bold' : 'text-slate-400'}`}>
+                        {SEAT_LABEL[p.seat]}
+                        {p.seat === book.leader ? ' ▸' : ''}
+                      </div>
+                      <Card card={p.card} size="md" className={p.seat === book.winner ? 'ring-2 ring-emerald-400' : ''} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </Overlay>

@@ -72,11 +72,48 @@ test('full hand simulation reaches settlement with conserved bankroll', () => {
     if (!s.gameOver) expect(total).toBe(300);
     // A played-out (non-conceded) hand must complete 25 tricks
     if (s.result === 'made' || s.result === 'hard') {
-      expect(s.trickNo).toBe(25);
-      const cardsLeft = SEATS.reduce((n, k) => n + s.hands[k].length, 0);
-      expect(cardsLeft).toBe(0);
+      if (!s.boardSet) {
+        expect(s.trickNo).toBe(25);
+        const cardsLeft = SEATS.reduce((n, k) => n + s.hands[k].length, 0);
+        expect(cardsLeft).toBe(0);
+        expect(s.completedBooks.length).toBe(25);
+        expect(s.playedIds.length).toBe(75);
+      }
     }
   }
+});
+
+function zeroMeldHand() {
+  const spec = [
+    ['S', 'A', 4], ['S', '10', 4],
+    ['H', 'K', 4], ['H', 'J', 4],
+    ['D', 'A', 2], ['D', '10', 2], ['D', 'K', 2],
+    ['C', '10', 4], ['C', 'J', 4],
+  ];
+  const h = [];
+  for (const [suit, rank, n] of spec) for (let i = 0; i < n; i++) h.push({ id: `${suit}-${rank}-${i}`, suit, rank });
+  return h; // 30 cards, computeMeld total === 0
+}
+
+test('BOARD SET: Bid - Meld > 50 triggers an immediate Hard Set without playing', () => {
+  const { computeMeld } = require('../meld');
+  const hand = zeroMeldHand();
+  expect(computeMeld(hand, 'S').total).toBe(0);
+  let s = reducer(initState(), { type: 'START_ROUND' });
+  s = reducer(s, { type: 'DEAL_DONE' });
+  // Splice in a controlled impossible contract for West.
+  s.bidWinner = 'W';
+  s.bid = 95;
+  s.trump = 'S';
+  s.phase = 'discard';
+  s.hands.W = hand;
+  s.discards = hand.slice(0, 5).map((c) => c.id);
+  s = reducer(s, { type: 'CONFIRM_DISCARD' });
+  expect(s.boardSet).toBe(true);
+  expect(s.phase).toBe('settlement');
+  expect(s.result).toBe('hard');
+  expect(s.settlement.boardSet).toBe(true);
+  expect(s.trickNo).toBe(0); // never played a book
 });
 
 test('multiple consecutive hands rotate dealer and never crash', () => {

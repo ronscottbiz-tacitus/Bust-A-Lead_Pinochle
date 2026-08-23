@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { Card } from './Card';
-import { SEAT_LABEL, SUIT_BY_KEY, SEATS } from '../game/constants';
+import { SEAT_LABEL, SUIT_BY_KEY, SEATS, SUIT_KEYS } from '../game/constants';
 import { legalPlays } from '../game/trick';
 import { sortHand } from '../game/deck';
 import { saveTarget, booksToMake } from '../game/scoring';
-import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3 } from 'lucide-react';
+import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 const STAKE_LABEL = { 1: '$1/$2', 2: '$2/$4', 5: '$5/$10' };
@@ -264,43 +265,94 @@ export function HandTray({ state, onCardClick }) {
   const legalIds = canPlay ? new Set(legalPlays(hand, s.trick, s.trump).map((c) => c.id)) : null;
   const selecting = s.phase === 'discard' && s.bidWinner === 'P';
   const n = hand.length;
+  const idx = new Map(hand.map((c, i) => [c.id, i]));
+
+  const groups = { S: [], H: [], D: [], C: [] };
+  hand.forEach((c) => groups[c.suit].push(c));
+  const suitsPresent = SUIT_KEYS.filter((k) => groups[k].length);
+  const [tab, setTab] = useState(null);
+  const activeTab = tab && groups[tab]?.length ? tab : suitsPresent[0] || 'S';
+
+  const renderCard = (c) => {
+    const i = idx.get(c.id);
+    const legal = legalIds ? legalIds.has(c.id) : false;
+    const dim = canPlay && !legal;
+    const selected = selecting && s.discards.includes(c.id);
+    const interactive = selecting || legal;
+    return (
+      <Card
+        card={c}
+        size="lg"
+        legal={legal}
+        dim={dim}
+        selected={selected}
+        onClick={interactive ? () => onCardClick(c) : undefined}
+        testid={`card-${c.suit}-${c.rank}-${i}`}
+      />
+    );
+  };
 
   return (
-    <div
-      data-testid="player-hand"
-      className="fixed bottom-1 inset-x-0 z-30 flex items-end justify-center px-2 overflow-x-auto py-3"
-    >
-      <div className="flex items-end justify-center min-w-min">
-        {hand.map((c, i) => {
-          const mid = (n - 1) / 2;
-          const rot = (i - mid) * 2.2;
-          const lift = Math.abs(i - mid) * 3;
-          const legal = legalIds ? legalIds.has(c.id) : false;
-          const dim = canPlay && !legal;
-          const selected = selecting && s.discards.includes(c.id);
-          const interactive = selecting || legal;
-          return (
-            <div
-              key={c.id}
-              style={{
-                marginLeft: i === 0 ? 0 : -18,
-                transform: `rotate(${rot}deg) translateY(${lift}px)`,
-                transformOrigin: 'bottom center',
-                zIndex: i,
-              }}
-            >
-              <Card
-                card={c}
-                size="lg"
-                legal={legal}
-                dim={dim}
-                selected={selected}
-                onClick={interactive ? () => onCardClick(c) : undefined}
-                testid={`card-${c.suit}-${c.rank}-${i}`}
-              />
-            </div>
-          );
-        })}
+    <div data-testid="player-hand" className="fixed bottom-4 inset-x-0 z-30 px-2 pb-[env(safe-area-inset-bottom)] pointer-events-none">
+      {/* Desktop: overlapping fan with hover lift */}
+      <div className="hidden sm:flex items-end justify-center overflow-x-auto pb-6 pointer-events-auto">
+        <div className="flex items-end justify-center min-w-min">
+          {hand.map((c) => {
+            const i = idx.get(c.id);
+            const mid = (n - 1) / 2;
+            const rot = (i - mid) * 2.2;
+            const lift = Math.abs(i - mid) * 3;
+            return (
+              <div
+                key={c.id}
+                className="hover:z-50 hover:-translate-y-4 transition-transform"
+                style={{
+                  marginLeft: i === 0 ? 0 : -18,
+                  transform: `rotate(${rot}deg) translateY(${lift}px)`,
+                  transformOrigin: 'bottom center',
+                  zIndex: i,
+                }}
+              >
+                {renderCard(c)}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Mobile: suit tabs with count badges */}
+      <div className="sm:hidden flex flex-col items-center gap-2 pointer-events-auto">
+        <div className="flex gap-1.5 glass rounded-xl px-2 py-1.5">
+          {SUIT_KEYS.map((k) => {
+            const su = SUIT_BY_KEY[k];
+            const cnt = groups[k].length;
+            const active = activeTab === k;
+            return (
+              <button
+                key={k}
+                data-testid={`suit-tab-${k}`}
+                onClick={() => setTab(k)}
+                disabled={!cnt}
+                className={`relative px-3 py-1.5 rounded-lg border text-lg font-bold transition-all disabled:opacity-30 ${
+                  active ? 'bg-cyan-500/20 border-cyan-400 neon-cyan' : 'bg-slate-800/60 border-slate-700'
+                } ${k === s.trump ? 'ring-1 ring-yellow-400/70' : ''}`}
+              >
+                <span style={{ color: su.neon }}>{su.symbol}</span>
+                <span
+                  data-testid={`suit-count-${k}`}
+                  className="absolute -top-1.5 -right-1.5 bg-slate-900 border border-slate-600 text-[9px] font-mono-stat text-slate-200 rounded-full w-4 h-4 flex items-center justify-center"
+                >
+                  {cnt}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-end justify-center gap-1 overflow-x-auto max-w-full pb-2">
+          {groups[activeTab].map((c) => (
+            <div key={c.id}>{renderCard(c)}</div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -358,6 +410,7 @@ export function MeldRack({ state }) {
   if (!['play', 'laydown', 'settlement'].includes(s.phase)) return null;
   const cards = s.meld[s.bidWinner].allCards || [];
   if (!cards.length) return null;
+  const played = new Set(s.playedIds || []);
   return (
     <div
       data-testid="meld-rack"
@@ -367,9 +420,24 @@ export function MeldRack({ state }) {
         {SEAT_LABEL[s.bidWinner]}'s Meld Rack · {s.meld[s.bidWinner].total} pts
       </div>
       <div className="flex flex-wrap justify-center gap-1 max-w-[540px]">
-        {cards.map((c) => (
-          <Card key={c.id} card={c} size="sm" />
-        ))}
+        {cards.map((c) => {
+          const isPlayed = played.has(c.id);
+          return (
+            <div
+              key={c.id}
+              className="relative"
+              data-testid={`meld-card-${c.suit}-${c.rank}`}
+              data-played={isPlayed ? 'true' : 'false'}
+            >
+              <Card card={c} size="sm" className={isPlayed ? 'opacity-30 grayscale' : ''} />
+              {isPlayed && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-[130%] h-[3px] bg-rose-500/90 -rotate-[24deg] rounded-full shadow" />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -403,7 +471,7 @@ export function DealAnimation({ state }) {
   );
 }
 
-export function Table({ state }) {
+export function Table({ state, onOpenHistory }) {
   const s = state;
   const meldTotal = s.meld[s.bidWinner]?.total || 0;
   const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
@@ -416,12 +484,23 @@ export function Table({ state }) {
       <SaveHUD state={state} />
       <MeldRack state={state} />
       {showBooks && (
-        <div
-          data-testid="seat-books-P"
-          className="absolute bottom-2 left-2 sm:left-6 glass rounded-lg px-3 py-1.5 text-[11px] font-mono-stat text-cyan-300 z-20"
-        >
-          You Books: {s.books.P}
-          {s.bidWinner === 'P' ? ` / ${bench}` : ''}
+        <div className="absolute bottom-2 left-2 sm:left-6 flex items-center gap-2 z-40">
+          <div
+            data-testid="seat-books-P"
+            className="glass rounded-lg px-3 py-1.5 text-[11px] font-mono-stat text-cyan-300"
+          >
+            You Books: {s.books.P}
+            {s.bidWinner === 'P' ? ` / ${bench}` : ''}
+          </div>
+          {s.completedBooks.length > 0 && (
+            <button
+              data-testid="book-history-btn"
+              onClick={onOpenHistory}
+              className="glass rounded-lg px-2.5 py-1.5 text-[11px] font-sub text-slate-300 hover:text-cyan-300 flex items-center gap-1 border border-slate-700 hover:border-cyan-500/50"
+            >
+              <History size={13} /> Book History
+            </button>
+          )}
         </div>
       )}
     </div>

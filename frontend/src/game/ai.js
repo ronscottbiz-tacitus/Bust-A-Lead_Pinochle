@@ -90,14 +90,44 @@ function wouldWin(card, trick, trump, seat) {
   return currentWinnerIndex(t, trump) === t.length - 1;
 }
 
+function pickStrongSuit(cards, trump) {
+  const bs = { S: [], H: [], D: [], C: [] };
+  for (const c of cards) if (c.suit !== trump) bs[c.suit].push(c);
+  let best = null;
+  let bestScore = 0;
+  for (const s of SUIT_KEYS) {
+    if (s === trump) continue;
+    const cs = bs[s];
+    const hasAce = cs.some((c) => c.rank === 'A');
+    const counters = cs.filter((c) => COUNTER_RANKS.has(c.rank)).length;
+    const score = (hasAce ? 5 : 0) + counters * 2 + cs.length;
+    if ((hasAce || counters >= 2) && score > bestScore) {
+      bestScore = score;
+      best = s;
+    }
+  }
+  return best;
+}
+
 // AI card selection during trick play. Defenders cooperate against the bidder.
-export function aiPlay(seat, hand, trick, trump, bidWinner) {
+export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit) {
   const legal = legalPlays(hand, trick, trump);
   if (legal.length === 1) return legal[0];
   const isDefender = bidWinner != null && seat !== bidWinner;
 
   if (trick.length === 0) {
-    // Leading: cash an off-suit Ace to grab counters, else lead a low card.
+    // Defender "come-back": lead the suit partner signalled for, if held.
+    if (isDefender && signalSuit) {
+      const sig = legal.filter((c) => c.suit === signalSuit);
+      if (sig.length) return lowest(sig);
+    }
+    if (!isDefender) {
+      // Bidder trump-draw: with trump dominance (5+ incl. a top trump) strip defenders first.
+      const trumps = legal.filter((c) => c.suit === trump);
+      const topTrump = trumps.some((c) => c.rank === 'A' || c.rank === '10');
+      if (trumps.length >= 5 && topTrump) return highest(trumps);
+    }
+    // Cash an off-suit Ace to grab counters, else lead a low card.
     const offAces = legal.filter((c) => c.rank === 'A' && c.suit !== trump);
     if (offAces.length) return offAces[0];
     const nonCounter = legal.filter((c) => !COUNTER_RANKS.has(c.rank));
@@ -108,13 +138,22 @@ export function aiPlay(seat, hand, trick, trump, bidWinner) {
   const winnerSeat = trick[winIdx].seat;
   const winners = legal.filter((c) => wouldWin(c, trick, trump, seat));
   const nonWinning = legal.filter((c) => !wouldWin(c, trick, trump, seat));
-
-  // Cooperative defence: my partner (the other defender) is currently taking the book.
-  // If the rules let me play a non-winning card, feed the biggest counter into their book.
   const partnerWinning = isDefender && winnerSeat !== seat && winnerSeat !== bidWinner;
+
   if (partnerWinning && nonWinning.length) {
+    const led = trick[0].card.suit;
+    const voidInLed = !hand.some((c) => c.suit === led);
+    // Come-back signal: when truly sloughing, throw a high card (A then J) of a strong side suit.
+    if (voidInLed) {
+      const strong = pickStrongSuit(nonWinning, trump);
+      if (strong) {
+        const sigCards = nonWinning.filter((c) => c.suit === strong && (c.rank === 'A' || c.rank === 'J'));
+        if (sigCards.length) return sigCards.find((c) => c.rank === 'A') || sigCards[0];
+      }
+    }
+    // Standard feeding: give partner the cheapest counter (K -> 10 -> A), keep top winners.
     const counters = nonWinning.filter((c) => COUNTER_RANKS.has(c.rank));
-    if (counters.length) return highest(counters);
+    if (counters.length) return lowest(counters);
     return lowest(nonWinning);
   }
 

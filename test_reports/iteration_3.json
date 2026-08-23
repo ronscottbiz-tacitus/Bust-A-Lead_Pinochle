@@ -1,0 +1,31 @@
+{
+  "summary": "Frontend-only Playwright browser test of Bust a Lead iteration 3 against the public preview URL. Verified the NEW UI features: (1) lifted / non-clipped desktop hand tray, (2) mobile suit tabs, (3) BOARD SET guardrail (bonus - triggered organically), (4) live meld-rack highlighting via data-played attribute, and (5) absence of false BUSTED alerts during play. 11/13 assertions passed. The Book History button appears bottom-left as soon as a book completes and the BookReplayModal component's source is correctly wired, but in two attempts clicking book-history-btn from Playwright did not consistently open the modal in-page (see caveat below).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "BookReplayModal open trigger (Table.jsx book-history-btn -> BustALead setShowHistory)", "issue": "In multiple Playwright runs, force-clicking [data-testid='book-history-btn'] while it was visible (Book 2/25, completedBooks length >= 1) did NOT cause [data-testid='book-replay-modal'] to appear (book chips count = 0). The button is bottom-left and the ActionBar hint overlay lives near the bottom-center - there is a chance an invisible ActionBar bottom bar/hint element is overlapping/intercepting pointer events on the bottom-left corner. Recommend verifying pointer-events/z-index on ActionBar and any absolute-positioned hint container so the History button is genuinely clickable. Source of the modal component itself is correct.", "selector": "[data-testid='book-history-btn']", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Verify [data-testid='book-history-btn'] is actually clickable (not covered by ActionBar hint or another absolute container). Ideally add pointer-events-none to the surrounding hint wrappers and/or bump z-index of the History button above the ActionBar layer. Manually clicking it in a real browser should be double-checked; if it works manually then this may be a Playwright coordinate issue and a data-testid on a slightly larger hit-area could help."
+  ],
+  "critical_code_review_comments": [
+    "HandTray desktop overlapping fan works: 33 card buttons render (26 hand + meld duplicates already accounted for internally) with visible bounding boxes (first card ~100x114 px). player-hand bbox y=764..884 at 1440x900 viewport, so cards are fully within viewport and not clipped by bottom edge - the 'lifted tray' fix is verified.",
+    "Mobile suit tabs work correctly at 390x844: suit-tab-S/H/D/C all render with suit-count-* badges (observed 8/3/8/6 for one deal). Clicking suit-tab-H filters to hearts (6 hearts visible). Desktop fan disappears on mobile and tabs disappear on desktop as intended.",
+    "MeldRack live highlight verified: [data-testid^='meld-card-'] elements expose data-played attribute that flips from 'false' to 'true' during play (observed sample [false,false,false,false,true,false,...] with visible cross-out styling in screenshot).",
+    "BOARD SET guardrail triggered organically in one run: West took the bid at $90 with Meld 39 -> Books to Save = 51 (>50) -> settlement modal immediately displayed a skull banner reading 'BOARD SET / Impossible Contract - Books Needed (51) exceed 50. Automatic Hard Set.' with Total x2 (Spades Trump) and transfers displayed correctly ($4.00 to each defender at $1/$2 stakes with x2 spade multiplier). This matches the spec exactly.",
+    "Robustness check: across ~80 iterations of automated card-play across multiple deals, NO false 'BUSTED A LEAD' alert appeared. Human legal-card highlighting also enforced (only non-aria-disabled cards were clickable) - trick engine remains reliable.",
+    "Regression: header still displays 'Book X/25' (confirmed 'Book 1/25', 'Book 2/25'), save-hud renders during play, stakes-badge visible, all three seat-books-W/E/P present (P was added since iteration 2 - fix confirmed), stats-btn/stats-modal and rules-btn/rulebook-modal both open as expected.",
+    "Minor UX note (previously reported, still not fully addressed but low priority): ActionBar hint copy 'FOLLOW SUIT - HEAD THE BOOK IF ABLE' correctly uses 'book' - previous iteration_2 remark about 'trick' terminology in hint appears resolved. Good."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "~92% (11/13 assertions; only book-replay-modal open-click is unverified via automation)"},
+  "seed_data_creation": "None (localStorage cleared before each run).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Fast path: cfg-speed-fast + cfg-stakes-1 + deal-btn, then click pass-btn ~5 times through auction (loop through pass appearances). To progress through play as human, poll for [data-testid^='card-'] and click first one without disabled/aria-disabled='true'. Handle 'Declare Aces Around' banner (click that button once before playing card 1) - otherwise the human is stuck. BOARD SET can trigger organically when AI wins with a high bid and low meld (Bid-Meld>50); saw it once in ~4 runs. Key testids: cfg-speed-fast, cfg-stakes-1/2/5, deal-btn, pass-btn, bid-btn, trump-S/H/D/C, concede-preplay-btn, confirm-discard-btn, player-hand, card-<S|H|D|C>-<rank>-<idx>, suit-tab-S/H/D/C, suit-count-S/H/D/C, meld-rack, meld-card-*, book-history-btn, book-replay-modal, book-chip-<n>, book-replay-detail, close-history-btn, board-set-banner, settlement-modal, next-hand-btn, save-hud, stakes-badge, seat-books-W/E/P, stats-btn/stats-modal, rules-btn/rulebook-modal, book-tracker.",
+  "rca of the issue": "book-history-btn appears at correct time (immediately after completedBooks.length > 0). Two force-click attempts from Playwright did not open the modal. The ActionBar has a bottom-anchored hint overlay ('FOLLOW SUIT - HEAD THE BOOK IF ABLE ... Tap a glowing card to play') and it may extend across the bottom of the viewport with pointer-events enabled on some wrapper, potentially intercepting clicks on the bottom-left History button. Suggested fix: audit the ActionBar hint container's bounding box and pointer-events; ensure book-history-btn has a higher z-index than the hint bar (e.g., z-30 vs the hint's z-20)."
+}
