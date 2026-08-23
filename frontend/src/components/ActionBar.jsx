@@ -23,7 +23,7 @@ const Btn = ({ children, onClick, disabled, tone = 'cyan', testid, className = '
 };
 
 const Wrap = ({ children, hint }) => (
-  <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 float-up" data-testid="action-bar">
+  <div className="fixed bottom-40 left-1/2 -translate-x-1/2 z-40 float-up" data-testid="action-bar">
     <div className="glass rounded-2xl px-4 py-3 flex flex-col items-center gap-2 neon-cyan max-w-[95vw]">
       {hint && <div className="text-[11px] font-sub uppercase tracking-widest text-cyan-300/80">{hint}</div>}
       <div className="flex flex-wrap items-center justify-center gap-2">{children}</div>

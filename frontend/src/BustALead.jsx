@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { useGame } from './hooks/useGame';
 import { Header, Table, HandTray, DealAnimation } from './components/Table';
 import { ActionBar, MeldBoard } from './components/ActionBar';
-import { ConfigScreen, SettlementModal, RulebookModal, StatsModal, BookReplayModal } from './components/Modals';
+import {
+  ConfigScreen,
+  SettlementModal,
+  RulebookModal,
+  StatsModal,
+  BookReplayModal,
+  NewGameConfirmModal,
+} from './components/Modals';
 import { legalPlays } from './game/trick';
 
 export default function BustALead() {
@@ -10,6 +17,7 @@ export default function BustALead() {
   const [showRules, setShowRules] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showNewGame, setShowNewGame] = useState(false);
   const s = state;
 
   const onCardClick = (card) => {
@@ -30,6 +38,7 @@ export default function BustALead() {
             onToggleSound={() => act({ type: 'UPDATE_SETTINGS', settings: { sound: !s.settings.sound } })}
             onOpenRules={() => setShowRules(true)}
             onOpenStats={() => setShowStats(true)}
+            onNewGame={() => setShowNewGame(true)}
           />
           <Table state={s} onOpenHistory={() => setShowHistory(true)} />
           <MeldBoard state={s} />
@@ -50,6 +59,15 @@ export default function BustALead() {
         />
       )}
       {showHistory && <BookReplayModal completedBooks={s.completedBooks} onClose={() => setShowHistory(false)} />}
+      {showNewGame && (
+        <NewGameConfirmModal
+          onCancel={() => setShowNewGame(false)}
+          onConfirm={() => {
+            act({ type: 'RESET_TABLE' });
+            setShowNewGame(false);
+          }}
+        />
+      )}
     </div>
   );
 }

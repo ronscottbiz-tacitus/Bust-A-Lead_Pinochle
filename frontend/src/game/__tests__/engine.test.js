@@ -168,3 +168,16 @@ test('AI never sloughs off-suit while holding the led suit or trump (strict lega
     }
   }
 });
+
+test('auction records a bid log and RESET_TABLE re-deals a fresh $100 table', () => {
+  let s = playHand(initState());
+  expect(s.bidLog.length).toBeGreaterThan(0);
+  s = reducer(s, { type: 'RESET_TABLE' });
+  expect(s.bankrolls).toEqual({ W: 100, E: 100, P: 100 });
+  expect(s.stats.handsPlayed).toBe(0);
+  expect(s.dealer).toBe('P');
+  expect(s.phase).toBe('dealing');
+  expect(s.hands.P.length).toBe(25);
+  expect(s.kitty.length).toBe(5);
+});
+

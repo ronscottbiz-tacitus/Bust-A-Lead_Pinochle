@@ -50,6 +50,7 @@ function emptyRound() {
     trickPending: false,
     lastTrick: null,
     lastTrickWinner: null,
+    bidLog: [],
     signals: { W: null, E: null, P: null },
     playedIds: [],
     completedBooks: [],
@@ -290,6 +291,12 @@ export function reducer(state, action) {
       s.stats = clone(EMPTY_STATS);
       return s;
 
+    case 'RESET_TABLE':
+      s.bankrolls = { W: 100, E: 100, P: 100 };
+      s.dealer = 'P';
+      s.stats = clone(EMPTY_STATS);
+      return dealRound(s);
+
     case 'START_ROUND':
       return dealRound(s);
 
@@ -304,10 +311,12 @@ export function reducer(state, action) {
     case 'PLACE_BID': {
       s.bid = s.bid == null ? s.settings.bidBase : s.bid + 5;
       s.highBidder = action.seat;
+      s.bidLog.push({ seat: action.seat, text: `Bid $${s.bid}`, kind: 'bid' });
       return afterBidChange(s);
     }
     case 'PASS':
       s.passed[action.seat] = true;
+      s.bidLog.push({ seat: action.seat, text: 'Pass', kind: 'pass' });
       return afterBidChange(s);
 
     case 'DECLARE_TRUMP':

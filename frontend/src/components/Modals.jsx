@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { SEAT_LABEL, SEATS } from '../game/constants';
 import { Card } from './Card';
-import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History } from 'lucide-react';
+import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 
@@ -437,3 +437,34 @@ export function BookReplayModal({ completedBooks, onClose }) {
     </Overlay>
   );
 }
+
+export function NewGameConfirmModal({ onConfirm, onCancel }) {
+  return (
+    <Overlay testid="new-game-modal">
+      <div className="glass rounded-3xl p-6 sm:p-7 w-full max-w-sm pop-in text-center border border-fuchsia-500/40">
+        <RefreshCw size={36} className="mx-auto text-fuchsia-400 mb-3" />
+        <div className="font-display font-bold text-xl text-fuchsia-200 mb-2">Reset Table?</div>
+        <p className="text-sm text-slate-300 mb-5">
+          Reset all player bankrolls to <b className="text-emerald-300">$100.00</b> and start a fresh session?
+        </p>
+        <div className="flex gap-2">
+          <button
+            data-testid="cancel-new-game-btn"
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl bg-slate-800/60 border border-slate-600 text-slate-300 font-sub font-semibold hover:bg-slate-700/60"
+          >
+            Cancel
+          </button>
+          <button
+            data-testid="confirm-new-game-btn"
+            onClick={onConfirm}
+            className="flex-1 py-2.5 rounded-xl bg-fuchsia-500/20 border border-fuchsia-400 text-fuchsia-100 font-display font-bold hover:bg-fuchsia-500/30 active:scale-95"
+          >
+            New Game
+          </button>
+        </div>
+      </div>
+    </Overlay>
+  );
+}
+

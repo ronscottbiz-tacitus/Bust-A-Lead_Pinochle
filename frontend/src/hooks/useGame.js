@@ -119,7 +119,7 @@ export function useGame() {
 
   const act = (action) => {
     const snd = soundRef.current;
-    if (action.type === 'START_ROUND' || action.type === 'NEXT_HAND') snd.ensure();
+    if (action.type === 'START_ROUND' || action.type === 'NEXT_HAND' || action.type === 'RESET_TABLE') snd.ensure();
     if (action.type === 'PLACE_BID') snd.chip();
     else if (action.type === 'PLAY_CARD') snd.play();
     else if (action.type === 'DECLARE_TRUMP') snd.trump();
