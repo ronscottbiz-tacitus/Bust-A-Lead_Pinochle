@@ -374,7 +374,7 @@ function Seat({ state, seat, corner, reaction }) {
       )}
       <div className="flex" style={{ marginLeft: 6 }}>
         {(expose ? s.hands[seat] : Array.from({ length: Math.min(count, 12) })).map((c, i) => (
-          <div key={i} style={{ marginLeft: i === 0 ? 0 : -22 }}>
+          <div key={c?.id || `fd-${i}`} style={{ marginLeft: i === 0 ? 0 : -22 }}>
             <Card size="sm" faceDown={!expose} card={expose ? c : null} />
           </div>
         ))}
@@ -748,7 +748,7 @@ export function DealAnimation({ state }) {
         const t = targets[p.seat] || targets.K;
         return (
           <div
-            key={i}
+            key={`${p.seat}-${i}`}
             className="absolute deal-fly"
             style={{ '--tx': t.x, '--ty': t.y, animationDelay: `${i * 0.09}s` }}
           >

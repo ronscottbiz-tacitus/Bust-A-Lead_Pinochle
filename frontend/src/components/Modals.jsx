@@ -202,8 +202,8 @@ export function SettlementModal({ state, act }) {
           <div className="text-[11px] uppercase tracking-widest text-slate-500 mb-1">Multiplier</div>
           <div className="flex items-center gap-2 flex-wrap">
             {r.multParts.length ? (
-              r.multParts.map((p, i) => (
-                <span key={i} className="text-xs px-2 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-200 border border-fuchsia-500/40">
+              r.multParts.map((p) => (
+                <span key={p} className="text-xs px-2 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-200 border border-fuchsia-500/40">
                   {p}
                 </span>
               ))
@@ -216,8 +216,8 @@ export function SettlementModal({ state, act }) {
 
         <div className="bg-black/30 rounded-xl p-3 mb-4">
           <div className="text-[11px] uppercase tracking-widest text-slate-500 mb-1">Transfers</div>
-          {r.transfers.map((t, i) => (
-            <div key={i} className="flex items-center justify-between text-sm py-0.5">
+          {r.transfers.map((t) => (
+            <div key={`${t.from}-${t.to}`} className="flex items-center justify-between text-sm py-0.5">
               <span className="text-rose-300">{SEAT_LABEL[t.from]}</span>
               <ArrowRight size={14} className="text-slate-500" />
               <span className="text-emerald-300">{SEAT_LABEL[t.to]}</span>
@@ -378,16 +378,16 @@ export function RulebookModal({ onClose }) {
         </div>
         {tab === 'rules' ? (
           <ol className="space-y-2 list-decimal list-inside">
-            {RULES.map((r, i) => (
-              <li key={i} className="text-sm text-slate-300 leading-relaxed">
+            {RULES.map((r) => (
+              <li key={r} className="text-sm text-slate-300 leading-relaxed">
                 {r}
               </li>
             ))}
           </ol>
         ) : (
           <ul className="space-y-1.5">
-            {MELD_REF.map(([name, pts], i) => (
-              <li key={i} className="flex justify-between text-sm border-b border-white/5 pb-1">
+            {MELD_REF.map(([name, pts]) => (
+              <li key={name} className="flex justify-between text-sm border-b border-white/5 pb-1">
                 <span className="text-slate-300">{name}</span>
                 <span className="font-mono-stat font-bold text-yellow-300">{pts}</span>
               </li>
@@ -424,7 +424,7 @@ export function BookReplayModal({ completedBooks, onClose }) {
             <div className="flex flex-wrap gap-1.5 mb-4">
               {books.map((b, i) => (
                 <button
-                  key={i}
+                  key={b.book}
                   data-testid={`book-chip-${b.book}`}
                   onClick={() => setSel(i)}
                   className={`w-8 h-8 rounded-lg text-xs font-mono-stat font-bold border transition-all ${
@@ -442,8 +442,8 @@ export function BookReplayModal({ completedBooks, onClose }) {
                   <span className="text-emerald-300 font-bold">{SEAT_LABEL[book.winner]} won (+{book.pts})</span>
                 </div>
                 <div className="flex justify-center gap-4">
-                  {book.plays.map((p, i) => (
-                    <div key={i} className="flex flex-col items-center gap-1">
+                  {book.plays.map((p) => (
+                    <div key={p.card.id} className="flex flex-col items-center gap-1">
                       <div className={`text-[10px] font-mono-stat ${p.seat === book.winner ? 'text-emerald-300 font-bold' : 'text-slate-400'}`}>
                         {SEAT_LABEL[p.seat]}
                         {p.seat === book.leader ? ' ▸' : ''}

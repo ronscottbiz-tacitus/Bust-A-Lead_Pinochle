@@ -182,8 +182,8 @@ export function MeldBoard({ state }) {
         <div className="text-xs text-slate-500">No meld</div>
       ) : (
         <ul className="space-y-1">
-          {meld.items.map((it, i) => (
-            <li key={i} className="flex justify-between text-[11px]">
+          {meld.items.map((it) => (
+            <li key={it.name} className="flex justify-between text-[11px]">
               <span className="text-slate-300">{it.name}</span>
               <span className="font-mono-stat text-emerald-300">{it.pts}</span>
             </li>
