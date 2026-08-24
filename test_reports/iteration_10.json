@@ -1,0 +1,30 @@
+{
+  "summary": "Frontend-only verification of the 6-part upgrade (Get2 table watermark, collapsible meld pill+drawer, mobile 4-col suit matrix, tablet suit-tabs, desktop fanned hand, DECLARE ACES + CALL RENEGE, two-choice New Game modal, GTA-styled modals + Best Win Streak). 10/11 review points verified live on REACT_APP_BACKEND_URL; declare-bidder-aces-btn and RENEGE CONFIRMED are probabilistic and could not be forced manually within reasonable attempts, but the underlying code paths are present and the deterministic FALSE ACCUSATION branch of call-renege-btn was observed live. 8/8 Jest engine tests pass.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Tablet 900x700 header", "issues": ["'Dealer: You' label in the header overlaps the 'You $100.00' bankroll pill (see attached screenshot). Consider tightening header spacing or hiding the dealer label at md breakpoint."]}
+    ]
+  },
+  "test_report_links": ["/app/frontend/src/game/__tests__/engine.test.js"],
+  "action_items": [
+    "Header at md (~900px) crowds the You bankroll under the Dealer badge — reduce Header gap or drop the Dealer label below lg.",
+    "MeldRack component is still defined/exported in Table.jsx (lines 754-791) but no longer rendered by App.js. Consider removing dead code to keep Table.jsx under the 700-line guideline (currently 923 lines).",
+    "Optional: expose a seedable RNG for the ~9% Convict renege so RENEGE CONFIRMED can be exercised deterministically in tests."
+  ],
+  "critical_code_review_comments": [
+    "Table.jsx = 923 lines and Modals.jsx = 562 lines. Split Header/Seat/HandTray/DiscardHUD/DealAnimation into their own files (>700-line guideline).",
+    "MeldRack is dead code but keeps `data-testid=meld-rack` in the bundle — removing it prevents confusion when future testers search for the (now removed) center meld rack.",
+    "call-renege-btn is declared twice in ActionBar.jsx (inside the bidderAcesPending block at line 160 AND in the general Convict play branch at line 177). The nested one is unreachable (turn=='P' && trickPending==false && trick.length>0 && bidderAcesPending simultaneously is a rare state and the outer branch will catch it first). Remove the duplicate to reduce noise.",
+    "declare-bidder-aces-btn requires the human to be dealt Aces Around after the kitty and win the contract — probabilistic and hard to hit in QA. Consider a debug flag or dev-only card-stacker for testability."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "~95% (probabilistic paths partially covered)"},
+  "seed_data_creation": "localStorage cleared before each scenario (key: bust-a-lead-save-v1).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Verified live on https://pinochle-ai-duel.preview.emergentagent.com:\n1) DESKTOP 1440x900 — table-watermark present in DOM under the table; seat-W has 'DooLow'; seat-E has 'PapaCap'; header shows meld-pill 'Meld: X pts'; clicking meld-pill opens meld-drawer with itemized meld-item-* rows (e.g. Hearts Marriage (Royal)+4, Double Kings (80)+80, Jacks Around+4) and close-meld-btn dismisses.\n2) meld-rack testid NOT rendered anywhere in play tree (component defined but unused — safe to delete).\n3) MOBILE 390x844 — player-hand renders 4 suit-col-{S,H,D,C} columns pinned to bottom (bbox y=489 h=354 fills bottom 42% viewport, no vertical scroll).\n4) TABLET 900x700 — no suit-col-*; suit-tab-{ALL,S,H,D,C} filters render; seat-W avatar width=58px (w-14) so avatars don't overlap the hand.\n5) NEW GAME MODAL — new-game-header-btn opens new-game-modal with redeal-table-btn, main-menu-btn (returns to config-screen and resets bankrolls to $100), cancel-new-game-btn.\n6) STATS MODAL — stat-best-win-streak present (value 0 on fresh session); modal body contains DooLow, PapaCap, You seat labels.\n7) RULEBOOK / BOOK REPLAY / NEW GAME / MELD DRAWER all use dark black/zinc classes with amber accents.\n8) CONVICT CALL RENEGE — call-renege-btn appears when phase=='play' && difficulty=='hard' && turn=='P' && !trickPending && trick.length>0; clicking with no opponent renege produces settlement-title='FALSE ACCUSATION' banner and Hard-Sets You (verified: DooLow $102, PapaCap $102, You $96). RENEGE CONFIRMED is ~9% per AI play — was not observed in the ~180 AI plays exercised across 6 test hands. Deterministic Jest coverage recommended.\n9) DECLARE ACES — did not surface in 8 fresh deals (probabilistic — need natural Aces Around in P's hand after the kitty). ActionBar.jsx:156 renders the button gated by s.bidderAcesPending; reducer path exists.\n10) 8/8 Jest engine tests pass (yarn test --watchAll=false).\nRecipe to reach declare-bidder-aces-btn: Normal/Convict + cfg-speed-fast → deal-btn → spam bid-btn → trump-<suit> → click 5 cards + confirm-discard-btn → button appears if hand contains an Ace in each suit.\nRecipe to reach call-renege-btn (Convict): cfg-difficulty-hard + fast → deal-btn → let AI win the contract (spam pass-btn) → play a card once AI has led → CALL RENEGE! button appears above the hand.",
+  "rca of the issue": "N/A — no functional bugs found. Only probabilistic coverage gaps and a minor tablet header overlap noted."
+}

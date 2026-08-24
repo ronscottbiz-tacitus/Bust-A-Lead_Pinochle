@@ -8,6 +8,13 @@ import { loadSave } from './storage';
 const clone = (o) =>
   typeof structuredClone === 'function' ? structuredClone(o) : JSON.parse(JSON.stringify(o));
 
+function allCardsFrom(items) {
+  const seen = new Set();
+  const out = [];
+  for (const it of items) for (const c of it.cards) if (!seen.has(c.id)) { seen.add(c.id); out.push(c); }
+  return out;
+}
+
 const EMPTY_STATS = {
   handsPlayed: 0,
   handsMade: 0,
@@ -62,6 +69,12 @@ function emptyRound() {
     settlement: null,
     gameOver: false,
     renegeSlipped: 0,
+    bidderAcesItem: null,
+    bidderAcesPending: false,
+    bidderAcesDeclared: false,
+    bidderAcesForfeited: false,
+    trickReneges: [],
+    renegeCall: null,
   };
 }
 
@@ -128,12 +141,22 @@ function finalizeDiscard(s) {
   s.buriedBooks = buried.filter(isCounter).length;
   s.hands[s.bidWinner] = hand.filter((c) => !set.has(c.id));
   s.meld[s.bidWinner] = computeMeld(s.hands[s.bidWinner], s.trump);
-  // BOARD SET guardrail: only 50 books exist. If Bid - Meld > 50 the contract is impossible.
+  // BOARD SET guardrail uses the FULL potential meld (Aces Around can still be declared).
   const meldTotal = s.meld[s.bidWinner].total;
   if (s.bid - meldTotal > 50) {
     s.boardSet = true;
     s.result = 'hard';
     return settle(s);
+  }
+  // Aces Around must be DECLARED before the bidder leads an Ace, or it is forfeited.
+  const meld = s.meld[s.bidWinner];
+  const acesIdx = meld.items.findIndex((i) => i.name === 'Aces Around' || i.name.startsWith('Double Aces'));
+  if (acesIdx >= 0) {
+    s.bidderAcesItem = meld.items[acesIdx];
+    s.bidderAcesPending = true;
+    meld.items = meld.items.filter((_, k) => k !== acesIdx);
+    meld.total -= s.bidderAcesItem.pts;
+    meld.allCards = allCardsFrom(meld.items);
   }
   if (s.laydown) {
     s.phase = 'laydown';
@@ -163,6 +186,7 @@ function beginPlay(s) {
   s.trick = [];
   s.trickPending = false;
   s.books = { W: 0, E: 0, P: 0 };
+  s.trickReneges = [];
   return s;
 }
 
@@ -404,20 +428,51 @@ export function reducer(state, action) {
       if (action.seat === 'P') s.humanAcesPending = false;
       return s;
 
+    case 'DECLARE_BIDDER_ACES': {
+      if (s.bidderAcesPending && s.bidderAcesItem) {
+        const meld = s.meld[s.bidWinner];
+        meld.items = [...meld.items, s.bidderAcesItem];
+        meld.total += s.bidderAcesItem.pts;
+        meld.allCards = allCardsFrom(meld.items);
+        s.bidderAcesDeclared = true;
+        s.bidderAcesPending = false;
+      }
+      return s;
+    }
+
+    case 'CALL_RENEGE': {
+      const reneger = (s.trickReneges || []).find((r) => r.seat !== 'P');
+      if (reneger) {
+        s.renegeCall = { result: 'confirmed', seat: reneger.seat };
+        return bust(s, reneger.seat, "RENEGE CONFIRMED — illegal card exposed");
+      }
+      s.renegeCall = { result: 'false', seat: 'P' };
+      return bust(s, 'P', 'FALSE ACCUSATION — the play was legal');
+    }
+
     case 'PLAY_CARD': {
       const { seat, card } = action;
       if (seat === 'P' && s.humanAcesPending)
         return bust(s, 'P', 'Failed to declare Aces before playing card 1');
+      // Bidder forfeits undeclared Aces Around the instant they LEAD an Ace.
+      if (seat === s.bidWinner && s.bidderAcesPending && s.trick.length === 0 && card.rank === 'A') {
+        s.bidderAcesForfeited = true;
+        s.bidderAcesPending = false;
+      }
       const legal = legalPlays(s.hands[seat], s.trick, s.trump);
       const isLegal = legal.some((c) => c.id === card.id);
       if (!isLegal) {
         const hard = s.settings.difficulty === 'hard';
-        // Normal/Easy: engine forbids reneging outright (instant Hard Set).
         if (!hard) return bust(s, seat, 'Reneged — illegal card played');
-        // Convict (Hard): reneging is physically allowed but the yard inspects (~95% catch).
-        if (Math.random() < 0.95)
-          return bust(s, seat, "BUS' A LEAD VIOLATION (RENEGE) — caught by the yard");
-        s.renegeSlipped = (s.renegeSlipped || 0) + 1; // slipped past inspection; the card stands
+        if (seat === 'P') {
+          // Player renege: the yard inspects (~95% catch).
+          if (Math.random() < 0.95)
+            return bust(s, seat, "BUS' A LEAD VIOLATION (RENEGE) — caught by the yard");
+          s.renegeSlipped = (s.renegeSlipped || 0) + 1;
+        } else {
+          // AI renege in Convict: the illegal card stands unless the human Calls Renege.
+          s.trickReneges = [...(s.trickReneges || []), { seat, cardId: card.id }];
+        }
       }
       const wasLeading = s.trick.length === 0;
       const winnerBefore = s.trick.length ? s.trick[currentWinnerIndex(s.trick, s.trump)].seat : null;
@@ -467,6 +522,7 @@ export function reducer(state, action) {
       s.turn = winner;
       s.trick = [];
       s.trickPending = false;
+      s.trickReneges = [];
       return s;
     }
 

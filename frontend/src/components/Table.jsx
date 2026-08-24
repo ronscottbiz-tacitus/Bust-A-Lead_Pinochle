@@ -5,7 +5,7 @@ import { legalPlays } from '../game/trick';
 import { sortHand } from '../game/deck';
 import { computeMeld } from '../game/meld';
 import { saveTarget, booksToMake } from '../game/scoring';
-import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles, AlertTriangle } from 'lucide-react';
+import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles, AlertTriangle, ChevronDown } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 const STAKE_LABEL = { 1: '$1/$2', 2: '$2/$4', 5: '$5/$10' };
@@ -13,10 +13,13 @@ const STAKE_LABEL = { 1: '$1/$2', 2: '$2/$4', 5: '$5/$10' };
 function useViewport() {
   const [vp, setVp] = useState(() => ({
     w: typeof window !== 'undefined' ? window.innerWidth : 1280,
+    h: typeof window !== 'undefined' ? window.innerHeight : 800,
     desktop: typeof window !== 'undefined' ? window.innerWidth >= 1024 : true,
+    mobile: typeof window !== 'undefined' ? window.innerWidth < 768 : false,
   }));
   useEffect(() => {
-    const onResize = () => setVp({ w: window.innerWidth, desktop: window.innerWidth >= 1024 });
+    const onResize = () =>
+      setVp({ w: window.innerWidth, h: window.innerHeight, desktop: window.innerWidth >= 1024, mobile: window.innerWidth < 768 });
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -125,10 +128,11 @@ function TrumpBadge({ trump }) {
   );
 }
 
-export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGame }) {
+export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGame, onOpenMeld }) {
   const s = state;
   const mult = liveMultiplier(s);
   const meldTotal = s.meld[s.bidWinner]?.total || 0;
+  const showMeldPill = ['discard', 'laydown', 'play', 'settlement'].includes(s.phase) && s.bidWinner;
   const bidderBooks = s.phase === 'play' || s.phase === 'settlement' ? s.books[s.bidWinner] + s.buriedBooks : 0;
   const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
   const stakes = s.settings.stakesBase || 1;
@@ -165,9 +169,18 @@ export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGa
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-3">
+        {showMeldPill && (
+          <button
+            data-testid="meld-pill"
+            onClick={onOpenMeld}
+            className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 border border-amber-400/60 text-amber-200 hover:bg-amber-500/25 transition-colors flex items-center gap-1"
+          >
+            Meld: {meldTotal} pts <ChevronDown size={12} />
+          </button>
+        )}
         <span
           data-testid="dealer-badge"
-          className="hidden md:inline px-2 py-1 rounded-full text-[11px] font-bold bg-slate-800/70 border border-slate-700 text-slate-300"
+          className="hidden lg:inline px-2 py-1 rounded-full text-[11px] font-bold bg-slate-800/70 border border-slate-700 text-slate-300"
         >
           Dealer: {SEAT_LABEL[s.dealer]}
         </span>
@@ -308,7 +321,7 @@ function Seat({ state, seat, corner, reaction }) {
       >
         <ReactionBadge reaction={reaction} testid={`reaction-${seat}`} className="-top-3 left-1/2 -translate-x-1/2" />
         <div
-          className={`relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl overflow-hidden border-[3px] bg-slate-900 flex items-center justify-center font-display font-black text-2xl ${
+          className={`relative w-14 h-14 md:w-16 md:h-16 lg:w-24 lg:h-24 rounded-2xl overflow-hidden border-[3px] bg-slate-900 flex items-center justify-center font-display font-black text-2xl ${
             isTurn
               ? 'border-cyan-300'
               : isBidder
@@ -370,6 +383,14 @@ function Seat({ state, seat, corner, reaction }) {
           className="pop-in px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-500/20 border border-yellow-400 text-yellow-200 flex items-center gap-1 shadow-[0_0_12px_rgba(255,199,0,0.6)]"
         >
           <Sparkles size={10} /> {aces === 'double' ? '1000 Aces!' : 'Aces Declared'}
+        </div>
+      )}
+      {seat === s.bidWinner && s.bidderAcesDeclared && (
+        <div
+          data-testid={`bidder-aces-badge-${seat}`}
+          className="pop-in px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/25 border border-amber-400 text-amber-100 flex items-center gap-1 shadow-[0_0_12px_rgba(255,199,0,0.6)]"
+        >
+          <Sparkles size={10} /> Aces Declared
         </div>
       )}
       <div className="flex" style={{ marginLeft: 6 }}>
@@ -455,7 +476,6 @@ function CenterArea({ state }) {
             {su.symbol}
           </div>
           <div className="text-[11px] font-mono-stat text-slate-200 mt-1">Contract: {s.bid}</div>
-          <div className="text-[11px] font-mono-stat text-cyan-300">Meld: {meldTotal}</div>
           <div className="text-[11px] font-mono-stat text-emerald-300">
             Books to Save: {bench} / Target: 50
           </div>
@@ -481,8 +501,8 @@ export function HandTray({ state, onCardClick }) {
   const selecting = s.phase === 'discard' && s.bidWinner === 'P';
   const n = hand.length;
   const idx = new Map(hand.map((c, i) => [c.id, i]));
-  const { w: winW, desktop: isDesktop } = useViewport();
-  // Zero-scroll dynamic overlap: fit all cards inside the available width.
+  const { w: winW, h: winH, desktop: isDesktop, mobile: isMobile } = useViewport();
+  // Zero-scroll dynamic overlap: fit all cards inside the available width (desktop fan).
   const cardW = 80;
   const avail = Math.min(winW - 32, 1500);
   const needed = n > 1 ? (n * cardW - avail) / (n - 1) : 0;
@@ -494,7 +514,7 @@ export function HandTray({ state, onCardClick }) {
   const activeTab = tab === 'ALL' ? 'ALL' : groups[tab]?.length ? tab : 'ALL';
   const mobileCards = activeTab === 'ALL' ? hand : groups[activeTab];
 
-  const renderCard = (c) => {
+  const renderCard = (c, size = 'lg') => {
     const i = idx.get(c.id);
     const legal = legalIds ? legalIds.has(c.id) : false;
     const dim = canPlay && !hard && !legal;
@@ -503,7 +523,7 @@ export function HandTray({ state, onCardClick }) {
     return (
       <Card
         card={c}
-        size="lg"
+        size={size}
         legal={legal}
         dim={dim}
         selected={selected}
@@ -517,6 +537,44 @@ export function HandTray({ state, onCardClick }) {
     { key: 'ALL', label: 'All', count: n },
     ...SUIT_KEYS.map((k) => ({ key: k, label: SUIT_BY_KEY[k].symbol, count: groups[k].length, suit: k })),
   ];
+
+  // Mobile (<768px): 4-column vertical suit matrix pinned to the bottom, zero-scroll.
+  if (isMobile) {
+    const mdH = 74;
+    const availColH = Math.max(150, winH * 0.42 - 44);
+    const vStep = (m) => (m > 1 ? -Math.min(Math.max((m * mdH - availColH) / (m - 1), 26), mdH - 12) : 0);
+    return (
+      <div
+        data-testid="player-hand"
+        className="fixed inset-x-0 bottom-0 z-30 h-[42%] px-1 pb-[env(safe-area-inset-bottom)] pointer-events-auto overflow-hidden"
+      >
+        <div className="grid grid-cols-4 gap-1 h-full">
+          {SUIT_KEYS.map((k) => {
+            const col = groups[k];
+            const step = vStep(col.length);
+            const su = SUIT_BY_KEY[k];
+            return (
+              <div key={k} data-testid={`suit-col-${k}`} className="flex flex-col items-center overflow-hidden">
+                <div
+                  className={`text-sm font-black leading-none mb-0.5 ${k === s.trump ? 'gold-pulse rounded px-1' : ''}`}
+                  style={{ color: k === s.trump ? '#facc15' : su.neon }}
+                >
+                  {su.symbol}
+                </div>
+                <div className="flex flex-col items-center">
+                  {col.map((c, gi) => (
+                    <div key={c.id} style={{ marginTop: gi === 0 ? 0 : step, zIndex: gi }}>
+                      {renderCard(c, 'md')}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div data-testid="player-hand" className="fixed bottom-3 inset-x-0 z-30 px-2 pb-[env(safe-area-inset-bottom)] pointer-events-none">
@@ -547,7 +605,7 @@ export function HandTray({ state, onCardClick }) {
           </div>
         </div>
       ) : (
-        /* Tablet & Mobile (<1024px): suit-tab filter incl. an All two-row grid */
+        /* Tablet (768–1023px): suit-tab filter incl. an All two-row grid */
         <div className="flex flex-col items-center gap-2 pointer-events-auto">
           <div className="flex gap-1.5 glass rounded-xl px-2 py-1.5 flex-wrap justify-center max-w-[96vw]">
             {TABS.map((t) => {
@@ -565,7 +623,7 @@ export function HandTray({ state, onCardClick }) {
                 >
                   {su ? (
                     <span style={{ color: su.neon }} className="text-lg">
-                      {su.label}
+                      {su.symbol}
                     </span>
                   ) : (
                     <span className="text-slate-200">All</span>
@@ -693,45 +751,6 @@ export function DiscardHUD({ state }) {
   );
 }
 
-export function MeldRack({ state }) {
-  const s = state;
-  if (!s.bidWinner || !s.meld[s.bidWinner]) return null;
-  if (!['play', 'laydown', 'settlement'].includes(s.phase)) return null;
-  const cards = s.meld[s.bidWinner].allCards || [];
-  if (!cards.length) return null;
-  const played = new Set(s.playedIds || []);
-  return (
-    <div
-      data-testid="meld-rack"
-      className="fixed top-[142px] left-1/2 -translate-x-1/2 z-20 glass rounded-xl px-3 py-2 max-w-[94vw]"
-    >
-      <div className="text-[10px] font-sub uppercase tracking-widest text-yellow-300/80 mb-1 text-center">
-        {SEAT_LABEL[s.bidWinner]}'s Meld Rack · {s.meld[s.bidWinner].total} pts
-      </div>
-      <div className="flex flex-wrap justify-center gap-1 max-w-[540px]">
-        {cards.map((c) => {
-          const isPlayed = played.has(c.id);
-          return (
-            <div
-              key={c.id}
-              className="relative"
-              data-testid={`meld-card-${c.suit}-${c.rank}`}
-              data-played={isPlayed ? 'true' : 'false'}
-            >
-              <Card card={c} size="sm" className={isPlayed ? 'opacity-30 grayscale' : ''} />
-              {isPlayed && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-[130%] h-[3px] bg-rose-500/90 -rotate-[24deg] rounded-full shadow" />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 export function DealAnimation({ state }) {
   const s = state;
   if (s.phase !== 'dealing') return null;
@@ -771,12 +790,17 @@ export function Table({ state, onOpenHistory }) {
   const pBidder = s.bidWinner === 'P';
   return (
     <div className="absolute inset-0 top-16 bottom-28 flex flex-col items-center justify-center">
+      <img
+        src="/assets/get2-logo_bal_blk.png"
+        alt=""
+        data-testid="table-watermark"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-15 mix-blend-luminosity pointer-events-none w-96 max-w-full z-0"
+      />
       <Seat state={state} seat="W" corner="top-2 left-2 sm:top-4 sm:left-6" reaction={reactions.W} />
       <Seat state={state} seat="E" corner="top-2 right-2 sm:top-4 sm:right-6" reaction={reactions.E} />
       <CenterArea state={state} />
       <SaveHUD state={state} />
       <DiscardHUD state={state} />
-      <MeldRack state={state} />
       {spotlight && (
         <div data-testid="bidder-spotlight" className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
           <div className="spotlight-in relative flex flex-col items-center">

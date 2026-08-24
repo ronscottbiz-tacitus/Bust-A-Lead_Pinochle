@@ -147,13 +147,37 @@ export function ActionBar({ state, act }) {
     );
   }
 
+  // BIDDER DECLARE ACES (must declare before leading an Ace, or forfeit)
+  if (s.phase === 'play' && s.bidWinner === 'P' && s.bidderAcesPending) {
+    const pts = s.bidderAcesItem?.pts || 10;
+    const soft = s.settings.difficulty !== 'hard';
+    return (
+      <Wrap hint={soft ? 'Declare your Aces Around BEFORE leading an Ace — or forfeit the meld!' : undefined}>
+        <Btn testid="declare-bidder-aces-btn" tone="gold" onClick={() => act({ type: 'DECLARE_BIDDER_ACES' })}>
+          <Sparkles size={16} /> DECLARE ACES ({pts} PTS)
+        </Btn>
+        {s.settings.difficulty === 'hard' && s.turn === 'P' && !s.trickPending && s.trick.length > 0 && (
+          <Btn testid="call-renege-btn" tone="red" onClick={() => act({ type: 'CALL_RENEGE' })}>
+            <Zap size={16} /> CALL RENEGE!
+          </Btn>
+        )}
+      </Wrap>
+    );
+  }
+
   // PLAY hint
   if (s.phase === 'play' && s.turn === 'P' && !s.trickPending) {
     const hard = s.settings.difficulty === 'hard';
+    const canCall = hard && s.trick.length > 0;
     if (hard) {
       return (
         <Wrap hint="CONVICT MODE · no help — the yard is watching for reneges">
           <span className="text-xs font-sub text-rose-300">Play any card · renege at your own risk</span>
+          {canCall && (
+            <Btn testid="call-renege-btn" tone="red" onClick={() => act({ type: 'CALL_RENEGE' })}>
+              <Zap size={16} /> CALL RENEGE!
+            </Btn>
+          )}
         </Wrap>
       );
     }

@@ -70,6 +70,9 @@ function drive(s, dispatch, sound) {
     }
 
     case 'play':
+      if (s.bidderAcesPending && s.bidWinner && s.bidWinner !== 'P') {
+        return setTimeout(() => dispatch({ type: 'DECLARE_BIDDER_ACES' }), Math.max(200, d.think / 2));
+      }
       if (s.trickPending) {
         return setTimeout(() => dispatch({ type: 'RESOLVE_TRICK' }), d.trick);
       }

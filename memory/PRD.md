@@ -48,6 +48,17 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   conserved, dealer rotation — all pass (`src/game/__tests__/engine.test.js`).
 - Testing agent (browser): config → deal → 25-card hand renders, auction/modals/toggles work.
 
+## Updates (2026-06 — Felt Watermark, Responsive Overhaul, Meld Drawer, Declare Aces, Call Renege, GTA Modals)
+- Opponents renamed DooLow (W) / PapaCap (E) via SEAT_LABEL (single source; stats persist under W/E/P keys).
+- **Get2 table watermark**: faint centered logo on the felt (`table-watermark`).
+- **Responsive hand**: mobile <768 → 4-column vertical suit matrix (`suit-col-*`, zero-scroll, dynamic overlap); tablet 768–1023 → suit-tab filter + scaled avatars (`w-14 md:w-16 lg:w-24`); desktop ≥1024 → fan.
+- **Collapsible Meld**: removed permanent center MeldRack; header `meld-pill` opens right `MeldDrawer` with itemized breakdown (live during discard).
+- **Bidder Declare Aces**: `declare-bidder-aces-btn` (reminder in easy/normal, silent in Convict); forfeits if leading an Ace before declaring; AI auto-declares. Engine: finalizeDiscard separates aces item, DECLARE_BIDDER_ACES re-adds.
+- **Convict Call Renege**: AI reneges ~9% mid-trick; `call-renege-btn` → RENEGE CONFIRMED (offender Hard-Set) or FALSE ACCUSATION (accuser Hard-Set). Player reneges ~95% auto-caught.
+- **GTA modals + New Game flow**: modals restyled zinc-950/amber; New Game → `redeal-table-btn` / `main-menu-btn` (reset money + return to splash).
+- Verified: 8/8 Jest; testing agent iteration_10.json ~95%, no functional bugs (fixed tablet header overlap, removed dead MeldRack). Declare-Aces & RENEGE-CONFIRMED probabilistic — paths verified, FALSE ACCUSATION seen live.
+
+
 ## Updates (2026-06 — Get2 Branding, Splash Refresh, Convict AI Depth)
 - **Get2 header branding**: `get2-logo_bal_blk.png` in the top-left of the persistent header,
   wrapped in an anchor to https://get2.one (target=_blank, rel=noopener). `data-testid=get2-logo-link`.

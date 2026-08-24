@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGame } from './hooks/useGame';
 import { Header, Table, HandTray, DealAnimation } from './components/Table';
-import { ActionBar, MeldBoard } from './components/ActionBar';
+import { ActionBar } from './components/ActionBar';
 import {
   ConfigScreen,
   SettlementModal,
@@ -9,6 +9,7 @@ import {
   StatsModal,
   BookReplayModal,
   NewGameConfirmModal,
+  MeldDrawer,
 } from './components/Modals';
 import { legalPlays } from './game/trick';
 import { TABLE_BG_IMG } from './game/constants';
@@ -19,6 +20,7 @@ export default function BustALead() {
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showNewGame, setShowNewGame] = useState(false);
+  const [showMeld, setShowMeld] = useState(false);
   const s = state;
 
   const onCardClick = (card) => {
@@ -56,9 +58,9 @@ export default function BustALead() {
             onOpenRules={() => setShowRules(true)}
             onOpenStats={() => setShowStats(true)}
             onNewGame={() => setShowNewGame(true)}
+            onOpenMeld={() => setShowMeld(true)}
           />
           <Table state={s} onOpenHistory={() => setShowHistory(true)} />
-          <MeldBoard state={s} />
           <HandTray state={s} onCardClick={onCardClick} />
           <ActionBar state={s} act={act} />
           <DealAnimation state={s} />
@@ -76,11 +78,16 @@ export default function BustALead() {
         />
       )}
       {showHistory && <BookReplayModal completedBooks={s.completedBooks} onClose={() => setShowHistory(false)} />}
+      {showMeld && <MeldDrawer state={s} onClose={() => setShowMeld(false)} />}
       {showNewGame && (
         <NewGameConfirmModal
           onCancel={() => setShowNewGame(false)}
-          onConfirm={() => {
+          onRedeal={() => {
             act({ type: 'RESET_TABLE' });
+            setShowNewGame(false);
+          }}
+          onMainMenu={() => {
+            act({ type: 'NEW_GAME' });
             setShowNewGame(false);
           }}
         />

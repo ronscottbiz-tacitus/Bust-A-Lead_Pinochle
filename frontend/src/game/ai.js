@@ -118,6 +118,16 @@ export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit, difficul
   if (legal.length === 1) return legal[0];
   const isDefender = bidWinner != null && seat !== bidWinner;
 
+  // Convict ("Yard Master"): AI occasionally sneaks an illegal card (renege) mid-trick,
+  // daring the human to Call Renege. It dumps a low non-counter to avoid feeding points.
+  if (difficulty === 'hard' && trick.length > 0 && Math.random() < 0.09) {
+    const illegal = hand.filter((c) => !legal.some((l) => l.id === c.id));
+    if (illegal.length) {
+      const safe = illegal.filter((c) => !COUNTER_RANKS.has(c.rank));
+      return lowest(safe.length ? safe : illegal);
+    }
+  }
+
   // Easy AI ("New Booty"): naive play, no defender cooperation or signalling.
   if (difficulty === 'easy') {
     if (trick.length === 0) {

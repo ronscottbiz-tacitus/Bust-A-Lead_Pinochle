@@ -1,9 +1,67 @@
 import { useState } from 'react';
 import { SEAT_LABEL, SEATS } from '../game/constants';
+import { computeMeld } from '../game/meld';
 import { Card } from './Card';
-import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw } from 'lucide-react';
+import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
+const GTA_PANEL = 'bg-zinc-950/95 border-2 border-amber-500/50 rounded-2xl shadow-2xl backdrop-blur-md';
+
+export function MeldDrawer({ state, onClose }) {
+  const s = state;
+  if (!s.bidWinner) return null;
+  let meld;
+  if (s.phase === 'discard' && s.bidWinner === 'P') {
+    const dset = new Set(s.discards);
+    meld = computeMeld(s.hands.P.filter((c) => !dset.has(c.id)), s.trump);
+  } else {
+    meld = s.meld[s.bidWinner] || { items: [], total: 0 };
+  }
+  return (
+    <div data-testid="meld-drawer" className="fixed inset-0 z-50 flex justify-end">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-sm h-full bg-zinc-950/97 border-l-2 border-amber-500/50 shadow-2xl p-5 overflow-y-auto float-up">
+        <button
+          data-testid="close-meld-btn"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-1.5 rounded-lg bg-zinc-800 border border-amber-500/30 text-amber-200 hover:text-white"
+        >
+          <X size={16} />
+        </button>
+        <div className="flex items-center gap-2 text-amber-400 mb-1">
+          <Layers size={18} />
+          <div className="font-display font-black text-lg uppercase tracking-wide">{SEAT_LABEL[s.bidWinner]}'s Meld</div>
+        </div>
+        <div className="text-4xl font-mono-stat font-black text-amber-300 mb-4">{meld.total} pts</div>
+        {meld.items.length === 0 ? (
+          <div className="text-slate-400 text-sm">No meld in hand.</div>
+        ) : (
+          <ul className="space-y-2">
+            {meld.items.map((it) => (
+              <li
+                key={it.name}
+                data-testid={`meld-item-${it.name.replace(/\s+/g, '-').toLowerCase()}`}
+                className="flex justify-between items-center border-b border-amber-500/10 pb-2"
+              >
+                <span className="text-slate-200 text-sm">{it.name}</span>
+                <span className="font-mono-stat font-bold text-amber-300">+{it.pts}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="mt-4 pt-3 border-t border-amber-500/30 flex justify-between font-black uppercase text-sm tracking-wide">
+          <span className="text-slate-100">Total Meld</span>
+          <span className="font-mono-stat text-amber-300">{meld.total}</span>
+        </div>
+        {s.bidderAcesPending && (
+          <div className="mt-3 text-xs text-amber-200/80">
+            Aces Around pending — declare before leading an Ace to add {s.bidderAcesItem?.pts || 10} pts.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const Overlay = ({ children, testid }) => (
   <div data-testid={testid} className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
@@ -165,7 +223,13 @@ export function SettlementModal({ state, act }) {
             <div className="shake">
               <Skull size={40} className="mx-auto text-red-400 mb-2" />
               <div data-testid="settlement-title" className="font-display font-black text-2xl text-red-300">
-                {String(r.busted.reason).includes('RENEGE') ? "BUS' A LEAD VIOLATION" : 'BUSTED A LEAD'}
+                {String(r.busted.reason).includes('FALSE ACCUSATION')
+                  ? 'FALSE ACCUSATION'
+                  : String(r.busted.reason).includes('RENEGE CONFIRMED')
+                  ? 'RENEGE CONFIRMED'
+                  : String(r.busted.reason).includes('RENEGE')
+                  ? "BUS' A LEAD VIOLATION"
+                  : 'BUSTED A LEAD'}
               </div>
               <div className="text-xs text-red-200/80 mt-1">
                 {SEAT_LABEL[r.busted.seat]}: {r.busted.reason}
@@ -303,15 +367,15 @@ export function StatsModal({ stats, onClose, onReset }) {
   ];
   return (
     <Overlay testid="stats-modal">
-      <div className="glass rounded-3xl p-5 sm:p-6 w-full max-w-md pop-in relative">
+      <div className={`${GTA_PANEL} p-5 sm:p-6 w-full max-w-md pop-in relative`}>
         <button
           data-testid="close-stats-btn"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white"
+          className="absolute top-4 right-4 p-1.5 rounded-lg bg-zinc-800 border border-amber-500/30 text-amber-200 hover:text-white"
         >
           <X size={16} />
         </button>
-        <div className="font-display font-bold text-xl text-cyan-300 mb-4 flex items-center gap-2">
+        <div className="font-display font-black text-xl text-amber-400 uppercase tracking-wide mb-4 flex items-center gap-2">
           <BarChart3 size={20} /> Session Stats
         </div>
         <div className="space-y-1.5 mb-4">
@@ -351,15 +415,15 @@ export function RulebookModal({ onClose }) {
   const [tab, setTab] = useState('rules');
   return (
     <Overlay testid="rulebook-modal">
-      <div className="glass rounded-3xl p-5 sm:p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto pop-in relative">
+      <div className={`${GTA_PANEL} p-5 sm:p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto pop-in relative`}>
         <button
           data-testid="close-rules-btn"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white"
+          className="absolute top-4 right-4 p-1.5 rounded-lg bg-zinc-800 border border-amber-500/30 text-amber-200 hover:text-white"
         >
           <X size={16} />
         </button>
-        <div className="font-display font-bold text-xl text-cyan-300 mb-3">Rulebook & Meld Reference</div>
+        <div className="font-display font-black text-xl text-amber-400 uppercase tracking-wide mb-3">Rulebook &amp; Meld Reference</div>
         <div className="flex gap-2 mb-4">
           {[
             ['rules', 'Rules'],
@@ -406,15 +470,15 @@ export function BookReplayModal({ completedBooks, onClose }) {
   const book = books[sel];
   return (
     <Overlay testid="book-replay-modal">
-      <div className="glass rounded-3xl p-5 sm:p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto pop-in relative">
+      <div className={`${GTA_PANEL} p-5 sm:p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto pop-in relative`}>
         <button
           data-testid="close-history-btn"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white"
+          className="absolute top-4 right-4 p-1.5 rounded-lg bg-zinc-800 border border-amber-500/30 text-amber-200 hover:text-white"
         >
           <X size={16} />
         </button>
-        <div className="font-display font-bold text-xl text-cyan-300 mb-3 flex items-center gap-2">
+        <div className="font-display font-black text-xl text-amber-400 uppercase tracking-wide mb-3 flex items-center gap-2">
           <History size={20} /> Book History
         </div>
         {books.length === 0 ? (
@@ -461,29 +525,34 @@ export function BookReplayModal({ completedBooks, onClose }) {
   );
 }
 
-export function NewGameConfirmModal({ onConfirm, onCancel }) {
+export function NewGameConfirmModal({ onRedeal, onMainMenu, onCancel }) {
   return (
     <Overlay testid="new-game-modal">
-      <div className="glass rounded-3xl p-6 sm:p-7 w-full max-w-sm pop-in text-center border border-fuchsia-500/40">
-        <RefreshCw size={36} className="mx-auto text-fuchsia-400 mb-3" />
-        <div className="font-display font-bold text-xl text-fuchsia-200 mb-2">Reset Table?</div>
-        <p className="text-sm text-slate-300 mb-5">
-          Reset all player bankrolls to <b className="text-emerald-300">$100.00</b> and start a fresh session?
-        </p>
-        <div className="flex gap-2">
+      <div className={`${GTA_PANEL} p-6 sm:p-7 w-full max-w-sm pop-in text-center`}>
+        <RefreshCw size={36} className="mx-auto text-amber-400 mb-3" />
+        <div className="font-display font-black text-xl text-amber-300 uppercase tracking-wide mb-2">New Game</div>
+        <p className="text-sm text-slate-300 mb-5">Choose how you want to restart. Both options reset all bankrolls to <b className="text-emerald-300">$100.00</b>.</p>
+        <div className="flex flex-col gap-2.5">
+          <button
+            data-testid="redeal-table-btn"
+            onClick={onRedeal}
+            className="w-full py-3 rounded-xl bg-amber-500 text-black font-display font-black uppercase tracking-wide hover:bg-amber-400 active:scale-95 flex items-center justify-center gap-2"
+          >
+            <RefreshCw size={18} /> Redeal Table
+          </button>
+          <button
+            data-testid="main-menu-btn"
+            onClick={onMainMenu}
+            className="w-full py-3 rounded-xl bg-zinc-800 border border-amber-500/40 text-amber-100 font-display font-bold uppercase tracking-wide hover:bg-zinc-700 active:scale-95 flex items-center justify-center gap-2"
+          >
+            <Home size={18} /> Return to Main Menu
+          </button>
           <button
             data-testid="cancel-new-game-btn"
             onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl bg-slate-800/60 border border-slate-600 text-slate-300 font-sub font-semibold hover:bg-slate-700/60"
+            className="w-full py-2 rounded-xl bg-transparent border border-zinc-700 text-slate-400 font-sub font-semibold hover:bg-zinc-800/60"
           >
             Cancel
-          </button>
-          <button
-            data-testid="confirm-new-game-btn"
-            onClick={onConfirm}
-            className="flex-1 py-2.5 rounded-xl bg-fuchsia-500/20 border border-fuchsia-400 text-fuchsia-100 font-display font-bold hover:bg-fuchsia-500/30 active:scale-95"
-          >
-            New Game
           </button>
         </div>
       </div>
