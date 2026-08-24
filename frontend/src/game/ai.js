@@ -11,7 +11,7 @@ function countRank(cards, rank) {
 }
 
 // Evaluate hand and return the max bid this seat is willing to make.
-export function evaluateBid(hand, base) {
+export function evaluateBid(hand, base, difficulty = 'normal') {
   const m = bySuit(hand);
   let hasMarriage = false;
   let bestSuitScore = 0;
@@ -34,7 +34,9 @@ export function evaluateBid(hand, base) {
   const score = bestSuitScore + totalAces * 1.4;
   const extra = Math.max(0, Math.floor((score - 15) / 3.5));
   const jitter = Math.random() < 0.4 ? -1 : 0;
-  const steps = Math.min(Math.max(extra + jitter, 0), 8);
+  // Easy AI ("New Booty") bids more timidly.
+  const diffAdj = difficulty === 'easy' ? -2 : 0;
+  const steps = Math.min(Math.max(extra + jitter + diffAdj, 0), 8);
   return { maxBid: base + 5 * steps };
 }
 
@@ -110,10 +112,22 @@ function pickStrongSuit(cards, trump) {
 }
 
 // AI card selection during trick play. Defenders cooperate against the bidder.
-export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit) {
+export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit, difficulty = 'normal') {
   const legal = legalPlays(hand, trick, trump);
   if (legal.length === 1) return legal[0];
   const isDefender = bidWinner != null && seat !== bidWinner;
+
+  // Easy AI ("New Booty"): naive play, no defender cooperation or signalling.
+  if (difficulty === 'easy') {
+    if (trick.length === 0) {
+      const nonCounter = legal.filter((c) => !COUNTER_RANKS.has(c.rank));
+      return lowest(nonCounter.length ? nonCounter : legal);
+    }
+    const winnersE = legal.filter((c) => wouldWin(c, trick, trump, seat));
+    if (winnersE.length && Math.random() < 0.6) return lowest(winnersE);
+    const nonCounterE = legal.filter((c) => !COUNTER_RANKS.has(c.rank));
+    return lowest(nonCounterE.length ? nonCounterE : legal);
+  }
 
   if (trick.length === 0) {
     // Defender "come-back": lead the suit partner signalled for, if held.

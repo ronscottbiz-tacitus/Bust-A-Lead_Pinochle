@@ -14,6 +14,8 @@ const EMPTY_STATS = {
   softSets: 0,
   hardSets: 0,
   biggestPot: 0,
+  winStreak: 0,
+  bestStreak: 0,
   net: { W: 0, E: 0, P: 0 },
 };
 
@@ -59,6 +61,7 @@ function emptyRound() {
     result: null,
     settlement: null,
     gameOver: false,
+    renegeSlipped: 0,
   };
 }
 
@@ -72,11 +75,12 @@ export function initState() {
       animSpeed: 'normal',
       sound: true,
       stakesBase: 1,
+      difficulty: 'normal',
       ...(saved?.settings || {}),
     },
     bankrolls: saved?.bankrolls || { W: 100, E: 100, P: 100 },
     dealer: saved?.dealer || 'P',
-    stats: saved?.stats || clone(EMPTY_STATS),
+    stats: { ...clone(EMPTY_STATS), ...(saved?.stats || {}) },
     ...emptyRound(),
   };
 }
@@ -249,10 +253,21 @@ function updateStats(s, res) {
   if (res.result === 'made') st.handsMade += 1;
   else if (res.result === 'soft') st.softSets += 1;
   else st.hardSets += 1; // 'hard' or 'busted'
+  let pNet = 0;
   for (const t of res.transfers) {
     st.net[t.to] += t.amount;
     st.net[t.from] -= t.amount;
     if (t.amount > st.biggestPot) st.biggestPot = t.amount;
+    if (t.to === 'P') pNet += t.amount;
+    if (t.from === 'P') pNet -= t.amount;
+  }
+  st.winStreak = st.winStreak || 0;
+  st.bestStreak = st.bestStreak || 0;
+  if (pNet > 0) {
+    st.winStreak += 1;
+    if (st.winStreak > st.bestStreak) st.bestStreak = st.winStreak;
+  } else {
+    st.winStreak = 0;
   }
 }
 
@@ -394,7 +409,16 @@ export function reducer(state, action) {
       if (seat === 'P' && s.humanAcesPending)
         return bust(s, 'P', 'Failed to declare Aces before playing card 1');
       const legal = legalPlays(s.hands[seat], s.trick, s.trump);
-      if (!legal.some((c) => c.id === card.id)) return bust(s, seat, 'Reneged — illegal card played');
+      const isLegal = legal.some((c) => c.id === card.id);
+      if (!isLegal) {
+        const hard = s.settings.difficulty === 'hard';
+        // Normal/Easy: engine forbids reneging outright (instant Hard Set).
+        if (!hard) return bust(s, seat, 'Reneged — illegal card played');
+        // Convict (Hard): reneging is physically allowed but the yard inspects (~95% catch).
+        if (Math.random() < 0.95)
+          return bust(s, seat, "BUS' A LEAD VIOLATION (RENEGE) — caught by the yard");
+        s.renegeSlipped = (s.renegeSlipped || 0) + 1; // slipped past inspection; the card stands
+      }
       const wasLeading = s.trick.length === 0;
       const winnerBefore = s.trick.length ? s.trick[currentWinnerIndex(s.trick, s.trump)].seat : null;
       s.hands[seat] = s.hands[seat].filter((c) => c.id !== card.id);

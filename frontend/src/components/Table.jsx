@@ -3,8 +3,9 @@ import { Card } from './Card';
 import { SEAT_LABEL, SUIT_BY_KEY, SEATS, SUIT_KEYS, SEAT_AVATAR } from '../game/constants';
 import { legalPlays } from '../game/trick';
 import { sortHand } from '../game/deck';
+import { computeMeld } from '../game/meld';
 import { saveTarget, booksToMake } from '../game/scoring';
-import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles } from 'lucide-react';
+import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles, AlertTriangle } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 const STAKE_LABEL = { 1: '$1/$2', 2: '$2/$4', 5: '$5/$10' };
@@ -69,6 +70,22 @@ function useTableReactions(state) {
   }, [state.phase, state.settlement]);
 
   return reactions;
+}
+
+function useBidderSpotlight(state) {
+  const [spot, setSpot] = useState(null);
+  const prev = useRef(state.bidWinner);
+  useEffect(() => {
+    if (state.bidWinner && !prev.current) {
+      const key = Date.now();
+      setSpot({ seat: state.bidWinner, bid: state.bid, key });
+      const t = setTimeout(() => setSpot((v) => (v && v.key === key ? null : v)), 2800);
+      prev.current = state.bidWinner;
+      return () => clearTimeout(t);
+    }
+    prev.current = state.bidWinner;
+  }, [state.bidWinner, state.bid]);
+  return spot;
 }
 
 function liveMultiplier(s) {
@@ -374,41 +391,45 @@ function TrickCard({ play }) {
 
 function CenterArea({ state }) {
   const s = state;
-  const showKitty = ['auction', 'trump', 'discard', 'laydown'].includes(s.phase);
+  const showKitty = ['dealing', 'auction', 'trump', 'discard', 'laydown'].includes(s.phase);
   const meldTotal = s.meld[s.bidWinner]?.total || 0;
   const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
   const su = s.trump ? SUIT_BY_KEY[s.trump] : null;
   return (
     <div className="relative w-[240px] h-[190px] sm:w-[300px] sm:h-[210px] rounded-[40%] border border-white/5 bg-white/[0.02] flex items-center justify-center">
-      {s.phase === 'auction' && (
-        <div data-testid="auction-log" className="flex flex-col items-center gap-1">
-          <div className="text-[10px] font-sub uppercase tracking-widest text-cyan-300/70">Auction</div>
-          <div className="glass rounded-lg px-3 py-1.5 text-center">
-            <div className="text-[11px] font-mono-stat text-slate-300">
-              High Bid: <b className="text-yellow-300">{s.bid == null ? '—' : `$${s.bid}`}</b>
-            </div>
-            <div className="text-[10px] font-sub text-slate-400">
-              {s.highBidder ? `${SEAT_LABEL[s.highBidder]} leading` : 'No bids yet'}
-            </div>
-          </div>
-        </div>
-      )}
-      {showKitty && s.phase !== 'auction' && (
-        <div className="flex flex-col items-center gap-1">
-          <div className="text-[10px] font-sub uppercase tracking-widest text-slate-500">
-            {s.kittyCollected ? 'Kitty Collected' : 'The Kitty'}
-          </div>
-          <div className="flex">
-            {s.kitty.map((c, i) => (
-              <div key={c.id} style={{ marginLeft: i === 0 ? 0 : -30 }} className="deal-in">
-                <Card
-                  card={c}
-                  size="md"
-                  faceDown={!(s.kittyExposed || (s.bidWinner === 'P' && s.kittyCollected))}
-                />
+      {(s.phase === 'auction' || showKitty) && (
+        <div className="flex flex-col items-center gap-2">
+          {s.phase === 'auction' && (
+            <div data-testid="auction-log" className="flex flex-col items-center gap-1">
+              <div className="text-[10px] font-sub uppercase tracking-widest text-cyan-300/70">Auction</div>
+              <div className="glass rounded-lg px-3 py-1.5 text-center">
+                <div className="text-[11px] font-mono-stat text-slate-300">
+                  High Bid: <b className="text-yellow-300">{s.bid == null ? '—' : `$${s.bid}`}</b>
+                </div>
+                <div className="text-[10px] font-sub text-slate-400">
+                  {s.highBidder ? `${SEAT_LABEL[s.highBidder]} leading` : 'No bids yet'}
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+          {showKitty && (
+            <div data-testid="kitty-pile" className="flex flex-col items-center gap-1">
+              <div className="text-[10px] font-sub uppercase tracking-[0.28em] text-amber-400/80 font-bold">
+                {s.kittyCollected ? 'KITTY COLLECTED' : 'THE KITTY'}
+              </div>
+              <div className="flex">
+                {s.kitty.map((c, i) => (
+                  <div key={c.id} style={{ marginLeft: i === 0 ? 0 : -30 }} className="deal-in">
+                    <Card
+                      card={c}
+                      size="md"
+                      faceDown={!(s.kittyExposed || (s.bidWinner === 'P' && s.kittyCollected))}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
       {(s.phase === 'play' || s.phase === 'settlement') && su && (
@@ -446,7 +467,8 @@ export function HandTray({ state, onCardClick }) {
   const s = state;
   const hand = sortHand(s.hands.P, s.settings.sortMode, s.trump);
   const canPlay = s.phase === 'play' && s.turn === 'P' && !s.trickPending && !s.humanAcesPending;
-  const legalIds = canPlay ? new Set(legalPlays(hand, s.trick, s.trump).map((c) => c.id)) : null;
+  const hard = s.settings.difficulty === 'hard';
+  const legalIds = canPlay && !hard ? new Set(legalPlays(hand, s.trick, s.trump).map((c) => c.id)) : null;
   const selecting = s.phase === 'discard' && s.bidWinner === 'P';
   const n = hand.length;
   const idx = new Map(hand.map((c, i) => [c.id, i]));
@@ -466,9 +488,9 @@ export function HandTray({ state, onCardClick }) {
   const renderCard = (c) => {
     const i = idx.get(c.id);
     const legal = legalIds ? legalIds.has(c.id) : false;
-    const dim = canPlay && !legal;
+    const dim = canPlay && !hard && !legal;
     const selected = selecting && s.discards.includes(c.id);
-    const interactive = selecting || legal;
+    const interactive = selecting || (canPlay && (hard || legal));
     return (
       <Card
         card={c}
@@ -606,6 +628,62 @@ export function SaveHUD({ state }) {
   );
 }
 
+export function DiscardHUD({ state }) {
+  const s = state;
+  if (s.phase !== 'discard' || s.bidWinner !== 'P') return null;
+  const discardSet = new Set(s.discards);
+  const kept = s.hands.P.filter((c) => !discardSet.has(c.id));
+  const activeMeld = computeMeld(kept, s.trump).total;
+  const diff = (s.bid || 0) - activeMeld;
+  const booksNeeded = Math.max(0, diff);
+  const floor = s.goingDouble ? 31 : 20;
+  const booksToSave = Math.max(floor, diff);
+  const safetyFloor = diff <= floor;
+  const boardWarn = diff > 50;
+  return (
+    <div
+      data-testid="discard-hud"
+      className="fixed top-[68px] left-1/2 -translate-x-1/2 z-30 glass rounded-xl px-4 py-2.5 flex flex-col items-center gap-2 w-[min(94vw,560px)]"
+    >
+      <div className="flex items-center gap-2 sm:gap-3 text-[11px] font-mono-stat flex-wrap justify-center">
+        <span className="text-slate-300">
+          Bid <b className="text-yellow-300">{s.bid}</b>
+        </span>
+        <span className="text-slate-600">|</span>
+        <span className="text-slate-300">
+          Active Meld <b data-testid="discard-active-meld" className="text-cyan-300">{activeMeld}</b>
+        </span>
+        <span className="text-slate-600">|</span>
+        <span className="text-slate-300">
+          Books Needed <b data-testid="discard-books-needed" className="text-emerald-300">{booksNeeded}</b>
+        </span>
+        <span className="text-slate-600">|</span>
+        <span
+          data-testid="discard-books-to-save"
+          className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/50 text-emerald-200 font-bold"
+        >
+          Books to Save: {booksToSave}
+        </span>
+      </div>
+      {boardWarn ? (
+        <div
+          data-testid="board-set-warning"
+          className="red-flash w-full text-center px-3 py-1.5 rounded-lg border text-xs font-display font-black text-rose-100 flex items-center justify-center gap-1.5"
+        >
+          <AlertTriangle size={14} /> BOARD SET WARNING (&gt;50 Books Required)
+        </div>
+      ) : safetyFloor ? (
+        <div
+          data-testid="safety-floor-badge"
+          className="w-full text-center px-3 py-1 rounded-lg border border-emerald-400/70 bg-emerald-500/15 text-xs font-bold text-emerald-200"
+        >
+          Max Safety Floor ({floor} Books to Save) — surplus meld can be buried safely
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function MeldRack({ state }) {
   const s = state;
   if (!s.bidWinner || !s.meld[s.bidWinner]) return null;
@@ -679,6 +757,7 @@ export function Table({ state, onOpenHistory }) {
   const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
   const showBooks = s.phase === 'play' || s.phase === 'settlement';
   const reactions = useTableReactions(state);
+  const spotlight = useBidderSpotlight(state);
   const pTurn = s.phase === 'play' && s.turn === 'P' && !s.trickPending;
   const pBidder = s.bidWinner === 'P';
   return (
@@ -687,7 +766,31 @@ export function Table({ state, onOpenHistory }) {
       <Seat state={state} seat="E" corner="top-2 right-2 sm:top-4 sm:right-6" reaction={reactions.E} />
       <CenterArea state={state} />
       <SaveHUD state={state} />
+      <DiscardHUD state={state} />
       <MeldRack state={state} />
+      {spotlight && (
+        <div data-testid="bidder-spotlight" className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+          <div className="spotlight-in relative flex flex-col items-center">
+            <div
+              className="absolute -inset-24 gold-rays pointer-events-none opacity-70"
+              style={{
+                background:
+                  'conic-gradient(from 0deg, transparent 0deg, rgba(255,199,0,0.16) 12deg, transparent 24deg, transparent 36deg, rgba(255,199,0,0.16) 48deg, transparent 60deg, transparent 72deg, rgba(255,199,0,0.16) 84deg, transparent 96deg)',
+              }}
+            />
+            <div className="relative px-8 py-5 rounded-2xl border-4 border-amber-400 bg-black/85 shadow-[0_0_60px_rgba(255,199,0,0.65)] text-center">
+              <div className="gta-title text-2xl sm:text-4xl leading-none">
+                {spotlight.seat === 'P'
+                  ? 'YOU TOOK THE CONTRACT'
+                  : `${SEAT_LABEL[spotlight.seat].toUpperCase()} TOOK THE CONTRACT`}
+              </div>
+              <div className="font-display font-black text-amber-300 text-lg sm:text-2xl mt-1">
+                AT {spotlight.bid}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {showBooks && (
         <div className="absolute bottom-2 left-2 sm:left-6 flex items-center gap-2 z-40">
           <div

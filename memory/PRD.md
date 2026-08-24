@@ -48,9 +48,30 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   conserved, dealer rotation — all pass (`src/game/__tests__/engine.test.js`).
 - Testing agent (browser): config → deal → 25-card hand renders, auction/modals/toggles work.
 
+## Updates (2026-06 — Difficulty Engine, Convict Mode, Kitty, Spotlight, DiscardHUD, Stats)
+- **Difficulty tiers** (`settings.difficulty`, splash selector): 'easy' (New Booty — timid AI
+  bidding, naive non-cooperative defenders), 'normal' (Inmate — full strategy), 'hard'
+  (Convict). Wired through `evaluateBid`/`aiPlay` in `ai.js` via `useGame.js`.
+- **Convict unconstrained mode**: no legal-card highlighting, every card clickable
+  (`HandTray` + `BustALead.onCardClick`). Reneging physically allowed; reducer `PLAY_CARD`
+  inspects illegal plays with ~95% AI catch → immediate Hard Set with "BUS' A LEAD VIOLATION
+  (RENEGE)" banner (settlement offender pays hard-set penalty to both other seats).
+- **Visible deal kitty**: `CenterArea` shows the 5 face-down kitty cards labeled "THE KITTY"
+  during dealing + auction, persisting until the bidder claims the contract (then "KITTY COLLECTED").
+- **Bidder spotlight** (`useBidderSpotlight`): gold banner "<SEAT> TOOK THE CONTRACT AT <bid>"
+  flashes ~2.8s when the auction concludes.
+- **Dynamic Discard HUD** (`DiscardHUD`): live meld recalculation as cards are buried; shows
+  Bid / Active Meld / Books Needed / Books to Save; green "Max Safety Floor" badge when
+  Bid−Meld ≤ floor; flashing red "BOARD SET WARNING (>50 Books Required)".
+- **Session stats**: added `winStreak`/`bestStreak` tracking (human net-positive hands) and a
+  "Best Win Streak" row in the Stats modal; persisted in localStorage.
+- **Splash restyle**: `splash_busalead.png` hero, amber/charcoal buttons (no neon), bid labels
+  "60"/"65", subtitle "CUTTHROAT PINOCHLE • CDCR PRISON RULES".
+- Verified: all 7 Jest engine tests pass; frontend testing agent 100% (iteration_9.json).
+
 ## Backlog (P1/P2)
-- P2: Hand history / running session stats panel enhancements.
-- P2: Difficulty selector.
+- P2: Difficulty-specific defender AI depth (Convict smarter card counting).
+- P2: Split `Table.jsx` (~850 lines) into per-component files (non-urgent).
 
 ## Updates (2026-06 — Request 7: Avatar Scaling & Table Prominence)
 - Enlarged seat portraits (`Table.jsx` `Seat`): bordered avatar cards (w-16→w-24 responsive)

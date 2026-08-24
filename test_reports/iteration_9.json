@@ -1,0 +1,23 @@
+{
+  "summary": "Frontend-only verification of the 5-part feature set (difficulty tiers, visible kitty, bidder spotlight, dynamic DiscardHUD, Best Win Streak stat). All 7 review-request checks pass live on REACT_APP_BACKEND_URL.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Convict renege detection uses probabilistic Math.random()<0.95 in reducer PLAY_CARD — non-deterministic. Not a bug but worth noting for unit tests: mock RNG or expose a seedable RNG to make renege tests reliable.",
+    "Table.jsx approaches 850 lines — Header/Seat/CenterArea/HandTray/SaveHUD/DiscardHUD/MeldRack/DealAnimation could be split into their own files to keep files under the 700-line guideline.",
+    "TrickCard uses no data-testid on the inner Card; when writing playwright, the trick-led-suit can only be inferred via seat label. Adding a data-testid=\"trick-play-<seat>\" wrapper would improve testability."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "localStorage cleared between runs (key: bust-a-lead-save-v1).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Verified live on preview URL at 1920x1080:\n1) Splash: data-testids present — splash-hero (image loads), gta-subtitle text 'Cutthroat Pinochle • CDCR Prison Rules', cfg-difficulty-easy/normal/hard (amber bg-amber-500 on active tier), cfg-bid-60/65, deal-btn.\n2) Kitty: after DEAL, data-testid kitty-pile appears immediately with label 'THE KITTY' and persists through dealing→auction; after bidder claims contract label switches to 'KITTY COLLECTED'.\n3) Bidder Spotlight: banner data-testid=bidder-spotlight appears when auction concludes, e.g. 'YA'LL TOOK THE CONTRACT AT 75' and 'YOU TOOK THE CONTRACT AT 100'. Auto-dismisses after ~2.8s (verified null after 3.2s wait).\n4) Stats: header stats-btn opens stats-modal; row data-testid stat-best-win-streak renders (value '0' on fresh session). LocalStorage key bust-a-lead-save-v1 present.\n5) Convict mode: 25 hand cards, legalRings=0, dimmed=0 while it's P's turn — all cards fully interactive with no cyan legal highlight. Repeatedly clicking cards produced 'BUS' A LEAD VIOLATION' settlement (data-testid=settlement-title text) with penalty transfers You→Them $2 and You→Ya'll $2, bankrolls updated to $102/$102/$96. Hard Set as expected.\n6) DiscardHUD (P bidder): discard-hud shows Bid 100, discard-active-meld=22 (initial), discard-books-needed=78, discard-books-to-save=78. After toggling 5 cards into bury pile: active-meld dropped 22→10 (live-updating meld recalculation confirmed), books-needed=90, board-set-warning appeared (>50 Books Required). safety-floor-badge did NOT appear here because Bid−Meld>50; correct branch.\n7) Regression: reaction-W observed in play; seats W/E render bordered portrait avatars with nameplates + bankroll chips ($100.00); player-avatar bottom-left renders; player-hand 25 cards visible & unobstructed; no console errors.\nRecipe to reach DiscardHUD as human bidder: Normal or Convict + cfg-speed-fast → deal-btn → spam bid-btn until AI passes → trump-<suit> → discard-hud appears.\nRecipe to trigger renege: Convict + fast → deal → pass so AI wins → declare aces if prompted → click any card several times (5-6 attempts sufficed here) until Bus a Lead Violation.",
+  "rca of the issue": "N/A — no issues found."
+}

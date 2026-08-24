@@ -6,7 +6,7 @@ import { evaluateBid, chooseTrump, chooseDiscards, shouldGoDouble, laydownChalle
 import { SoundEngine } from '../audio/sfx';
 
 function aiBidAction(s, seat) {
-  const { maxBid } = evaluateBid(s.hands[seat], s.settings.bidBase);
+  const { maxBid } = evaluateBid(s.hands[seat], s.settings.bidBase, s.settings.difficulty);
   const nextVal = s.bid == null ? s.settings.bidBase : s.bid + 5;
   if (maxBid >= nextVal) return { type: 'PLACE_BID', seat };
   return { type: 'PASS', seat };
@@ -75,7 +75,7 @@ function drive(s, dispatch, sound) {
       }
       if (s.turn && s.turn !== 'P') {
         return setTimeout(() => {
-          const card = aiPlay(s.turn, s.hands[s.turn], s.trick, s.trump, s.bidWinner, s.signals?.[s.turn]);
+          const card = aiPlay(s.turn, s.hands[s.turn], s.trick, s.trump, s.bidWinner, s.signals?.[s.turn], s.settings.difficulty);
           sound.play();
           dispatch({ type: 'PLAY_CARD', seat: s.turn, card });
         }, d.think);

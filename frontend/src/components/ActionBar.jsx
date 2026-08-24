@@ -149,6 +149,14 @@ export function ActionBar({ state, act }) {
 
   // PLAY hint
   if (s.phase === 'play' && s.turn === 'P' && !s.trickPending) {
+    const hard = s.settings.difficulty === 'hard';
+    if (hard) {
+      return (
+        <Wrap hint="CONVICT MODE · no help — the yard is watching for reneges">
+          <span className="text-xs font-sub text-rose-300">Play any card · renege at your own risk</span>
+        </Wrap>
+      );
+    }
     return (
       <Wrap hint={s.trick.length === 0 ? 'Your lead — pick any highlighted card' : 'Follow suit · head the book if able'}>
         <span className="text-xs font-sub text-slate-400">Tap a glowing card to play</span>

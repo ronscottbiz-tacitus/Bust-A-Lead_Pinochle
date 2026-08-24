@@ -14,17 +14,17 @@ const Overlay = ({ children, testid }) => (
 function Choice({ label, options, value, onChange, testidPrefix }) {
   return (
     <div className="w-full">
-      <div className="text-[11px] font-sub uppercase tracking-widest text-slate-400 mb-1.5">{label}</div>
+      <div className="text-[11px] font-sub uppercase tracking-widest text-amber-500/70 mb-1.5">{label}</div>
       <div className="grid grid-cols-3 gap-2">
         {options.map((o) => (
           <button
             key={o.value}
             data-testid={`${testidPrefix}-${o.value}`}
             onClick={() => onChange(o.value)}
-            className={`px-2 py-2 rounded-lg border text-xs font-semibold transition-all ${
+            className={`px-2 py-2 rounded-lg border text-xs font-bold transition-all active:scale-95 ${
               value === o.value
-                ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 neon-cyan'
-                : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-500'
+                ? 'bg-amber-500 border-amber-400 text-black shadow-[0_3px_0_rgba(0,0,0,0.6)]'
+                : 'bg-neutral-900/80 border-neutral-700 text-neutral-300 hover:border-neutral-500'
             }`}
           >
             {o.label}
@@ -40,81 +40,96 @@ export function ConfigScreen({ state, act }) {
   const set = (patch) => act({ type: 'UPDATE_SETTINGS', settings: patch });
   return (
     <Overlay testid="config-screen">
-      <div className="gta-panel rounded-3xl p-6 sm:p-8 w-full max-w-md pop-in max-h-[92vh] overflow-y-auto">
-        <div className="flex flex-col items-center text-center mb-5">
+      <div className="rounded-3xl overflow-hidden w-full max-w-lg pop-in max-h-[92vh] overflow-y-auto border-2 border-amber-600/50 bg-neutral-950 shadow-[0_0_0_2px_rgba(0,0,0,0.9),0_28px_70px_rgba(0,0,0,0.75)]">
+        <div className="relative">
           <img
-            src="/assets/get2_cardback.png"
-            alt="Get2 card back"
-            className="w-16 h-24 rounded-lg mb-4 border-2 border-yellow-500/60 shadow-[0_8px_24px_rgba(0,0,0,0.6)] rotate-[-6deg]"
+            src="/assets/splash_busalead.png"
+            alt="Bus' a Lead — CDCR yard card table"
+            data-testid="splash-hero"
+            className="w-full object-cover"
           />
-          <div className="gta-title text-4xl sm:text-5xl" data-testid="gta-title">
-            BUS' A LEAD
-          </div>
-          <div className="text-[11px] sm:text-xs font-sub font-bold uppercase tracking-[0.28em] text-yellow-500/80 mt-2">
-            Cutthroat Pinochle • CDCR Rules
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/10 to-transparent pointer-events-none" />
         </div>
-        <div className="space-y-4">
-          <Choice
-            label="Opening Bid Base"
-            testidPrefix="cfg-bid"
-            value={s.bidBase}
-            onChange={(v) => set({ bidBase: v })}
-            options={[
-              { value: 60, label: '$60' },
-              { value: 65, label: '$65' },
-            ]}
-          />
-          <Choice
-            label="Card Sorting"
-            testidPrefix="cfg-sort"
-            value={s.sortMode}
-            onChange={(v) => set({ sortMode: v })}
-            options={[
-              { value: 'suit', label: 'By Suit' },
-              { value: 'rank', label: 'By Rank' },
-            ]}
-          />
-          <Choice
-            label="Animation Speed"
-            testidPrefix="cfg-speed"
-            value={s.animSpeed}
-            onChange={(v) => set({ animSpeed: v })}
-            options={[
-              { value: 'slow', label: 'Slow' },
-              { value: 'normal', label: 'Normal' },
-              { value: 'fast', label: 'Fast' },
-            ]}
-          />
-          <Choice
-            label="Sound"
-            testidPrefix="cfg-sound"
-            value={s.sound ? 'on' : 'off'}
-            onChange={(v) => set({ sound: v === 'on' })}
-            options={[
-              { value: 'on', label: 'On' },
-              { value: 'off', label: 'Off' },
-            ]}
-          />
-          <Choice
-            label="Table Stakes"
-            testidPrefix="cfg-stakes"
-            value={s.stakesBase || 1}
-            onChange={(v) => set({ stakesBase: v })}
-            options={[
-              { value: 1, label: 'Low $1/$2' },
-              { value: 2, label: 'Mid $2/$4' },
-              { value: 5, label: 'High $5/$10' },
-            ]}
-          />
+        <div className="px-6 sm:px-8 pb-7 pt-2">
+          <div
+            className="text-center text-[11px] sm:text-xs font-sub font-bold uppercase tracking-[0.26em] text-amber-500/90 mb-5"
+            data-testid="gta-subtitle"
+          >
+            Cutthroat Pinochle • CDCR Prison Rules
+          </div>
+          <div className="space-y-4">
+            <Choice
+              label="Difficulty"
+              testidPrefix="cfg-difficulty"
+              value={s.difficulty || 'normal'}
+              onChange={(v) => set({ difficulty: v })}
+              options={[
+                { value: 'easy', label: 'New Booty' },
+                { value: 'normal', label: 'Inmate' },
+                { value: 'hard', label: 'Convict' },
+              ]}
+            />
+            <Choice
+              label="Opening Bid Base"
+              testidPrefix="cfg-bid"
+              value={s.bidBase}
+              onChange={(v) => set({ bidBase: v })}
+              options={[
+                { value: 60, label: '60' },
+                { value: 65, label: '65' },
+              ]}
+            />
+            <Choice
+              label="Card Sorting"
+              testidPrefix="cfg-sort"
+              value={s.sortMode}
+              onChange={(v) => set({ sortMode: v })}
+              options={[
+                { value: 'suit', label: 'By Suit' },
+                { value: 'rank', label: 'By Rank' },
+              ]}
+            />
+            <Choice
+              label="Animation Speed"
+              testidPrefix="cfg-speed"
+              value={s.animSpeed}
+              onChange={(v) => set({ animSpeed: v })}
+              options={[
+                { value: 'slow', label: 'Slow' },
+                { value: 'normal', label: 'Normal' },
+                { value: 'fast', label: 'Fast' },
+              ]}
+            />
+            <Choice
+              label="Sound"
+              testidPrefix="cfg-sound"
+              value={s.sound ? 'on' : 'off'}
+              onChange={(v) => set({ sound: v === 'on' })}
+              options={[
+                { value: 'on', label: 'On' },
+                { value: 'off', label: 'Off' },
+              ]}
+            />
+            <Choice
+              label="Table Stakes"
+              testidPrefix="cfg-stakes"
+              value={s.stakesBase || 1}
+              onChange={(v) => set({ stakesBase: v })}
+              options={[
+                { value: 1, label: 'Low $1/$2' },
+                { value: 2, label: 'Mid $2/$4' },
+                { value: 5, label: 'High $5/$10' },
+              ]}
+            />
+          </div>
+          <button
+            data-testid="deal-btn"
+            onClick={() => act({ type: 'START_ROUND' })}
+            className="mt-6 w-full py-3 rounded-xl bg-amber-500 border-2 border-black/70 text-black font-display font-black tracking-wide flex items-center justify-center gap-2 hover:bg-amber-400 transition-all active:scale-95 shadow-[0_6px_0_rgba(0,0,0,0.6)]"
+          >
+            <Play size={18} /> DEAL CARDS
+          </button>
         </div>
-        <button
-          data-testid="deal-btn"
-          onClick={() => act({ type: 'START_ROUND' })}
-          className="mt-6 w-full py-3 rounded-xl bg-gradient-to-b from-yellow-400 to-orange-500 border-2 border-black/70 text-black font-display font-black tracking-wide flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-95 shadow-[0_6px_0_rgba(0,0,0,0.6)]"
-        >
-          <Play size={18} /> DEAL CARDS
-        </button>
       </div>
     </Overlay>
   );
@@ -149,7 +164,9 @@ export function SettlementModal({ state, act }) {
           ) : busted ? (
             <div className="shake">
               <Skull size={40} className="mx-auto text-red-400 mb-2" />
-              <div className="font-display font-black text-2xl text-red-300">BUSTED A LEAD</div>
+              <div data-testid="settlement-title" className="font-display font-black text-2xl text-red-300">
+                {String(r.busted.reason).includes('RENEGE') ? "BUS' A LEAD VIOLATION" : 'BUSTED A LEAD'}
+              </div>
               <div className="text-xs text-red-200/80 mt-1">
                 {SEAT_LABEL[r.busted.seat]}: {r.busted.reason}
               </div>
@@ -275,13 +292,14 @@ const RULES = [
 ];
 
 export function StatsModal({ stats, onClose, onReset }) {
-  const st = stats || { handsPlayed: 0, handsMade: 0, softSets: 0, hardSets: 0, biggestPot: 0, net: { W: 0, E: 0, P: 0 } };
+  const st = stats || { handsPlayed: 0, handsMade: 0, softSets: 0, hardSets: 0, biggestPot: 0, bestStreak: 0, net: { W: 0, E: 0, P: 0 } };
   const rows = [
     ['Hands Played', st.handsPlayed],
     ['Hands Made', st.handsMade],
     ['Soft Sets', st.softSets],
     ['Hard Sets', st.hardSets],
     ['Biggest Pot Won', `$${(st.biggestPot || 0).toFixed(2)}`],
+    ['Best Win Streak', `${st.bestStreak || 0}`],
   ];
   return (
     <Overlay testid="stats-modal">

@@ -25,6 +25,11 @@ export default function BustALead() {
     if (s.phase === 'discard' && s.bidWinner === 'P') {
       act({ type: 'TOGGLE_DISCARD', id: card.id });
     } else if (s.phase === 'play' && s.turn === 'P' && !s.trickPending && !s.humanAcesPending) {
+      if (s.settings.difficulty === 'hard') {
+        // Convict mode: any card is playable; the reducer inspects for reneges.
+        act({ type: 'PLAY_CARD', seat: 'P', card });
+        return;
+      }
       const legal = legalPlays(s.hands.P, s.trick, s.trump);
       if (legal.some((c) => c.id === card.id)) act({ type: 'PLAY_CARD', seat: 'P', card });
     }
