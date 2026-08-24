@@ -1,7 +1,7 @@
 // Core constants for Bus' a Lead (3-player Cutthroat Pinochle variant)
 
 export const SEATS = ['W', 'E', 'P'];
-export const SEAT_LABEL = { W: 'DooLow', E: 'PapaCap', P: 'You' };
+export const SEAT_LABEL = { W: 'DooLow', E: 'PapaCap', P: 'G2' };
 // Avatar image assets per seat (E has no portrait -> null, falls back to initial)
 export const SEAT_AVATAR = {
   W: '/assets/avatar_them.png',

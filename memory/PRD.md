@@ -48,6 +48,17 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   conserved, dealer rotation — all pass (`src/game/__tests__/engine.test.js`).
 - Testing agent (browser): config → deal → 25-card hand renders, auction/modals/toggles work.
 
+## Updates (2026-06 — G2 Rebrand, Triple Pinochle, Header Cleanup, Prison Audio, Taunts, Meld Tooltip)
+- **Rebrand**: human player 'You' → 'G2' via SEAT_LABEL.P (propagates to dock, bubbles, logs, spotlight, settlement, stats). You-dock nameplate + letter fallback updated to G2.
+- **Triple/Quad Pinochle**: `meld.js` PIN_PTS {1:4, 2:40, 3:90, 4:300}, label 'Triple Pinochle (90 Nuts!)'. Live in discard HUD / meld pill / drawer. Jest guard added (10/10).
+- **Header cleanup (tablet+desktop)**: removed opponent bankroll chips from header (now only under avatars); left = Get2 logo (h-9) + title, center = single `status-capsule` (Pot • Trump • Stake [+ Book/Books in play]), right = Stats/Rules/Sound/New Game icon cluster.
+- **Prison audio** (`sfx.js`, procedural Web Audio): deal = mechanical snaps; play = thud + metallic clank; renege = dual-tone siren + buzzer (new `renege()`, fired on CALL_RENEGE + renege busts); busted = iron-door slam w/ echo; win = whistle + jackpot chime.
+- **Convict taunts** (bonus): `renegeTaunt()` shows a DooLow/PapaCap taunt (`convict-taunt`) on renege/false-accusation settlements only.
+- **Meld tooltip** (bonus): meld-drawer lines are tappable (`meld-item-*`) to reveal the exact cards (`meld-cards-*`).
+- Verified: 10/10 Jest; testing agent iteration_13.json 100%, zero console errors.
+- Known maintainability note: Table.jsx >1000 lines (Header/Seat could be split later; deferred to avoid regression).
+
+
 ## Updates (2026-06 — 6 Bug Fixes: Meld Math, Modal Positioning, Mobile Header, Avatar, Card Backs, Desktop Cards)
 - **Meld math**: `computeMeld` now scores the Trump Run first and only awards a Royal Marriage from K/Q NOT consumed by the run (no phantom +4). Pinochle/Arounds doubles already flat. New Jest guard added (9/9 pass).
 - **Modal positioning**: `ActionBar` `Wrap` gained a `pos` prop — auction/trump/laydown centered on the felt, Bury-5 panel upper-center, play/aces/renege as a top banner — never over the cards.

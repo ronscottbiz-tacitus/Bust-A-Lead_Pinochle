@@ -224,3 +224,19 @@ test('MELD: trump run does not double-count the royal marriage (no phantom +4)',
   const m2 = computeMeld(runPlusMarriage, 'S');
   expect(m2.total).toBe(19); // 15 run + 4 royal marriage
 });
+
+test('MELD: Triple Pinochle scores 90 (not 4+40+...) and quad scores 300', () => {
+  const { computeMeld } = require('../meld');
+  const triple = [
+    { id: 'S-Q-0', suit: 'S', rank: 'Q' }, { id: 'S-Q-1', suit: 'S', rank: 'Q' }, { id: 'S-Q-2', suit: 'S', rank: 'Q' },
+    { id: 'D-J-0', suit: 'D', rank: 'J' }, { id: 'D-J-1', suit: 'D', rank: 'J' }, { id: 'D-J-2', suit: 'D', rank: 'J' },
+  ];
+  const m = computeMeld(triple, 'H');
+  const pin = m.items.find((i) => i.name.includes('Pinochle'));
+  expect(pin.pts).toBe(90);
+  expect(pin.name).toContain('90 Nuts');
+
+  const quad = [...triple, { id: 'S-Q-3', suit: 'S', rank: 'Q' }, { id: 'D-J-3', suit: 'D', rank: 'J' }];
+  const mq = computeMeld(quad, 'H');
+  expect(mq.items.find((i) => i.name.includes('Pinochle')).pts).toBe(300);
+});

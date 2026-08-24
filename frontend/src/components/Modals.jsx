@@ -5,10 +5,21 @@ import { Card } from './Card';
 import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
+
+function renegeTaunt(busted) {
+  if (!busted) return null;
+  const reason = String(busted.reason);
+  const opp = busted.seat === 'W' ? 'PapaCap' : 'DooLow';
+  if (reason.includes('FALSE ACCUSATION')) return `${opp}: Ain't nobody renege, G2 — sit yo' paranoid self down.`;
+  if (reason.includes('RENEGE CONFIRMED')) return `${SEAT_LABEL[busted.seat]}: Man… G2 got eyes in the back of his head.`;
+  if (reason.includes('RENEGE') || reason.includes('VIOLATION')) return `${opp}: Caught you slippin', G2! That's a bus' a lead.`;
+  return null;
+}
 const GTA_PANEL = 'bg-zinc-950/95 border-2 border-amber-500/50 rounded-2xl shadow-2xl backdrop-blur-md';
 
 export function MeldDrawer({ state, onClose }) {
   const s = state;
+  const [openItem, setOpenItem] = useState(null);
   if (!s.bidWinner) return null;
   let meld;
   if (s.phase === 'discard' && s.bidWinner === 'P') {
@@ -37,16 +48,32 @@ export function MeldDrawer({ state, onClose }) {
           <div className="text-slate-400 text-sm">No meld in hand.</div>
         ) : (
           <ul className="space-y-2">
-            {meld.items.map((it) => (
-              <li
-                key={it.name}
-                data-testid={`meld-item-${it.name.replace(/\s+/g, '-').toLowerCase()}`}
-                className="flex justify-between items-center border-b border-amber-500/10 pb-2"
-              >
-                <span className="text-slate-200 text-sm">{it.name}</span>
-                <span className="font-mono-stat font-bold text-amber-300">+{it.pts}</span>
-              </li>
-            ))}
+            {meld.items.map((it) => {
+              const tid = it.name.replace(/\s+/g, '-').toLowerCase().replace(/[^a-z0-9-]/g, '');
+              const open = openItem === it.name;
+              return (
+                <li key={it.name} className="border-b border-amber-500/10 pb-2">
+                  <button
+                    data-testid={`meld-item-${tid}`}
+                    onClick={() => setOpenItem(open ? null : it.name)}
+                    className="w-full flex justify-between items-center text-left hover:text-amber-100"
+                  >
+                    <span className="text-slate-200 text-sm flex items-center gap-1.5">
+                      <span className={`text-amber-400 transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
+                      {it.name}
+                    </span>
+                    <span className="font-mono-stat font-bold text-amber-300">+{it.pts}</span>
+                  </button>
+                  {open && (
+                    <div data-testid={`meld-cards-${tid}`} className="mt-2 flex flex-wrap gap-1 pl-4 pop-in">
+                      {it.cards.map((c) => (
+                        <Card key={c.id} card={c} size="sm" />
+                      ))}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
         <div className="mt-4 pt-3 border-t border-amber-500/30 flex justify-between font-black uppercase text-sm tracking-wide">
@@ -241,6 +268,14 @@ export function SettlementModal({ state, act }) {
               <div className="text-xs text-red-200/80 mt-1">
                 {SEAT_LABEL[r.busted.seat]}: {r.busted.reason}
               </div>
+              {renegeTaunt(r.busted) && (
+                <div
+                  data-testid="convict-taunt"
+                  className="mt-3 inline-block px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-400/50 text-amber-200 text-sm italic font-sub"
+                >
+                  {renegeTaunt(r.busted)}
+                </div>
+              )}
             </div>
           ) : (
             <>

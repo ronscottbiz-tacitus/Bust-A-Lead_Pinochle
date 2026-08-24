@@ -61,13 +61,15 @@ export function computeMeld(hand, trump) {
     }
   }
 
-  // 3) Pinochle Q♠ + J♦ (double is a flat 40, never 40+8)
+  // 3) Pinochle Q♠ + J♦ — singles never stack (double/triple/quad are flat totals).
   const pin = Math.min(cnt.S.Q, cnt.D.J);
   if (pin >= 1) {
-    const n = pin >= 2 ? 2 : 1;
+    const n = Math.min(pin, 4);
+    const PIN_PTS = { 1: 4, 2: 40, 3: 90, 4: 300 };
+    const PIN_NAME = { 1: 'Pinochle', 2: 'Double Pinochle', 3: 'Triple Pinochle (90 Nuts!)', 4: 'Quadruple Pinochle' };
     items.push({
-      name: n === 2 ? 'Double Pinochle' : 'Pinochle',
-      pts: n === 2 ? 40 : 4,
+      name: PIN_NAME[n],
+      pts: PIN_PTS[n],
       cards: [...pick('S', 'Q', n), ...pick('D', 'J', n)],
     });
   }

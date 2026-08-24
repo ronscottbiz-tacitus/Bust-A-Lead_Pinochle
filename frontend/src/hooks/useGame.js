@@ -108,12 +108,15 @@ export function useGame() {
   useEffect(() => {
     if (state.phase === 'settlement' && prevPhase.current !== 'settlement') {
       const snd = soundRef.current;
-      if (state.result === 'busted') snd.busted();
-      else if (state.settlement && state.settlement.transfers.some((t) => t.to === 'P')) snd.win();
+      if (state.result === 'busted') {
+        const reason = state.busted?.reason || '';
+        if (/RENEGE|FALSE ACCUSATION|VIOLATION/i.test(reason)) snd.renege();
+        else snd.busted();
+      } else if (state.settlement && state.settlement.transfers.some((t) => t.to === 'P')) snd.win();
       else snd.lose();
     }
     prevPhase.current = state.phase;
-  }, [state.phase, state.result, state.settlement]);
+  }, [state.phase, state.result, state.settlement, state.busted]);
 
   useEffect(() => {
     const id = drive(state, dispatch, soundRef.current);
@@ -126,6 +129,7 @@ export function useGame() {
     if (action.type === 'PLACE_BID') snd.chip();
     else if (action.type === 'PLAY_CARD') snd.play();
     else if (action.type === 'DECLARE_TRUMP') snd.trump();
+    else if (action.type === 'CALL_RENEGE') snd.renege();
     dispatch(action);
   };
 
