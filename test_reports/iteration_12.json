@@ -1,0 +1,30 @@
+{
+  "summary": "Frontend-only regression run covering all 8 review items (meld math visualization, action-bar positioning on desktop 1440x900 and mobile 390x844, mobile compact header, You avatar with letter fallback, AI card-back fans, dealer chip under avatars, desktop w-20 h-32 hand with open felt, and end-to-end reachability). Config screen -> Fast/Hard -> Deal succeeds. Mobile header renders as a single compact row (get2-logo-link + mobile-status-pill 'Pot: $1 • trump-symbol' + rules-btn + stats-btn + menu-btn). Kebab menu opens and reveals sound-toggle + new-game-header-btn. facedown-fan-W and facedown-fan-E are rendered next to DooLow and PapaCap in every observed phase. Auction Bid/Pass panel positions at top:40% center (y~355 on 844h mobile, y~361 on 900h desktop) clearly above the fanned cards. Discard Bury-5 panel positions at top:15% upper (y~127 mobile / y~135 desktop) — above the card matrix, tappable. Play banner sits near top:28 (y~135 desktop) as a compact banner. Desktop shows the open-felt table-watermark and the fanned player-hand at the bottom with large w-20 h-32 cards. Meld drawer (meld-pill -> meld-drawer) opens and itemises meld correctly (observed: Clubs Marriage +2, Pinochle +4, Jacks Around +4, Total 10 in a non-run hand). Meld double-count guard is also covered by the passing 9/9 Jest suite.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "You seat (bottom-left dock)", "issues": ["player-avatar and dealer-chip-P are only rendered when showBooks is true (phase === 'play' || 'settlement'). During dealing/auction/discard the You dock (and its dealer chip) does not appear, while the top W/E seats DO show their dealer-chip in every phase. This is an inconsistency vs the spec bullet 'the current dealer's seat shows a small Dealer chip under the portrait (dealer-chip-W / dealer-chip-E / dealer-chip-P)'. If dealer is P during auction, no chip is visible anywhere. Recommend rendering the You dock (or at least the dealer-chip-P + avatar block) in all phases, or moving the dealer-chip-P outside the showBooks conditional in Table.jsx around lines 928-978."]},
+      {"screen": "meld-pill text vs meld-drawer total", "issues": ["Observed meld-pill textContent read 'Meld: 0 pts' at the exact moment before opening the drawer, while the drawer immediately reported 'Total Meld 10'. Possible stale render before the meld is committed post-discard. Non-blocking but worth verifying meld-pill reads the same source as meld-drawer."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Move dealer-chip-P (and ideally the You avatar block) out of the showBooks conditional so it is visible during auction/discard like the W/E seats — currently dealer-chip-P and player-avatar are only rendered in phase play/settlement (Table.jsx ~L928 & L970).",
+    "Verify meld-pill total binding: pill showed '0 pts' while meld-drawer reported '10' in the same instant."
+  ],
+  "critical_code_review_comments": [
+    "Table.jsx is 1001 lines — approaching the 700-line split threshold; consider breaking into Seat.jsx, Header.jsx, PlayerDock.jsx.",
+    "ActionBar.jsx WRAP_POS is clean and uses fixed positioning with z-40; player-hand uses z-30 with pointer-events-none on the container so overlapping bounding boxes at the container level do not block card interactions (verified visually).",
+    "Card.jsx 'xs' size (w-7 h-10 lg:w-10 lg:h-14) is only used for AI facedown fans as intended; 'lg' is w-20 h-32 on desktop as spec'd.",
+    "meld.js correctly offsets K/Q used by a trump run before scoring Royal Marriage (see usedTrumpK/usedTrumpQ) — no phantom +4."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only)", "frontend": "100% for the 8 review items on their functional assertions; 2 minor design inconsistencies flagged (dealer-chip-P visibility gated by phase; meld-pill stale total)"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All required data-testids exist: get2-logo-link, mobile-status-pill, rules-btn, stats-btn, menu-btn, sound-toggle, new-game-header-btn, facedown-fan-W, facedown-fan-E, dealer-chip-W/E/P (P only under showBooks), player-avatar (under showBooks), meld-pill, meld-drawer, action-bar (with pos-driven fixed placement), player-hand, table-watermark. To reach discard-as-human on Convict/Fast: click cfg-speed-fast + cfg-difficulty-hard, then Deal, then spam bid-btn ~5x until AI passes, then click any trump-<S|H|D|C>. Player-hand container spans a large empty region (pointer-events-none inset-x-0 fixed bottom-3) so bounding-box overlap checks against action-bar will yield false positives — verify visually instead. Meld drawer works during discard as well as play.",
+  "rca of the issue": "N/A - all six reported bug fixes confirmed working; two minor observations documented under design_issues."
+}

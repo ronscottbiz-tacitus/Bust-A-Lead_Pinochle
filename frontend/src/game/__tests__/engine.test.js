@@ -201,3 +201,26 @@ test('CONVICT bidder bleeds trump: leads highest trump while defenders hold trum
   const normalCard = aiPlay('P', hand, [], trump, 'P', null, 'normal', []);
   expect(normalCard.id).not.toBe('S-A-0');
 });
+
+test('MELD: trump run does not double-count the royal marriage (no phantom +4)', () => {
+  const { computeMeld } = require('../meld');
+  // A,10,K,Q,J of Spades = exactly one Trump Run (15), NO extra Royal Marriage.
+  const runOnly = [
+    { id: 'S-A-0', suit: 'S', rank: 'A' },
+    { id: 'S-10-0', suit: 'S', rank: '10' },
+    { id: 'S-K-0', suit: 'S', rank: 'K' },
+    { id: 'S-Q-0', suit: 'S', rank: 'Q' },
+    { id: 'S-J-0', suit: 'S', rank: 'J' },
+  ];
+  const m1 = computeMeld(runOnly, 'S');
+  expect(m1.total).toBe(15);
+  expect(m1.items.find((i) => i.name.includes('Marriage'))).toBeUndefined();
+
+  // A separate, unused K+Q of trump DOES score a Royal Marriage on top of the run.
+  const runPlusMarriage = [...runOnly,
+    { id: 'S-K-1', suit: 'S', rank: 'K' },
+    { id: 'S-Q-1', suit: 'S', rank: 'Q' },
+  ];
+  const m2 = computeMeld(runPlusMarriage, 'S');
+  expect(m2.total).toBe(19); // 15 run + 4 royal marriage
+});

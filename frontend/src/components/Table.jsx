@@ -5,7 +5,7 @@ import { legalPlays } from '../game/trick';
 import { sortHand } from '../game/deck';
 import { computeMeld } from '../game/meld';
 import { saveTarget, booksToMake } from '../game/scoring';
-import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles, AlertTriangle, ChevronDown, MoreVertical } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 const STAKE_LABEL = { 1: '$1/$2', 2: '$2/$4', 5: '$5/$10' };
@@ -130,12 +130,98 @@ function TrumpBadge({ trump }) {
 
 export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGame, onOpenMeld }) {
   const s = state;
+  const { mobile } = useViewport();
+  const [menu, setMenu] = useState(false);
   const mult = liveMultiplier(s);
   const meldTotal = s.meld[s.bidWinner]?.total || 0;
   const showMeldPill = ['discard', 'laydown', 'play', 'settlement'].includes(s.phase) && s.bidWinner;
+  // During discard the committed meld isn't stored yet — compute the live total so the pill matches the drawer.
+  const pillTotal =
+    s.phase === 'discard' && s.bidWinner === 'P'
+      ? computeMeld(s.hands.P.filter((c) => !s.discards.includes(c.id)), s.trump).total
+      : meldTotal;
   const bidderBooks = s.phase === 'play' || s.phase === 'settlement' ? s.books[s.bidWinner] + s.buriedBooks : 0;
   const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
   const stakes = s.settings.stakesBase || 1;
+
+  if (mobile) {
+    const su = s.trump ? SUIT_BY_KEY[s.trump] : null;
+    const pot = stakes * mult;
+    return (
+      <header className="fixed top-0 inset-x-0 z-50 h-12 flex items-center justify-between px-3 glass border-b border-white/10">
+        <a
+          href="https://get2.one"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="get2-logo-link"
+          className="flex items-center hover:opacity-85 shrink-0"
+        >
+          <img src="/assets/get2-logo_bal_blk.png" alt="Get2" className="h-7 w-auto object-contain" />
+        </a>
+        <div
+          data-testid="mobile-status-pill"
+          className="flex items-center gap-1.5 text-[11px] font-mono-stat text-slate-200 bg-slate-900/70 rounded-full px-2.5 py-1 border border-slate-700"
+        >
+          <span className="text-emerald-300">Pot: ${pot}</span>
+          <span className="text-slate-600">•</span>
+          <span style={{ color: su ? su.neon : '#64748b' }} className="text-sm font-black leading-none">
+            {su ? su.symbol : '—'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          {showMeldPill && (
+            <button
+              data-testid="meld-pill"
+              onClick={onOpenMeld}
+              className="px-2 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 border border-amber-400/60 text-amber-200"
+            >
+              {pillTotal}p
+            </button>
+          )}
+          <button data-testid="rules-btn" onClick={onOpenRules} className="p-1.5 rounded-md bg-slate-800/70 border border-slate-700 text-slate-300">
+            <BookOpen size={15} />
+          </button>
+          <button data-testid="stats-btn" onClick={onOpenStats} className="p-1.5 rounded-md bg-slate-800/70 border border-slate-700 text-slate-300">
+            <BarChart3 size={15} />
+          </button>
+          <div className="relative">
+            <button data-testid="menu-btn" onClick={() => setMenu((m) => !m)} className="p-1.5 rounded-md bg-slate-800/70 border border-slate-700 text-slate-300">
+              <MoreVertical size={15} />
+            </button>
+            {menu && (
+              <div className="absolute right-0 top-9 z-50 w-40 glass rounded-xl border border-white/10 p-1.5 flex flex-col gap-1">
+                <button
+                  data-testid="sound-toggle"
+                  onClick={onToggleSound}
+                  className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-slate-200 hover:bg-white/5"
+                >
+                  {s.settings.sound ? <Volume2 size={14} /> : <VolumeX size={14} />} Sound: {s.settings.sound ? 'On' : 'Off'}
+                </button>
+                <button
+                  data-testid="new-game-header-btn"
+                  onClick={() => {
+                    setMenu(false);
+                    onNewGame();
+                  }}
+                  className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-fuchsia-200 hover:bg-fuchsia-500/10"
+                >
+                  <RefreshCw size={14} /> New Game
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        {(s.phase === 'play' || s.phase === 'settlement') && (
+          <div className="absolute top-12 inset-x-0 flex justify-center pointer-events-none">
+            <div className="mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono-stat bg-slate-900/80 border border-slate-700 text-slate-200">
+              Book {Math.min(s.trickNo, 25)}/25 · Bidder {bidderBooks}/{bench}
+            </div>
+          </div>
+        )}
+      </header>
+    );
+  }
+
   return (
     <header className="fixed top-0 inset-x-0 z-40 h-16 glass px-3 sm:px-6 flex items-center justify-between">
       <div className="flex items-center gap-2 sm:gap-4">
@@ -175,7 +261,7 @@ export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGa
             onClick={onOpenMeld}
             className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 border border-amber-400/60 text-amber-200 hover:bg-amber-500/25 transition-colors flex items-center gap-1"
           >
-            Meld: {meldTotal} pts <ChevronDown size={12} />
+            Meld: {pillTotal} pts <ChevronDown size={12} />
           </button>
         )}
         <span
@@ -332,7 +418,19 @@ function Seat({ state, seat, corner, reaction }) {
           }`}
         >
           {SEAT_AVATAR[seat] ? (
-            <img src={SEAT_AVATAR[seat]} alt={SEAT_LABEL[seat]} className="w-full h-full object-cover" />
+            <>
+              <span className="absolute inset-0 flex items-center justify-center text-slate-500 select-none pointer-events-none">
+                {SEAT_LABEL[seat][0]}
+              </span>
+              <img
+                src={SEAT_AVATAR[seat]}
+                alt={SEAT_LABEL[seat]}
+                className="relative w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </>
           ) : (
             SEAT_LABEL[seat][0]
           )}
@@ -359,6 +457,14 @@ function Seat({ state, seat, corner, reaction }) {
           >
             <Coins size={10} className="text-yellow-400" /> {money(s.bankrolls[seat])}
           </div>
+          {seat === s.dealer && (
+            <div
+              data-testid={`dealer-chip-${seat}`}
+              className="mt-0.5 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-yellow-500/20 border border-yellow-400/60 text-yellow-200"
+            >
+              Dealer
+            </div>
+          )}
           {showBooks && (
             <div data-testid={`seat-books-${seat}`} className="mt-0.5 text-[10px] font-mono-stat text-cyan-300">
               Books: {s.books[seat]}
@@ -393,10 +499,10 @@ function Seat({ state, seat, corner, reaction }) {
           <Sparkles size={10} /> Aces Declared
         </div>
       )}
-      <div className="flex" style={{ marginLeft: 6 }}>
+      <div data-testid={`facedown-fan-${seat}`} className="flex" style={{ marginLeft: 6 }}>
         {(expose ? s.hands[seat] : Array.from({ length: Math.min(count, 12) })).map((c, i) => (
-          <div key={c?.id || `fd-${i}`} style={{ marginLeft: i === 0 ? 0 : -22 }}>
-            <Card size="sm" faceDown={!expose} card={expose ? c : null} />
+          <div key={c?.id || `fd-${i}`} style={{ marginLeft: i === 0 ? 0 : -16 }}>
+            <Card size={expose ? 'sm' : 'xs'} faceDown={!expose} card={expose ? c : null} />
           </div>
         ))}
         <span className="ml-1 self-center text-[10px] font-mono-stat text-slate-400">{count}</span>
@@ -824,7 +930,7 @@ export function Table({ state, onOpenHistory }) {
           </div>
         </div>
       )}
-      {showBooks && (
+      {s.phase !== 'config' && (
         <div className="absolute bottom-2 left-2 sm:left-6 flex items-center gap-2 z-40">
           <div
             className={`relative glass rounded-2xl pl-2 pr-3 py-2 flex items-center gap-2.5 transition-all duration-200 ${
@@ -833,11 +939,20 @@ export function Table({ state, onOpenHistory }) {
           >
             <ReactionBadge reaction={reactions.P} testid="reaction-P" className="-top-3 left-6" />
             <div
-              className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-[3px] ${
+              className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-[3px] bg-slate-900 flex items-center justify-center font-display font-black text-xl ${
                 pTurn ? 'border-cyan-300' : pBidder ? 'border-yellow-400/80' : 'border-cyan-400/50'
               }`}
             >
-              <img src={SEAT_AVATAR.P} alt="You" data-testid="player-avatar" className="w-full h-full object-cover" />
+              <span className="absolute inset-0 flex items-center justify-center text-slate-500 select-none pointer-events-none">Y</span>
+              <img
+                src={SEAT_AVATAR.P}
+                alt="You"
+                data-testid="player-avatar"
+                className="relative w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
               {pTurn && (
                 <div className="absolute inset-0 rounded-xl ring-4 ring-inset ring-cyan-400/50 animate-pulse pointer-events-none" />
               )}
@@ -853,10 +968,20 @@ export function Table({ state, onOpenHistory }) {
                 <Coins size={10} className="text-yellow-400" />
                 {money(s.bankrolls.P)}
               </div>
-              <div>
-                Books: {s.books.P}
-                {pBidder ? ` / ${bench}` : ''}
-              </div>
+              {showBooks && (
+                <div>
+                  Books: {s.books.P}
+                  {pBidder ? ` / ${bench}` : ''}
+                </div>
+              )}
+              {s.dealer === 'P' && (
+                <div
+                  data-testid="dealer-chip-P"
+                  className="mt-0.5 inline-block text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-yellow-500/20 border border-yellow-400/60 text-yellow-200"
+                >
+                  Dealer
+                </div>
+              )}
             </div>
           </div>
           {(s.defenderAces.P === 'single' || s.defenderAces.P === 'double') && (

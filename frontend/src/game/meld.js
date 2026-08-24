@@ -11,28 +11,14 @@ function counts(hand) {
 export function computeMeld(hand, trump) {
   const cnt = counts(hand);
   const items = [];
-  // pick up to n cards of a given suit+rank from the hand
-  const pick = (suit, rank, n = 1) => hand.filter((c) => c.suit === suit && c.rank === rank).slice(0, n);
+  // pick n cards of a given suit+rank starting from an offset (so run/marriage never reuse a card)
+  const pickFrom = (suit, rank, start, n) =>
+    hand.filter((c) => c.suit === suit && c.rank === rank).slice(start, start + n);
+  const pick = (suit, rank, n = 1) => pickFrom(suit, rank, 0, n);
 
-  // Marriages
-  const marriageSuits = SUIT_KEYS.filter((s) => cnt[s].K > 0 && cnt[s].Q > 0);
-  if (marriageSuits.length === 4) {
-    const cards = [];
-    for (const s of SUIT_KEYS) cards.push(...pick(s, 'K', 1), ...pick(s, 'Q', 1));
-    items.push({ name: '4-Suit Marriage (Roundhouse)', pts: 24, cards });
-  } else {
-    for (const s of marriageSuits) {
-      const pairs = Math.min(cnt[s].K, cnt[s].Q);
-      const per = s === trump ? 4 : 2;
-      items.push({
-        name: `${SUIT_BY_KEY[s].name} Marriage${s === trump ? ' (Royal)' : ''}`,
-        pts: per * pairs,
-        cards: [...pick(s, 'K', pairs), ...pick(s, 'Q', pairs)],
-      });
-    }
-  }
-
-  // Trump run: A,10,K,Q,J in trump
+  // 1) Trump Run FIRST — A,10,K,Q,J of trump. Consumes those K/Q so they can't also score a marriage.
+  let usedTrumpK = 0;
+  let usedTrumpQ = 0;
   if (trump) {
     const t = cnt[trump];
     const runs = Math.min(t.A, t['10'], t.K, t.Q, t.J);
@@ -40,10 +26,42 @@ export function computeMeld(hand, trump) {
       const n = runs >= 2 ? 2 : 1;
       const cards = ['A', '10', 'K', 'Q', 'J'].flatMap((r) => pick(trump, r, n));
       items.push({ name: n === 2 ? 'Double Trump Run' : 'Trump Run', pts: n === 2 ? 150 : 15, cards });
+      usedTrumpK = n;
+      usedTrumpQ = n;
     }
   }
 
-  // Pinochle Q♠ + J♦
+  // 2) Marriages — using only K/Q NOT already consumed by the trump run.
+  const availMarriage = {};
+  for (const s of SUIT_KEYS) {
+    const k = cnt[s].K - (s === trump ? usedTrumpK : 0);
+    const q = cnt[s].Q - (s === trump ? usedTrumpQ : 0);
+    availMarriage[s] = Math.max(0, Math.min(k, q));
+  }
+  const marriageSuits = SUIT_KEYS.filter((s) => availMarriage[s] > 0);
+  if (marriageSuits.length === 4 && SUIT_KEYS.every((s) => availMarriage[s] >= 1)) {
+    const cards = [];
+    for (const s of SUIT_KEYS) {
+      const kOff = s === trump ? usedTrumpK : 0;
+      const qOff = s === trump ? usedTrumpQ : 0;
+      cards.push(...pickFrom(s, 'K', kOff, 1), ...pickFrom(s, 'Q', qOff, 1));
+    }
+    items.push({ name: '4-Suit Marriage (Roundhouse)', pts: 24, cards });
+  } else {
+    for (const s of marriageSuits) {
+      const pairs = availMarriage[s];
+      const per = s === trump ? 4 : 2;
+      const kOff = s === trump ? usedTrumpK : 0;
+      const qOff = s === trump ? usedTrumpQ : 0;
+      items.push({
+        name: `${SUIT_BY_KEY[s].name} Marriage${s === trump ? ' (Royal)' : ''}`,
+        pts: per * pairs,
+        cards: [...pickFrom(s, 'K', kOff, pairs), ...pickFrom(s, 'Q', qOff, pairs)],
+      });
+    }
+  }
+
+  // 3) Pinochle Q♠ + J♦ (double is a flat 40, never 40+8)
   const pin = Math.min(cnt.S.Q, cnt.D.J);
   if (pin >= 1) {
     const n = pin >= 2 ? 2 : 1;

@@ -22,8 +22,15 @@ const Btn = ({ children, onClick, disabled, tone = 'cyan', testid, className = '
   );
 };
 
-const Wrap = ({ children, hint }) => (
-  <div className="fixed bottom-48 left-1/2 -translate-x-1/2 z-40 float-up" data-testid="action-bar">
+const WRAP_POS = {
+  bottom: 'fixed bottom-48 left-1/2 -translate-x-1/2',
+  center: 'fixed top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2',
+  upper: 'fixed top-[15%] left-1/2 -translate-x-1/2',
+  banner: 'fixed top-28 left-1/2 -translate-x-1/2',
+};
+
+const Wrap = ({ children, hint, pos = 'bottom' }) => (
+  <div className={`${WRAP_POS[pos]} z-40 float-up`} data-testid="action-bar">
     <div className="glass rounded-2xl px-4 py-3 flex flex-col items-center gap-2 neon-cyan max-w-[95vw]">
       {hint && <div className="text-[11px] font-sub uppercase tracking-widest text-cyan-300/80">{hint}</div>}
       <div className="flex flex-wrap items-center justify-center gap-2">{children}</div>
@@ -39,7 +46,7 @@ export function ActionBar({ state, act }) {
   if (s.phase === 'auction' && s.currentBidder === 'P') {
     const nextVal = s.bid == null ? s.settings.bidBase : s.bid + 5;
     return (
-      <Wrap hint={`Auction · current high ${s.bid == null ? '—' : '$' + s.bid}`}>
+      <Wrap pos="center" hint={`Auction · current high ${s.bid == null ? '—' : '$' + s.bid}`}>
         <Btn testid="bid-btn" tone="gold" onClick={() => act({ type: 'PLACE_BID', seat: 'P' })}>
           <Gavel size={16} /> Bid ${nextVal}
         </Btn>
@@ -54,7 +61,7 @@ export function ActionBar({ state, act }) {
   if (s.phase === 'trump' && isBidder) {
     if (s.availableTrumps.length === 0) {
       return (
-        <Wrap hint="No marriage in hand — Soft Set required">
+        <Wrap pos="center" hint="No marriage in hand — Soft Set required">
           <Btn testid="soft-set-btn" tone="red" onClick={() => act({ type: 'SOFT_SET' })}>
             <Flag size={16} /> Concede (Soft Set)
           </Btn>
@@ -62,7 +69,7 @@ export function ActionBar({ state, act }) {
       );
     }
     return (
-      <Wrap hint="Declare Trump — expose a Marriage (K+Q)">
+      <Wrap pos="center" hint="Declare Trump — expose a Marriage (K+Q)">
         {s.availableTrumps.map((suit) => {
           const su = SUIT_BY_KEY[suit];
           return (
@@ -87,7 +94,7 @@ export function ActionBar({ state, act }) {
   if (s.phase === 'discard' && isBidder) {
     const count = s.discards.length;
     return (
-      <Wrap hint={`Bury exactly 5 cards · selected ${count}/5`}>
+      <Wrap pos="upper" hint={`Bury exactly 5 cards · selected ${count}/5`}>
         <Btn testid="expose-kitty-btn" tone="slate" onClick={() => act({ type: 'TOGGLE_EXPOSE' })}>
           {s.kittyExposed ? <EyeOff size={16} /> : <Eye size={16} />}
           {s.kittyExposed ? 'Hide Kitty' : 'Expose Kitty'}
@@ -124,7 +131,7 @@ export function ActionBar({ state, act }) {
   // LAY-DOWN RESPONSE (human defender)
   if (s.phase === 'laydown' && !isBidder && s.laydownResp['P'] == null) {
     return (
-      <Wrap hint={`${SEAT_LABEL[s.bidWinner]} declared a Lay-Down — challenge or concede?`}>
+      <Wrap pos="center" hint={`${SEAT_LABEL[s.bidWinner]} declared a Lay-Down — challenge or concede?`}>
         <Btn testid="challenge-btn" tone="red" onClick={() => act({ type: 'LAYDOWN_RESPONSE', seat: 'P', challenge: true })}>
           <Zap size={16} /> Challenge (×2)
         </Btn>
@@ -139,7 +146,7 @@ export function ActionBar({ state, act }) {
   if (s.phase === 'play' && s.humanAcesPending) {
     const a = acesAround(s.hands.P);
     return (
-      <Wrap hint="You hold Aces Around — DECLARE before playing card 1 or Bust a Lead!">
+      <Wrap pos="banner" hint="You hold Aces Around — DECLARE before playing card 1 or Bust a Lead!">
         <Btn testid="declare-aces-btn" tone="gold" onClick={() => act({ type: 'DECLARE_ACES', seat: 'P' })}>
           <Sparkles size={16} /> Declare {a?.type === 'double' ? '1000 Aces' : 'Aces Around'}
         </Btn>
@@ -152,7 +159,7 @@ export function ActionBar({ state, act }) {
     const pts = s.bidderAcesItem?.pts || 10;
     const soft = s.settings.difficulty !== 'hard';
     return (
-      <Wrap hint={soft ? 'Declare your Aces Around BEFORE leading an Ace — or forfeit the meld!' : undefined}>
+      <Wrap pos="banner" hint={soft ? 'Declare your Aces Around BEFORE leading an Ace — or forfeit the meld!' : undefined}>
         <Btn testid="declare-bidder-aces-btn" tone="gold" onClick={() => act({ type: 'DECLARE_BIDDER_ACES' })}>
           <Sparkles size={16} /> DECLARE ACES ({pts} PTS)
         </Btn>
@@ -171,7 +178,7 @@ export function ActionBar({ state, act }) {
     const canCall = hard && s.trick.length > 0;
     if (hard) {
       return (
-        <Wrap hint="CONVICT MODE · no help — the yard is watching for reneges">
+        <Wrap pos="banner" hint="CONVICT MODE · no help — the yard is watching for reneges">
           <span className="text-xs font-sub text-rose-300">Play any card · renege at your own risk</span>
           {canCall && (
             <Btn testid="call-renege-btn" tone="red" onClick={() => act({ type: 'CALL_RENEGE' })}>
@@ -182,7 +189,7 @@ export function ActionBar({ state, act }) {
       );
     }
     return (
-      <Wrap hint={s.trick.length === 0 ? 'Your lead — pick any highlighted card' : 'Follow suit · head the book if able'}>
+      <Wrap pos="banner" hint={s.trick.length === 0 ? 'Your lead — pick any highlighted card' : 'Follow suit · head the book if able'}>
         <span className="text-xs font-sub text-slate-400">Tap a glowing card to play</span>
       </Wrap>
     );

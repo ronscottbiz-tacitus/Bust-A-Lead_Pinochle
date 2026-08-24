@@ -48,6 +48,17 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   conserved, dealer rotation — all pass (`src/game/__tests__/engine.test.js`).
 - Testing agent (browser): config → deal → 25-card hand renders, auction/modals/toggles work.
 
+## Updates (2026-06 — 6 Bug Fixes: Meld Math, Modal Positioning, Mobile Header, Avatar, Card Backs, Desktop Cards)
+- **Meld math**: `computeMeld` now scores the Trump Run first and only awards a Royal Marriage from K/Q NOT consumed by the run (no phantom +4). Pinochle/Arounds doubles already flat. New Jest guard added (9/9 pass).
+- **Modal positioning**: `ActionBar` `Wrap` gained a `pos` prop — auction/trump/laydown centered on the felt, Bury-5 panel upper-center, play/aces/renege as a top banner — never over the cards.
+- **Mobile header (<768)**: compact single 48px row — Get2 logo + 'Pot: $X • Trump' pill + Rules/Stats/kebab (kebab → Sound + New Game). Dealer indicator + bankrolls now live under each avatar (`dealer-chip-*`).
+- **Player avatar**: letter fallback + onError so a broken image never renders; You dock now shows in all phases.
+- **AI card backs**: DooLow/PapaCap face-down fans (`facedown-fan-W/E`) always rendered, sized via new Card `xs` (w-7 h-10 / lg:w-10 lg:h-14).
+- **Desktop cards**: `lg` = w-20 h-32; center felt kept open for watermark/trick/kitty.
+- **Meld pill** now computes the live discard total so it matches the drawer.
+- Verified: 9/9 Jest; testing agent iteration_12.json 100% on the 6 fixes.
+
+
 ## Updates (2026-06 — Felt Watermark, Responsive Overhaul, Meld Drawer, Declare Aces, Call Renege, GTA Modals)
 - Opponents renamed DooLow (W) / PapaCap (E) via SEAT_LABEL (single source; stats persist under W/E/P keys).
 - **Get2 table watermark**: faint centered logo on the felt (`table-watermark`).

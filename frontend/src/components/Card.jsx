@@ -1,6 +1,7 @@
 import { SUIT_BY_KEY, CARD_BACK_IMG } from '../game/constants';
 
 const SIZES = {
+  xs: 'w-7 h-10 lg:w-10 lg:h-14 text-[9px] rounded',
   sm: 'w-9 h-[52px] text-[10px] rounded-md',
   md: 'w-[52px] h-[74px] text-sm rounded-lg',
   lg: 'w-[64px] h-[96px] lg:w-20 lg:h-32 text-base rounded-xl',
