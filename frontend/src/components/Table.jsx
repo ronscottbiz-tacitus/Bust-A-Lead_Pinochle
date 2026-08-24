@@ -135,6 +135,15 @@ export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGa
   return (
     <header className="fixed top-0 inset-x-0 z-40 h-16 glass px-3 sm:px-6 flex items-center justify-between">
       <div className="flex items-center gap-2 sm:gap-4">
+        <a
+          href="https://get2.one"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="get2-logo-link"
+          className="flex items-center hover:opacity-85 transition-opacity shrink-0"
+        >
+          <img src="/assets/get2-logo_bal_blk.png" alt="Get2" className="h-8 md:h-10 w-auto object-contain" />
+        </a>
         <div className="font-display font-black text-sm sm:text-lg tracking-tight text-cyan-300 leading-none">
           BUS'<span className="text-fuchsia-400">·</span>A<span className="text-fuchsia-400">·</span>LEAD
         </div>

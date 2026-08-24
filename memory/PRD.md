@@ -48,6 +48,15 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   conserved, dealer rotation — all pass (`src/game/__tests__/engine.test.js`).
 - Testing agent (browser): config → deal → 25-card hand renders, auction/modals/toggles work.
 
+## Updates (2026-06 — Get2 Branding, Splash Refresh, Convict AI Depth)
+- **Get2 header branding**: `get2-logo_bal_blk.png` in the top-left of the persistent header,
+  wrapped in an anchor to https://get2.one (target=_blank, rel=noopener). `data-testid=get2-logo-link`.
+- **Updated splash art**: config hero swapped to `splash2_bal.png` (Get2-hoodie dealer scene).
+- **Convict AI depth** (`aiPlay` hard branch, `useGame` passes `s.playedIds`): the Convict bidder
+  counts trumps seen (20 total) and bleeds high trump aggressively while defenders still hold
+  trump (threshold 3+ or a top trump vs 5+ for Inmate), then cashes guaranteed off-suit Aces.
+- Verified: 8/8 Jest tests pass (incl. new Convict trump-bleed test); assets serve 200; splash confirmed live.
+
 ## Updates (2026-06 — Difficulty Engine, Convict Mode, Kitty, Spotlight, DiscardHUD, Stats)
 - **Difficulty tiers** (`settings.difficulty`, splash selector): 'easy' (New Booty — timid AI
   bidding, naive non-cooperative defenders), 'normal' (Inmate — full strategy), 'hard'

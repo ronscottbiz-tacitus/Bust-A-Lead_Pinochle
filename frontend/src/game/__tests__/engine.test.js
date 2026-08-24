@@ -181,3 +181,23 @@ test('auction records a bid log and RESET_TABLE re-deals a fresh $100 table', ()
   expect(s.kitty.length).toBe(5);
 });
 
+
+test('CONVICT bidder bleeds trump: leads highest trump while defenders hold trump', () => {
+  const trump = 'S';
+  const hand = [
+    { id: 'S-A-0', suit: 'S', rank: 'A' },
+    { id: 'S-K-0', suit: 'S', rank: 'K' },
+    { id: 'S-Q-0', suit: 'S', rank: 'Q' },
+    { id: 'H-A-0', suit: 'H', rank: 'A' },
+    { id: 'C-J-0', suit: 'C', rank: 'J' },
+  ];
+  // On lead, no trumps seen yet -> Convict bidder should lead its highest trump (Ace of spades).
+  const card = aiPlay('P', hand, [], trump, 'P', null, 'hard', []);
+  expect(card.suit).toBe('S');
+  expect(card.rank).toBe('A');
+
+  // A normal (Inmate) bidder with the same hand does NOT open by bleeding the top trump
+  // (only 3 trumps, threshold is 5) -> should not lead the Ace of spades.
+  const normalCard = aiPlay('P', hand, [], trump, 'P', null, 'normal', []);
+  expect(normalCard.id).not.toBe('S-A-0');
+});

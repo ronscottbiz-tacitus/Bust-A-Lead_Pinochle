@@ -112,7 +112,8 @@ function pickStrongSuit(cards, trump) {
 }
 
 // AI card selection during trick play. Defenders cooperate against the bidder.
-export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit, difficulty = 'normal') {
+// `played` is the list of card ids seen so far this hand (for Convict card counting).
+export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit, difficulty = 'normal', played = []) {
   const legal = legalPlays(hand, trick, trump);
   if (legal.length === 1) return legal[0];
   const isDefender = bidWinner != null && seat !== bidWinner;
@@ -130,6 +131,21 @@ export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit, difficul
   }
 
   if (trick.length === 0) {
+    // Convict ("Yard Master"): bidder bleeds trump aggressively using card counting.
+    if (difficulty === 'hard' && !isDefender) {
+      const trumps = legal.filter((c) => c.suit === trump);
+      if (trumps.length) {
+        // 20 trump cards exist (4× A,10,K,Q,J). Estimate how many the defenders still hold.
+        const myTrumps = hand.filter((c) => c.suit === trump).length;
+        const seenTrumps = (played || []).filter((id) => id[0] === trump).length;
+        const outstanding = Math.max(0, 20 - myTrumps - seenTrumps);
+        const topTrump = trumps.some((c) => c.rank === 'A' || c.rank === '10');
+        if (outstanding > 0 && (topTrump || trumps.length >= 3)) return highest(trumps);
+      }
+      // No trump left to strip — cash a guaranteed off-suit Ace for counters.
+      const offAcesH = legal.filter((c) => c.rank === 'A' && c.suit !== trump);
+      if (offAcesH.length) return offAcesH[0];
+    }
     // Defender "come-back": lead the suit partner signalled for, if held.
     if (isDefender && signalSuit) {
       const sig = legal.filter((c) => c.suit === signalSuit);

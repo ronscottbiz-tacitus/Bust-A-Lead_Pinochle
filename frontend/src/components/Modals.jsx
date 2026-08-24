@@ -43,7 +43,7 @@ export function ConfigScreen({ state, act }) {
       <div className="rounded-3xl overflow-hidden w-full max-w-lg pop-in max-h-[92vh] overflow-y-auto border-2 border-amber-600/50 bg-neutral-950 shadow-[0_0_0_2px_rgba(0,0,0,0.9),0_28px_70px_rgba(0,0,0,0.75)]">
         <div className="relative">
           <img
-            src="/assets/splash_busalead.png"
+            src="/assets/splash2_bal.png"
             alt="Bus' a Lead — CDCR yard card table"
             data-testid="splash-hero"
             className="w-full object-cover"
