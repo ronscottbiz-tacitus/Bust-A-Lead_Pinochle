@@ -49,7 +49,17 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Testing agent (browser): config → deal → 25-card hand renders, auction/modals/toggles work.
 
 ## Backlog (P1/P2)
-- P1: Richer AI trick strategy (signalling, defender cooperation vs bidder).
-- P1: Deal animation polish (per-packet card flight to seats).
-- P2: Hand history / running session stats panel.
-- P2: Difficulty selector; adjustable table stakes.
+- P2: Hand history / running session stats panel enhancements.
+- P2: Difficulty selector.
+
+## Updates (2026-06 — Request 7: Avatar Scaling & Table Prominence)
+- Enlarged seat portraits (`Table.jsx` `Seat`): bordered avatar cards (w-16→w-24 responsive)
+  with nameplates ("Them"/"Ya'll"/"You"), live bankroll chips (`seat-bankroll-*`) and book
+  counts beneath each seat. "You" seat (bottom-left) enlarged to match.
+- Active-turn glow: high-visibility cyan ring + neon on whichever seat is acting (auction
+  bidder or play turn); gold ring + "BID" badge on the current bidder.
+- Avatar reactions (`useTableReactions` hook): transient floating green badge flashes next to
+  the seat that wins a book (`+N`/`Book!`, ~1.6s), and a win/loss net-$ flash for all seats at
+  settlement. Uses existing `.react-pop` CSS animation.
+- Verified: all 7 Jest engine tests pass; frontend testing agent 100% (iteration_8.json) — no
+  card/HUD overlap, cards remain clickable.

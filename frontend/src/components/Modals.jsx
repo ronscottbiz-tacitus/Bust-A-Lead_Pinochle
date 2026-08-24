@@ -40,13 +40,18 @@ export function ConfigScreen({ state, act }) {
   const set = (patch) => act({ type: 'UPDATE_SETTINGS', settings: patch });
   return (
     <Overlay testid="config-screen">
-      <div className="glass rounded-3xl p-6 sm:p-8 w-full max-w-md pop-in">
-        <div className="text-center mb-5">
-          <div className="font-display font-black text-3xl sm:text-4xl tracking-tight text-cyan-300">
-            BUS'<span className="text-fuchsia-400">·</span>A<span className="text-fuchsia-400">·</span>LEAD
+      <div className="gta-panel rounded-3xl p-6 sm:p-8 w-full max-w-md pop-in max-h-[92vh] overflow-y-auto">
+        <div className="flex flex-col items-center text-center mb-5">
+          <img
+            src="/assets/get2_cardback.png"
+            alt="Get2 card back"
+            className="w-16 h-24 rounded-lg mb-4 border-2 border-yellow-500/60 shadow-[0_8px_24px_rgba(0,0,0,0.6)] rotate-[-6deg]"
+          />
+          <div className="gta-title text-4xl sm:text-5xl" data-testid="gta-title">
+            BUS' A LEAD
           </div>
-          <div className="text-xs font-sub uppercase tracking-[0.3em] text-slate-500 mt-1">
-            Cutthroat Pinochle · 3 Seats
+          <div className="text-[11px] sm:text-xs font-sub font-bold uppercase tracking-[0.28em] text-yellow-500/80 mt-2">
+            Cutthroat Pinochle • CDCR Rules
           </div>
         </div>
         <div className="space-y-4">
@@ -106,7 +111,7 @@ export function ConfigScreen({ state, act }) {
         <button
           data-testid="deal-btn"
           onClick={() => act({ type: 'START_ROUND' })}
-          className="mt-6 w-full py-3 rounded-xl bg-cyan-500/20 border border-cyan-400 text-cyan-100 font-display font-bold tracking-wide flex items-center justify-center gap-2 hover:bg-cyan-500/30 transition-all active:scale-95 neon-cyan"
+          className="mt-6 w-full py-3 rounded-xl bg-gradient-to-b from-yellow-400 to-orange-500 border-2 border-black/70 text-black font-display font-black tracking-wide flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-95 shadow-[0_6px_0_rgba(0,0,0,0.6)]"
         >
           <Play size={18} /> DEAL CARDS
         </button>

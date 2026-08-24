@@ -1,0 +1,21 @@
+{
+  "summary": "Frontend-only UI test of enlarged avatar seats, turn-glow rings, nameplates, bankroll chips, book counters, and transient reaction badges. All 7 checks in the review request pass on the public REACT_APP_BACKEND_URL.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Reaction badge for a seat that wins consecutive tricks keeps re-spawning so it may appear 'persistent' during a run of AI wins — that is expected (new badge per book), not a stuck badge. Verified by observing seat-W reaction across 6 x 1s snapshots while Them was on a winning streak (Books: 0 -> 11)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Verified live on preview URL:\n1) DEAL flow: cfg-speed-fast -> deal-btn -> auction visible with cyan glow on active seat (screenshot shows Them BID badge + glow while Ya'll and You dim). Passing progressed to trump selection; picking trump auto-advanced through discards into play.\n2) Seats W and E render as 212x279 bordered portrait cards. Avatars: avatar_them.png (nw=1024) and avatar_yall.png (nw=1024). Nameplates 'Them' / 'Ya'll' shown, bankroll chips $100.00 present via [data-testid=seat-bankroll-W/E].\n3) During play: seat-books-W ('Books: 0 / 31'), seat-books-E ('Books: 0'), seat-books-P ('You $100.00 Books: 0') all present. player-avatar renders as bottom-left 'You' card with same styling; no overlap with player-hand (seat rects top<=359 vs hand top=916 at 1920x1080).\n4) 25 hand cards under [data-testid=player-hand] are visible and click registers (card play advanced trick counter Book 1/25 -> 6/25 after a few plays).\n5) Reaction badge: [data-testid=reaction-W] appeared immediately after trick resolution and continued to re-appear as Them kept winning tricks (expected transient re-spawn ~1.6s cadence). reaction-E and reaction-P not observed in this run because Them dominated; the DOM node is inserted/removed by the useTableReactions hook off state.completedBooks and is not stuck.\n6) No console errors, no layout breakage, background/vignette still correct.\nRecipe unchanged from iter7: cfg-speed-fast -> deal-btn -> pass-btn until trump selection then trump-* to advance into play.",
+  "rca of the issue": "N/A — no issues found."
+}

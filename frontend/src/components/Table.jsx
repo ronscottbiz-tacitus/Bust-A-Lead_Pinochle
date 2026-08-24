@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from './Card';
 import { SEAT_LABEL, SUIT_BY_KEY, SEATS, SUIT_KEYS, SEAT_AVATAR } from '../game/constants';
 import { legalPlays } from '../game/trick';
@@ -9,14 +9,66 @@ import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshC
 const money = (n) => `$${n.toFixed(2)}`;
 const STAKE_LABEL = { 1: '$1/$2', 2: '$2/$4', 5: '$5/$10' };
 
-function useIsDesktop() {
-  const [desktop, setDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+function useViewport() {
+  const [vp, setVp] = useState(() => ({
+    w: typeof window !== 'undefined' ? window.innerWidth : 1280,
+    desktop: typeof window !== 'undefined' ? window.innerWidth >= 1024 : true,
+  }));
   useEffect(() => {
-    const onResize = () => setDesktop(window.innerWidth >= 1024);
+    const onResize = () => setVp({ w: window.innerWidth, desktop: window.innerWidth >= 1024 });
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-  return desktop;
+  return vp;
+}
+
+function useTableReactions(state) {
+  const [reactions, setReactions] = useState({});
+  const prevLen = useRef(state.completedBooks?.length || 0);
+  const prevPhase = useRef(state.phase);
+
+  useEffect(() => {
+    const len = state.completedBooks?.length || 0;
+    if (state.phase === 'play' && len > prevLen.current) {
+      const last = state.completedBooks[len - 1];
+      const key = `book-${len}`;
+      const text = last.pts > 0 ? `+${last.pts}` : 'Book!';
+      setReactions((r) => ({ ...r, [last.winner]: { text, tone: 'good', key } }));
+      const t = setTimeout(() => {
+        setReactions((r) => (r[last.winner]?.key === key ? { ...r, [last.winner]: null } : r));
+      }, 1600);
+      prevLen.current = len;
+      return () => clearTimeout(t);
+    }
+    prevLen.current = len;
+  }, [state.completedBooks, state.phase]);
+
+  useEffect(() => {
+    if (state.phase === 'settlement' && prevPhase.current !== 'settlement' && state.settlement) {
+      const net = { W: 0, E: 0, P: 0 };
+      state.settlement.transfers.forEach((t) => {
+        net[t.to] += t.amount;
+        net[t.from] -= t.amount;
+      });
+      const key = `settle-${Date.now()}`;
+      const map = {};
+      SEATS.forEach((seat) => {
+        const v = net[seat];
+        map[seat] = {
+          text: v > 0 ? `+${money(v)}` : v < 0 ? `-${money(-v)}` : 'Even',
+          tone: v >= 0 ? 'good' : 'bad',
+          key,
+        };
+      });
+      setReactions(map);
+      const t = setTimeout(() => setReactions({}), 2600);
+      prevPhase.current = state.phase;
+      return () => clearTimeout(t);
+    }
+    prevPhase.current = state.phase;
+  }, [state.phase, state.settlement]);
+
+  return reactions;
 }
 
 function liveMultiplier(s) {
@@ -165,16 +217,35 @@ function statusText(s, seat) {
   return null;
 }
 
-function Seat({ state, seat, corner }) {
+function ReactionBadge({ reaction, testid, className = '' }) {
+  if (!reaction || !reaction.text) return null;
+  return (
+    <div
+      key={reaction.key}
+      data-testid={testid}
+      className={`react-pop absolute z-30 px-2.5 py-0.5 rounded-full text-xs font-display font-black whitespace-nowrap border shadow-[0_0_16px_rgba(52,211,153,0.75)] ${
+        reaction.tone === 'bad'
+          ? 'bg-rose-500/25 border-rose-400 text-rose-200 shadow-[0_0_16px_rgba(244,63,94,0.7)]'
+          : 'bg-emerald-500/25 border-emerald-400 text-emerald-200'
+      } ${className}`}
+    >
+      {reaction.text}
+    </div>
+  );
+}
+
+function Seat({ state, seat, corner, reaction }) {
   const s = state;
   const meldTotal = s.meld[s.bidWinner]?.total || 0;
   const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
   const isTurn =
     (s.phase === 'auction' && s.currentBidder === seat) ||
     (s.phase === 'play' && s.turn === seat && !s.trickPending);
+  const isBidder = s.bidWinner === seat;
   const status = statusText(s, seat);
   const count = s.hands[seat].length;
   const expose = seat === s.bidWinner && s.bidderExposed;
+  const showBooks = s.phase === 'play' || s.phase === 'settlement';
   const lastAction = [...(s.bidLog || [])].reverse().find((e) => e.seat === seat);
   const bubbleText =
     s.phase === 'auction'
@@ -205,13 +276,20 @@ function Seat({ state, seat, corner }) {
         </div>
       )}
       <div
-        className={`flex items-center gap-2 glass rounded-xl px-3 py-1.5 ${
-          isTurn ? 'ring-2 ring-cyan-400 neon-cyan' : ''
-        } ${s.bidWinner === seat ? 'border-yellow-400/50' : ''}`}
+        className={`relative flex flex-col items-center gap-1.5 glass rounded-2xl px-3 py-2.5 transition-all duration-200 ${
+          isTurn ? 'ring-4 ring-cyan-400 neon-cyan scale-105' : isBidder ? 'ring-2 ring-yellow-400/70' : ''
+        }`}
       >
+        <ReactionBadge reaction={reaction} testid={`reaction-${seat}`} className="-top-3 left-1/2 -translate-x-1/2" />
         <div
-          className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center font-display font-bold text-xs ${
-            seat === 'W' ? 'bg-fuchsia-500/20 text-fuchsia-300' : 'bg-cyan-500/20 text-cyan-300'
+          className={`relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-2xl overflow-hidden border-[3px] bg-slate-900 flex items-center justify-center font-display font-black text-2xl ${
+            isTurn
+              ? 'border-cyan-300'
+              : isBidder
+              ? 'border-yellow-400/80'
+              : seat === 'W'
+              ? 'border-fuchsia-500/60 text-fuchsia-300'
+              : 'border-cyan-500/50 text-cyan-300'
           }`}
         >
           {SEAT_AVATAR[seat] ? (
@@ -219,13 +297,32 @@ function Seat({ state, seat, corner }) {
           ) : (
             SEAT_LABEL[seat][0]
           )}
+          {isTurn && (
+            <div className="absolute inset-0 rounded-2xl ring-4 ring-inset ring-cyan-400/50 animate-pulse pointer-events-none" />
+          )}
+          {isBidder && (
+            <div className="absolute top-0.5 right-0.5 bg-yellow-400 text-black text-[8px] font-black px-1 rounded-full shadow">
+              BID
+            </div>
+          )}
         </div>
-        <div className="leading-tight">
-          <div className="text-xs font-sub font-semibold text-slate-200">{SEAT_LABEL[seat]}</div>
-          <div className="text-[10px] font-mono-stat text-emerald-300">{money(s.bankrolls[seat])}</div>
-          {(s.phase === 'play' || s.phase === 'settlement') && (
-            <div data-testid={`seat-books-${seat}`} className="text-[10px] font-mono-stat text-cyan-300">
-              {SEAT_LABEL[seat]} Books: {s.books[seat]}
+        <div className="flex flex-col items-center leading-tight">
+          <div
+            className={`font-display font-black text-sm tracking-tight ${
+              seat === 'W' ? 'text-fuchsia-300' : 'text-cyan-300'
+            }`}
+          >
+            {SEAT_LABEL[seat]}
+          </div>
+          <div
+            data-testid={`seat-bankroll-${seat}`}
+            className="mt-0.5 flex items-center gap-1 font-mono-stat text-[11px] font-bold text-emerald-300 bg-slate-900/70 rounded-full px-2 py-0.5 border border-slate-700"
+          >
+            <Coins size={10} className="text-yellow-400" /> {money(s.bankrolls[seat])}
+          </div>
+          {showBooks && (
+            <div data-testid={`seat-books-${seat}`} className="mt-0.5 text-[10px] font-mono-stat text-cyan-300">
+              Books: {s.books[seat]}
               {seat === s.bidWinner ? ` / ${bench}` : ''}
             </div>
           )}
@@ -233,10 +330,8 @@ function Seat({ state, seat, corner }) {
         {status && (
           <span
             data-testid={`seat-status-${seat}`}
-            className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-              status === 'PASS'
-                ? 'bg-slate-700 text-slate-400'
-                : 'bg-cyan-500/20 text-cyan-200'
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              status === 'PASS' ? 'bg-slate-700 text-slate-400' : 'bg-cyan-500/20 text-cyan-200'
             }`}
           >
             {status}
@@ -355,7 +450,12 @@ export function HandTray({ state, onCardClick }) {
   const selecting = s.phase === 'discard' && s.bidWinner === 'P';
   const n = hand.length;
   const idx = new Map(hand.map((c, i) => [c.id, i]));
-  const overlap = n > 24 ? -30 : n > 18 ? -24 : -18;
+  const { w: winW, desktop: isDesktop } = useViewport();
+  // Zero-scroll dynamic overlap: fit all cards inside the available width.
+  const cardW = 80;
+  const avail = Math.min(winW - 32, 1500);
+  const needed = n > 1 ? (n * cardW - avail) / (n - 1) : 0;
+  const overlap = -Math.min(Math.max(needed, 18), cardW - 22);
 
   const groups = { S: [], H: [], D: [], C: [] };
   hand.forEach((c) => groups[c.suit].push(c));
@@ -387,23 +487,21 @@ export function HandTray({ state, onCardClick }) {
     ...SUIT_KEYS.map((k) => ({ key: k, label: SUIT_BY_KEY[k].symbol, count: groups[k].length, suit: k })),
   ];
 
-  const isDesktop = useIsDesktop();
-
   return (
     <div data-testid="player-hand" className="fixed bottom-3 inset-x-0 z-30 px-2 pb-[env(safe-area-inset-bottom)] pointer-events-none">
       {isDesktop ? (
-        /* Desktop (>=1024px): overlapping fan with hover lift */
-        <div className="flex items-end justify-center overflow-x-auto pb-6 pointer-events-auto">
-          <div className="flex items-end justify-center min-w-min">
+        /* Desktop (>=1024px): zero-scroll dynamic fan */
+        <div className="flex items-end justify-center overflow-visible pb-6 pointer-events-auto">
+          <div className="flex items-end justify-center">
             {hand.map((c) => {
               const i = idx.get(c.id);
               const mid = (n - 1) / 2;
-              const rot = (i - mid) * 2.0;
-              const lift = Math.abs(i - mid) * 2.5;
+              const rot = (i - mid) * 1.6;
+              const lift = Math.abs(i - mid) * 2.0;
               return (
                 <div
                   key={c.id}
-                  className="hover:-translate-y-6 hover:scale-105 hover:z-30 transition-transform"
+                  className="hover:-translate-y-8 hover:scale-110 hover:z-40 transition-all duration-150"
                   style={{
                     marginLeft: i === 0 ? 0 : overlap,
                     transform: `rotate(${rot}deg) translateY(${lift}px)`,
@@ -580,29 +678,49 @@ export function Table({ state, onOpenHistory }) {
   const meldTotal = s.meld[s.bidWinner]?.total || 0;
   const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
   const showBooks = s.phase === 'play' || s.phase === 'settlement';
+  const reactions = useTableReactions(state);
+  const pTurn = s.phase === 'play' && s.turn === 'P' && !s.trickPending;
+  const pBidder = s.bidWinner === 'P';
   return (
     <div className="absolute inset-0 top-16 bottom-28 flex flex-col items-center justify-center">
-      <Seat state={state} seat="W" corner="top-2 left-2 sm:top-4 sm:left-6" />
-      <Seat state={state} seat="E" corner="top-2 right-2 sm:top-4 sm:right-6" />
+      <Seat state={state} seat="W" corner="top-2 left-2 sm:top-4 sm:left-6" reaction={reactions.W} />
+      <Seat state={state} seat="E" corner="top-2 right-2 sm:top-4 sm:right-6" reaction={reactions.E} />
       <CenterArea state={state} />
       <SaveHUD state={state} />
       <MeldRack state={state} />
       {showBooks && (
         <div className="absolute bottom-2 left-2 sm:left-6 flex items-center gap-2 z-40">
-          <div className="glass rounded-lg pl-1.5 pr-3 py-1 flex items-center gap-2">
-            <img
-              src={SEAT_AVATAR.P}
-              alt="You"
-              data-testid="player-avatar"
-              className="w-9 h-9 rounded-full object-cover border border-cyan-400/40"
-            />
+          <div
+            className={`relative glass rounded-2xl pl-2 pr-3 py-2 flex items-center gap-2.5 transition-all duration-200 ${
+              pTurn ? 'ring-4 ring-cyan-400 neon-cyan' : pBidder ? 'ring-2 ring-yellow-400/70' : ''
+            }`}
+          >
+            <ReactionBadge reaction={reactions.P} testid="reaction-P" className="-top-3 left-6" />
             <div
-              data-testid="seat-books-P"
-              className="text-[11px] font-mono-stat text-cyan-300 leading-tight"
+              className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-[3px] ${
+                pTurn ? 'border-cyan-300' : pBidder ? 'border-yellow-400/80' : 'border-cyan-400/50'
+              }`}
             >
-              <div className="text-slate-200 font-sub font-semibold">You</div>
-              Books: {s.books.P}
-              {s.bidWinner === 'P' ? ` / ${bench}` : ''}
+              <img src={SEAT_AVATAR.P} alt="You" data-testid="player-avatar" className="w-full h-full object-cover" />
+              {pTurn && (
+                <div className="absolute inset-0 rounded-xl ring-4 ring-inset ring-cyan-400/50 animate-pulse pointer-events-none" />
+              )}
+              {pBidder && (
+                <div className="absolute top-0.5 right-0.5 bg-yellow-400 text-black text-[8px] font-black px-1 rounded-full shadow">
+                  BID
+                </div>
+              )}
+            </div>
+            <div data-testid="seat-books-P" className="text-[11px] font-mono-stat text-cyan-300 leading-tight">
+              <div className="text-slate-100 font-display font-black text-sm">You</div>
+              <div className="flex items-center gap-1 text-emerald-300">
+                <Coins size={10} className="text-yellow-400" />
+                {money(s.bankrolls.P)}
+              </div>
+              <div>
+                Books: {s.books.P}
+                {pBidder ? ` / ${bench}` : ''}
+              </div>
             </div>
           </div>
           {(s.defenderAces.P === 'single' || s.defenderAces.P === 'double') && (
