@@ -1,0 +1,22 @@
+{
+  "summary": "Frontend-only visual integration pass for Ya'll avatar portrait and concrete table background. All 4 request checks pass. Verified via Playwright on the public REACT_APP_BACKEND_URL.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Card backs are applied via CSS backgroundImage on <div> (Card.jsx), not <img> tags — this is by design and get2_cardback.png loads correctly (24 elements found using it as CSS bg after deal).",
+    "player-avatar (avatar_g2.png) only renders during play/settlement phase per Table.jsx (showBooks gate). Confirmed rendering after progressing auction to play."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Test evidence:\n1) SEAT-E: <img src=.../assets/avatar_yall.png>, naturalWidth=1024. Confirmed no letter fallback.\n2) Root div has computed backgroundImage url('/assets/table_bg.png') with classes 'bg-cover bg-center bg-fixed'; sibling absolute inset-0 z-0 pointer-events-none overlay present (vignette).\n3) After deal: header BUS'·A·LEAD title, bankroll chips (Them/Ya'll/You $100.00), NO TRUMP stakes badges, Auction/High Bid center badge, hand cards, Bid/Pass action bar all clearly visible and readable over the new background.\n4) Regression checks: SEAT-W avatar_them.png (nw=1024) ok, player-avatar avatar_g2.png (nw=1024) visible in play phase, get2_cardback.png used as CSS bg on 24 divs (opponent hands), 'Them'/'Ya'll'/'You' labels intact, no false 'BUSTED A LEAD', New Game modal (Reset Table?) opens on header New Game button.\nProgress-to-play recipe: cfg-speed-fast → deal-btn → wait 2s → repeatedly click [data-testid=pass-btn]; if you become bidder click any [data-testid=trump-*].",
+  "rca of the issue": "N/A — no issues found."
+}

@@ -5,10 +5,11 @@ export const SEAT_LABEL = { W: 'Them', E: "Ya'll", P: 'You' };
 // Avatar image assets per seat (E has no portrait -> null, falls back to initial)
 export const SEAT_AVATAR = {
   W: '/assets/avatar_them.png',
-  E: null,
+  E: '/assets/avatar_yall.png',
   P: '/assets/avatar_g2.png',
 };
 export const CARD_BACK_IMG = '/assets/get2_cardback.png';
+export const TABLE_BG_IMG = '/assets/table_bg.png';
 // Clockwise seating order used for dealing and turn rotation
 export const CLOCKWISE = ['W', 'E', 'P'];
 

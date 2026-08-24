@@ -11,6 +11,7 @@ import {
   NewGameConfirmModal,
 } from './components/Modals';
 import { legalPlays } from './game/trick';
+import { TABLE_BG_IMG } from './game/constants';
 
 export default function BustALead() {
   const { state, act } = useGame();
@@ -30,7 +31,18 @@ export default function BustALead() {
   };
 
   return (
-    <div className="felt-bg min-h-screen w-full overflow-hidden relative">
+    <div
+      className="min-h-screen w-full overflow-hidden relative bg-cover bg-center bg-fixed"
+      style={{ backgroundImage: `url(${TABLE_BG_IMG})` }}
+    >
+      {/* Dark overlay / vignette for readability over the concrete table backdrop */}
+      <div
+        className="absolute inset-0 z-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(ellipse at 50% 42%, rgba(4,8,11,0.42) 0%, rgba(4,8,11,0.62) 62%, rgba(4,8,11,0.82) 100%)',
+        }}
+      />
       {s.phase !== 'config' && (
         <>
           <Header
