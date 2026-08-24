@@ -1,0 +1,23 @@
+{
+  "summary": "Regression test of ConfigScreen refactor (CFG_* module-level option arrays + storage.js console gating). Verified splash/config screen renders with all six option groups (Difficulty, Bid Base, Sort, Speed, Sound, Stakes), all 15 option buttons are clickable and toggle the amber active class correctly, DEAL CARDS starts a game with Convict+Fast selected, and the table renders with seats DooLow (W) and PapaCap (E). No regression from the refactor.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/game_started.png", "/app/test_reports/after_auction.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Refactor is clean: CFG_* constants correctly extracted and passed to Choice; no behavior change observed.",
+    "storage.js console.warn gating behind NODE_ENV check is appropriate.",
+    "Note: gta-subtitle raw DOM text is title-case ('Cutthroat Pinochle • CDCR Prison Rules'); visual uppercase is applied via CSS. If any tests assert on textContent uppercase, they'd need to check computed style or the source string."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only)", "frontend": "100% (all refactor-relevant assertions passed; 24/26 raw assertions, 2 non-regression false-positives)"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "ConfigScreen refactor confirmed non-regressive. All data-testids present and working: config-screen, splash-hero, gta-subtitle, cfg-difficulty-{easy,normal,hard}, cfg-bid-{60,65}, cfg-sort-{suit,rank}, cfg-speed-{slow,normal,fast}, cfg-sound-{on,off}, cfg-stakes-{1,2,5}, deal-btn, seat-W, seat-E. Active button uses classes 'bg-amber-500 border-amber-400 text-black'. meld-pill only appears after auction resolves — automated tests must drive bids/passes to reach that state.",
+  "rca of the issue": "N/A - no bugs found"
+}

@@ -93,6 +93,34 @@ function Choice({ label, options, value, onChange, testidPrefix }) {
   );
 }
 
+const CFG_DIFFICULTY = [
+  { value: 'easy', label: 'New Booty' },
+  { value: 'normal', label: 'Inmate' },
+  { value: 'hard', label: 'Convict' },
+];
+const CFG_BID = [
+  { value: 60, label: '60' },
+  { value: 65, label: '65' },
+];
+const CFG_SORT = [
+  { value: 'suit', label: 'By Suit' },
+  { value: 'rank', label: 'By Rank' },
+];
+const CFG_SPEED = [
+  { value: 'slow', label: 'Slow' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'fast', label: 'Fast' },
+];
+const CFG_SOUND = [
+  { value: 'on', label: 'On' },
+  { value: 'off', label: 'Off' },
+];
+const CFG_STAKES = [
+  { value: 1, label: 'Low $1/$2' },
+  { value: 2, label: 'Mid $2/$4' },
+  { value: 5, label: 'High $5/$10' },
+];
+
 export function ConfigScreen({ state, act }) {
   const s = state.settings;
   const set = (patch) => act({ type: 'UPDATE_SETTINGS', settings: patch });
@@ -121,63 +149,42 @@ export function ConfigScreen({ state, act }) {
               testidPrefix="cfg-difficulty"
               value={s.difficulty || 'normal'}
               onChange={(v) => set({ difficulty: v })}
-              options={[
-                { value: 'easy', label: 'New Booty' },
-                { value: 'normal', label: 'Inmate' },
-                { value: 'hard', label: 'Convict' },
-              ]}
+              options={CFG_DIFFICULTY}
             />
             <Choice
               label="Opening Bid Base"
               testidPrefix="cfg-bid"
               value={s.bidBase}
               onChange={(v) => set({ bidBase: v })}
-              options={[
-                { value: 60, label: '60' },
-                { value: 65, label: '65' },
-              ]}
+              options={CFG_BID}
             />
             <Choice
               label="Card Sorting"
               testidPrefix="cfg-sort"
               value={s.sortMode}
               onChange={(v) => set({ sortMode: v })}
-              options={[
-                { value: 'suit', label: 'By Suit' },
-                { value: 'rank', label: 'By Rank' },
-              ]}
+              options={CFG_SORT}
             />
             <Choice
               label="Animation Speed"
               testidPrefix="cfg-speed"
               value={s.animSpeed}
               onChange={(v) => set({ animSpeed: v })}
-              options={[
-                { value: 'slow', label: 'Slow' },
-                { value: 'normal', label: 'Normal' },
-                { value: 'fast', label: 'Fast' },
-              ]}
+              options={CFG_SPEED}
             />
             <Choice
               label="Sound"
               testidPrefix="cfg-sound"
               value={s.sound ? 'on' : 'off'}
               onChange={(v) => set({ sound: v === 'on' })}
-              options={[
-                { value: 'on', label: 'On' },
-                { value: 'off', label: 'Off' },
-              ]}
+              options={CFG_SOUND}
             />
             <Choice
               label="Table Stakes"
               testidPrefix="cfg-stakes"
               value={s.stakesBase || 1}
               onChange={(v) => set({ stakesBase: v })}
-              options={[
-                { value: 1, label: 'Low $1/$2' },
-                { value: 2, label: 'Mid $2/$4' },
-                { value: 5, label: 'High $5/$10' },
-              ]}
+              options={CFG_STAKES}
             />
           </div>
           <button
