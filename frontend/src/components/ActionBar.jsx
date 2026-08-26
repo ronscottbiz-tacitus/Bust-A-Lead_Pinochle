@@ -24,7 +24,7 @@ const Btn = ({ children, onClick, disabled, tone = 'cyan', testid, className = '
 
 const WRAP_POS = {
   bottom: 'fixed bottom-48 left-1/2 -translate-x-1/2',
-  center: 'fixed top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2',
+  center: 'fixed top-[16%] sm:top-[40%] left-1/2 -translate-x-1/2 sm:-translate-y-1/2',
   upper: 'fixed top-[15%] left-1/2 -translate-x-1/2',
   banner: 'fixed top-28 left-1/2 -translate-x-1/2',
 };

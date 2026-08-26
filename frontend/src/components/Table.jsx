@@ -880,6 +880,7 @@ export function Table({ state, onOpenHistory }) {
   const spotlight = useBidderSpotlight(state);
   const pTurn = s.phase === 'play' && s.turn === 'P' && !s.trickPending;
   const pBidder = s.bidWinner === 'P';
+  const { mobile: isMobile } = useViewport();
   return (
     <div className="absolute inset-0 top-16 bottom-28 flex flex-col items-center justify-center">
       <img
@@ -916,7 +917,7 @@ export function Table({ state, onOpenHistory }) {
           </div>
         </div>
       )}
-      {s.phase !== 'config' && (
+      {s.phase !== 'config' && !isMobile && (
         <div className="absolute bottom-2 left-2 sm:left-6 flex items-center gap-2 z-40">
           <div
             className={`relative glass rounded-2xl pl-2 pr-3 py-2 flex items-center gap-2.5 transition-all duration-200 ${
@@ -985,6 +986,73 @@ export function Table({ state, onOpenHistory }) {
               className="glass rounded-lg px-2.5 py-1.5 text-[11px] font-sub text-slate-300 hover:text-cyan-300 flex items-center gap-1 border border-slate-700 hover:border-cyan-500/50"
             >
               <History size={13} /> Book History
+            </button>
+          )}
+        </div>
+      )}
+      {s.phase !== 'config' && isMobile && (
+        <div
+          data-testid="mobile-g2-bar"
+          className="fixed top-[52px] left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5"
+        >
+          <div
+            className={`relative glass rounded-full pl-1 pr-2.5 py-1 flex items-center gap-1.5 transition-all duration-200 ${
+              pTurn ? 'ring-2 ring-cyan-400 neon-cyan' : pBidder ? 'ring-2 ring-yellow-400/70' : ''
+            }`}
+          >
+            <ReactionBadge reaction={reactions.P} testid="reaction-P" className="-top-3 left-4" />
+            <div
+              className={`relative w-7 h-7 rounded-full overflow-hidden border-2 bg-slate-900 flex items-center justify-center font-display font-black text-[10px] ${
+                pTurn ? 'border-cyan-300' : pBidder ? 'border-yellow-400/80' : 'border-cyan-400/50'
+              }`}
+            >
+              <span className="absolute inset-0 flex items-center justify-center text-slate-500 select-none pointer-events-none">G2</span>
+              <img
+                src={SEAT_AVATAR.P}
+                alt="G2"
+                data-testid="player-avatar"
+                className="relative w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+            <span className="text-[11px] font-display font-black text-slate-100">G2</span>
+            <span data-testid="seat-books-P" className="text-[11px] font-mono-stat text-emerald-300 flex items-center gap-0.5">
+              <Coins size={9} className="text-yellow-400" />
+              {money(s.bankrolls.P)}
+            </span>
+            {showBooks && (
+              <span className="text-[10px] font-mono-stat text-cyan-300 whitespace-nowrap">
+                Bk {s.books.P}
+                {pBidder ? `/${bench}` : ''}
+              </span>
+            )}
+            {pBidder && (
+              <span className="bg-yellow-400 text-black text-[8px] font-black px-1 rounded-full">BID</span>
+            )}
+            {(s.defenderAces.P === 'single' || s.defenderAces.P === 'double') && (
+              <span data-testid="aces-badge-P" className="text-yellow-200 flex items-center" title={s.defenderAces.P === 'double' ? '1000 Aces!' : 'Aces Declared'}>
+                <Sparkles size={12} />
+              </span>
+            )}
+            {s.dealer === 'P' && (
+              <span
+                data-testid="dealer-chip-P"
+                className="text-[8px] font-black uppercase tracking-wide px-1 py-0.5 rounded-full bg-yellow-500/20 border border-yellow-400/60 text-yellow-200"
+              >
+                D
+              </span>
+            )}
+          </div>
+          {s.completedBooks.length > 0 && (
+            <button
+              data-testid="book-history-btn"
+              onClick={onOpenHistory}
+              className="glass rounded-full p-1.5 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-500/50"
+              aria-label="Book History"
+            >
+              <History size={14} />
             </button>
           )}
         </div>

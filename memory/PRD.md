@@ -115,6 +115,24 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - P2: Difficulty-specific defender AI depth (Convict smarter card counting).
 - P2: Split `Table.jsx` (~850 lines) into per-component files (non-urgent).
 
+## Updates (2026-06 — get2_chopper asset + Mobile HUD Overlap Refactor)
+- **get2_chopper.mp4** uploaded + WebM encoded; the GET-2 Extraction elimination cutscene now
+  plays (was auto-skipping while the file was missing). All 11 cutscenes live.
+- **Mobile/portrait HUD refactor** (Table.jsx + ActionBar.jsx):
+  - G2 badge no longer floats over the Spades column. On mobile (`useViewport().mobile`) the
+    desktop bottom-left dock is hidden (`!isMobile`) and a compact `mobile-g2-bar` pill is docked
+    at the top (fixed top-[52px], below the header) — verified no overlap with `player-hand`.
+  - Auction/trump/laydown controls (`WRAP_POS.center`) are now responsive
+    `top-[16%] sm:top-[40%]` so on mobile they sit in the upper felt between the AI seats and the
+    kitty instead of over the kitty/hand.
+  - `player-hand` retains z-30 + pointer-events-auto; card taps verified registering on mobile;
+    4-column suit matrix fits with dynamic vStep compression, no overflow.
+  - Desktop layout unchanged (dock bottom-left, auction centered); `mobile-g2-bar` absent on desktop.
+  - Verified: testing agent iteration_18.json 100% via bounding-box comparisons + live card tap;
+    desktop non-regression confirmed. NOTE: several player testids (seat-books-P, player-avatar,
+    reaction-P, book-history-btn, dealer-chip-P, aces-badge-P) intentionally appear in BOTH the
+    desktop dock and mobile pill branches, but the two are mutually exclusive so only one renders.
+
 ## Updates (2026-06 — Full 11-Cutscene Suite, Meld Phase Modal, Milestone/Signature Triggers)
 - **Cutscene suite expanded to 11** (`CutsceneOverlay.jsx` CUTSCENE_FILE/CAP/BANNER). New assets
   under `/public/assets/cutscenes/` (each webm+mp4): `cutscene_kitty_prayer`, `cutscene_1000_aces`,
