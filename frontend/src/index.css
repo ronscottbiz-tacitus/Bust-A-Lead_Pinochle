@@ -91,6 +91,21 @@ body {
   to { opacity: 1; }
 }
 
+@keyframes renegeReplay {
+  0% { transform: scale(0.45) translateY(60px) rotate(-14deg); opacity: 0; filter: blur(2px); }
+  18% { opacity: 1; filter: blur(0); }
+  55% { transform: scale(1.18) translateY(0) rotate(2deg); opacity: 1; }
+  78% { transform: scale(1.12) translateY(0) rotate(-2deg); }
+  100% { transform: scale(1.18) translateY(0) rotate(2deg); opacity: 1; }
+}
+.renege-replay { animation: renegeReplay 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite; }
+
+@keyframes renegeRingPulse {
+  0%, 100% { box-shadow: 0 0 22px 4px rgba(244,63,94,0.55); }
+  50% { box-shadow: 0 0 46px 10px rgba(244,63,94,0.95); }
+}
+.renege-ring { animation: renegeRingPulse 1.1s ease-in-out infinite; }
+
 @keyframes dealFly {
   0% { transform: translate(0, 0) scale(0.7) rotate(0deg); opacity: 0; }
   15% { opacity: 1; }

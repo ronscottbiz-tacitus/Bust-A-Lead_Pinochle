@@ -13,16 +13,24 @@ function aiBidAction(s, seat) {
   return { type: 'PASS', seat };
 }
 
-// Maps a settlement state to the cutscene that should play (or null).
+// Maps a settlement state to the cutscene { key, data } that should play (or null).
 function settlementCutscene(s) {
   if (s.result === 'busted') {
     const reason = s.busted?.reason || '';
-    if (/FALSE ACCUSATION/i.test(reason)) return 'trashtalk';
-    if (/RENEGE|VIOLATION/i.test(reason)) return 'renege';
-    return 'hardset';
+    if (/FALSE ACCUSATION/i.test(reason)) return { key: 'trashtalk' };
+    if (/RENEGE|VIOLATION/i.test(reason)) {
+      const rc = s.renegeCall;
+      let data = null;
+      if (rc && rc.seat && rc.book != null) {
+        const entry = (s.playLog || []).find((e) => e.seat === rc.seat && e.book === rc.book);
+        if (entry) data = { card: entry.card, leadCard: entry.leadCard, seat: entry.seat, reason: rc.reason || entry.reason, book: entry.book };
+      }
+      return { key: 'renege', data };
+    }
+    return { key: 'hardset' };
   }
-  if (s.result === 'hard') return 'hardset';
-  if (s.result === 'soft' && s.conceded) return 'concession';
+  if (s.result === 'hard') return { key: 'hardset' };
+  if (s.result === 'soft' && s.conceded) return { key: 'concession' };
   return null;
 }
 
@@ -142,10 +150,10 @@ export function useGame() {
       const cs = settlementCutscene(state);
       const snd = soundRef.current;
       if (cs) {
-        setCutscene({ key: cs, blocking: true });
-        if (cs === 'renege' || cs === 'trashtalk') snd.renege();
-        else if (cs === 'hardset') snd.busted();
-        else if (cs === 'concession') snd.play();
+        setCutscene({ key: cs.key, blocking: true, data: cs.data });
+        if (cs.key === 'renege' || cs.key === 'trashtalk') snd.renege();
+        else if (cs.key === 'hardset') snd.busted();
+        else if (cs.key === 'concession') snd.play();
       } else if (state.result === 'busted') snd.busted();
       else if (state.settlement && state.settlement.transfers.some((t) => t.to === 'P')) snd.win();
       else snd.lose();

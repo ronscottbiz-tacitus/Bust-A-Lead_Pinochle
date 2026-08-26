@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { SkipForward } from 'lucide-react';
+import { Card } from './Card';
 
 // Map internal cutscene keys -> optimized assets under /assets/cutscenes/.
 // WebM (VP9) is listed first so open-source Chromium (which lacks proprietary
@@ -58,6 +59,7 @@ export function CutsceneOverlay({ cutscene, onDone }) {
 
   if (!key || failed) return null;
   const base = `/assets/cutscenes/${CUTSCENE_FILE[key]}`;
+  const replay = key === 'renege' && cutscene?.data?.card;
 
   return (
     <div
@@ -92,6 +94,26 @@ export function CutsceneOverlay({ cutscene, onDone }) {
       >
         {CUTSCENE_BANNER[key]}
       </div>
+
+      {replay && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+          data-testid="renege-replay"
+        >
+          <div className="text-rose-400 font-display font-black text-xs sm:text-sm uppercase tracking-[0.3em] mb-3 animate-pulse">
+            ▶ Instant Replay
+          </div>
+          <div className="renege-replay">
+            <div className="renege-ring rounded-xl">
+              <Card card={cutscene.data.card} size="lg" />
+            </div>
+          </div>
+          <div className="mt-5 px-5 py-2 rounded-full bg-rose-950/80 border-2 border-rose-500/70 text-rose-200 font-display font-black text-sm sm:text-lg uppercase tracking-wide text-center max-w-[92vw]">
+            {cutscene.data.reason || 'Illegal Card'}
+          </div>
+        </div>
+      )}
+
       <button
         data-testid="cutscene-skip-btn"
         onClick={(e) => {

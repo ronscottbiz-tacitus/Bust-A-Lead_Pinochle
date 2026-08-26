@@ -9,7 +9,7 @@ export const SEAT_AVATAR = {
   P: '/assets/avatar_g2.png',
 };
 export const CARD_BACK_IMG = '/assets/get2_cardback.png';
-export const TABLE_BG_IMG = '/assets/table_bg.png';
+export const TABLE_BG_IMG = '/assets/new_canteen_table.webp';
 // Clockwise seating order used for dealing and turn rotation
 export const CLOCKWISE = ['W', 'E', 'P'];
 

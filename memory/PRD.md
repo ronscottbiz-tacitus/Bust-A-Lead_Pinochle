@@ -115,6 +115,22 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - P2: Difficulty-specific defender AI depth (Convict smarter card counting).
 - P2: Split `Table.jsx` (~850 lines) into per-component files (non-urgent).
 
+## Updates (2026-06 — Canteen Table Bg, Renege Replay, Audit Highlight)
+- **New table surface**: `TABLE_BG_IMG` → `/assets/new_canteen_table.webp` (constants.js), the
+  canteen-stakes overhead table. Rendered as the root `backgroundImage` in `BustALead.jsx`
+  (bg-cover/center); all game UI plays on top unaffected.
+- **Renege Replay** (`CutsceneOverlay.jsx`): the RENEGE CONFIRMED cutscene now overlays a
+  slow-motion looping "INSTANT REPLAY" of the caught card (`renege-replay` / `renege-ring` CSS
+  in index.css) plus the exact violation reason. Data flows from `useGame.settlementCutscene`
+  which pulls the offending card from `state.playLog` by `renegeCall.seat + book` into
+  `cutscene.data`.
+- **Audit Highlight** (`Modals.jsx` YardCourtModal): auto-flags suspicious plays — flagged
+  book buttons get a red pulsing dot + rose styling, the modal default-selects the first
+  flagged book, the illegal opponent row is rose-bordered with a glowing red ring on the card
+  and an `audit-flag-<seat>-<book>` reason line.
+- Verified: testing agent iteration_16.json 100% — caught a live AI renege (J♣), replay +
+  reason + RENEGE CONFIRMED settlement all correct; engine pauses during audit; no regressions.
+
 ## Updates (2026-06 — Cutscene Video Engine, Yard Court Renege Audit, AI Concession)
 - **Cutscene Video Modal Engine** (`components/CutsceneOverlay.jsx`, wired in `BustALead.jsx`,
   driven by `hooks/useGame.js`): 5 clips under `/public/assets/cutscenes/`.

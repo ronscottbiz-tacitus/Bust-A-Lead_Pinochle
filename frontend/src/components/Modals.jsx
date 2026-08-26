@@ -605,9 +605,13 @@ export function NewGameConfirmModal({ onRedeal, onMainMenu, onCancel }) {
 
 export function YardCourtModal({ state, onAccuse, onClose }) {
   const s = state;
-  const books = [...new Set((s.playLog || []).map((e) => e.book))].sort((a, b) => a - b);
-  const [sel, setSel] = useState(books.length ? books[books.length - 1] : 1);
-  const entries = (s.playLog || []).filter((e) => e.book === sel).sort((a, b) => a.playIndex - b.playIndex);
+  const log = s.playLog || [];
+  const books = [...new Set(log.map((e) => e.book))].sort((a, b) => a - b);
+  // Auto-flag: books that contain an illegal opponent play.
+  const flaggedBooks = new Set(log.filter((e) => e.seat !== 'P' && !e.legal).map((e) => e.book));
+  const firstFlagged = books.find((b) => flaggedBooks.has(b));
+  const [sel, setSel] = useState(firstFlagged || (books.length ? books[books.length - 1] : 1));
+  const entries = log.filter((e) => e.book === sel).sort((a, b) => a.playIndex - b.playIndex);
   const lead = entries[0];
   const opps = entries.filter((e) => e.seat !== 'P');
 
@@ -637,13 +641,18 @@ export function YardCourtModal({ state, onAccuse, onClose }) {
                     key={b}
                     data-testid={`audit-book-${b}`}
                     onClick={() => setSel(b)}
-                    className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-sub font-bold border transition-colors ${
+                    className={`relative shrink-0 px-3 py-1.5 rounded-lg text-xs font-sub font-bold border transition-colors ${
                       sel === b
                         ? 'bg-amber-500 text-black border-amber-400'
+                        : flaggedBooks.has(b)
+                        ? 'bg-rose-950/70 text-rose-200 border-rose-500/70'
                         : 'bg-zinc-800/70 text-zinc-300 border-zinc-700 hover:bg-zinc-700'
                     }`}
                   >
                     Book {b}
+                    {flaggedBooks.has(b) && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border border-black animate-pulse" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -664,27 +673,36 @@ export function YardCourtModal({ state, onAccuse, onClose }) {
                   <div
                     key={e.seat}
                     data-testid={`audit-play-${e.seat}-${sel}`}
-                    className="rounded-xl border border-zinc-700/70 bg-zinc-900/60 p-4"
+                    className={`rounded-xl border p-4 ${
+                      !e.legal ? 'border-rose-500/70 bg-rose-950/30' : 'border-zinc-700/70 bg-zinc-900/60'
+                    }`}
                   >
                     <div className="flex items-center justify-between mb-3 gap-2">
                       <div className="flex items-center gap-3">
                         <span className="font-display font-bold text-zinc-100">{SEAT_LABEL[e.seat]}</span>
                         <span className="text-xs text-zinc-500 font-sub">played</span>
-                        <Card card={e.card} size="sm" />
-                        {!e.legal && (
-                          <span className="text-[10px] font-sub font-bold text-rose-400 uppercase tracking-wide">
-                            ⚠ suspicious
-                          </span>
-                        )}
+                        <div className={!e.legal ? 'renege-ring rounded-md' : ''}>
+                          <Card card={e.card} size="sm" />
+                        </div>
                       </div>
                       <button
                         data-testid={`accuse-${e.seat}-btn`}
                         onClick={() => onAccuse(e.seat, sel)}
-                        className="px-3 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-display font-black tracking-wide flex items-center gap-1.5 active:scale-95 shrink-0"
+                        className={`px-3 py-2 rounded-lg text-white text-xs font-display font-black tracking-wide flex items-center gap-1.5 active:scale-95 shrink-0 ${
+                          !e.legal ? 'bg-rose-600 hover:bg-rose-500 animate-pulse' : 'bg-rose-700/80 hover:bg-rose-600'
+                        }`}
                       >
                         <ShieldAlert size={14} /> ACCUSE
                       </button>
                     </div>
+                    {!e.legal && (
+                      <div
+                        data-testid={`audit-flag-${e.seat}-${sel}`}
+                        className="mb-3 flex items-center gap-1.5 text-[11px] font-sub font-bold text-rose-300 uppercase tracking-wide"
+                      >
+                        <ShieldAlert size={13} /> Flagged: {e.reason}
+                      </div>
+                    )}
                     <div className="text-[10px] font-sub uppercase tracking-widest text-zinc-500 mb-1.5">
                       Hand held at that moment
                     </div>
