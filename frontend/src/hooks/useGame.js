@@ -5,6 +5,7 @@ import { SEATS, SPEED } from '../game/constants';
 import { evaluateBid, chooseTrump, chooseDiscards, shouldGoDouble, laydownChallenge, aiPlay, aiConcede } from '../game/ai';
 import { saveTarget } from '../game/scoring';
 import { SoundEngine } from '../audio/sfx';
+import { TtsEngine } from '../audio/tts';
 
 function aiBidAction(s, seat) {
   const { maxBid } = evaluateBid(s.hands[seat], s.settings.bidBase, s.settings.difficulty);
@@ -26,7 +27,7 @@ function settlementCutscene(s) {
   // 2) Renege / Bus'-a-Lead violation penalties.
   if (s.result === 'busted') {
     const reason = s.busted?.reason || '';
-    if (/FALSE ACCUSATION/i.test(reason)) return { key: 'trashtalk' };
+    if (/FALSE ACCUSATION/i.test(reason)) return { key: 'trashtalk', data: { speaker: 'E' } };
     if (/RENEGE|VIOLATION/i.test(reason)) {
       const rc = s.renegeCall;
       let data = null;
@@ -149,11 +150,14 @@ export function useGame() {
   const [state, dispatch] = useReducer(reducer, undefined, initState);
   const soundRef = useRef(null);
   if (!soundRef.current) soundRef.current = new SoundEngine();
+  const ttsRef = useRef(null);
+  if (!ttsRef.current) ttsRef.current = new TtsEngine();
   const prevPhase = useRef(state.phase);
   const [cutscene, setCutscene] = useState(null);
   const [paused, setPaused] = useState(false);
   const [meldReveal, setMeldReveal] = useState(null);
   const trashRef = useRef(state.completedBooks.length);
+  const snatchRef = useRef(0);
   const kittyRef = useRef(false);
   const meldRef = useRef(false);
   const meldPendingRef = useRef(null);
@@ -164,6 +168,7 @@ export function useGame() {
 
   useEffect(() => {
     soundRef.current.setEnabled(state.settings.sound);
+    ttsRef.current.setEnabled(state.settings.sound);
   }, [state.settings.sound]);
 
   // Reset the once-per-hand cutscene guards when a fresh hand is dealt.
@@ -187,6 +192,7 @@ export function useGame() {
         else if (cs.key === 'hardset' || cs.key === 'breakyoself') snd.busted();
         else if (cs.key === 'canteensweep') snd.win();
         else if (cs.key === 'concession') snd.play();
+        if (cs.key === 'trashtalk') ttsRef.current.taunt(cs.data?.speaker || 'E');
       } else if (state.result === 'busted') snd.busted();
       else if (state.settlement && state.settlement.transfers.some((t) => t.to === 'P')) snd.win();
       else snd.lose();
@@ -235,9 +241,21 @@ export function useGame() {
     }
     if (state.completedBooks.length > trashRef.current) {
       trashRef.current = state.completedBooks.length;
-      const w = state.lastTrickWinner;
-      if (!cutscene && !meldReveal && (w === 'W' || w === 'E') && Math.random() < 0.12) {
-        setCutscene({ key: 'trashtalk', blocking: true });
+      const last = state.completedBooks[state.completedBooks.length - 1];
+      const w = last?.winner;
+      const isAI = w === 'W' || w === 'E';
+      const busy = cutscene || meldReveal;
+      if (!busy && isAI && Math.random() < 0.12) {
+        // Full trash-talk cutscene + spoken taunt from the AI who took the book.
+        setCutscene({ key: 'trashtalk', blocking: true, data: { speaker: w } });
+        ttsRef.current.taunt(w);
+      } else if (!busy && isAI && last?.plays?.some((p) => p.card.rank === 'A' && p.seat !== w)) {
+        // An opponent's Ace got captured — "Snatchin' teeth!" (throttled to avoid spam).
+        const now = Date.now();
+        if (now - snatchRef.current > 3500) {
+          snatchRef.current = now;
+          ttsRef.current.snatch(w);
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -262,7 +280,10 @@ export function useGame() {
 
   const act = (action) => {
     const snd = soundRef.current;
-    if (action.type === 'START_ROUND' || action.type === 'NEXT_HAND' || action.type === 'RESET_TABLE') snd.ensure();
+    if (action.type === 'START_ROUND' || action.type === 'NEXT_HAND' || action.type === 'RESET_TABLE') {
+      snd.ensure();
+      ttsRef.current.prime();
+    }
     if (action.type === 'PLACE_BID') snd.chip();
     else if (action.type === 'PLAY_CARD') snd.play();
     else if (action.type === 'DECLARE_TRUMP') snd.trump();

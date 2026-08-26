@@ -115,6 +115,23 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - P2: Difficulty-specific defender AI depth (Convict smarter card counting).
 - P2: Split `Table.jsx` (~850 lines) into per-component files (non-urgent).
 
+## Updates (2026-06 — Convict Taunt Voices, browser TTS)
+- **Spoken AI taunts** via the browser Web Speech API (no keys, offline) — new `src/audio/tts.js`
+  `TtsEngine`. DooLow (W) = higher pitch/faster rate; PapaCap (E) = deeper/slower; distinct
+  system voices when available. Follows the Sound On/Off setting; fails open if unsupported.
+- **Triggers** (`useGame.js`):
+  - Trash-talk cutscene → speaks a random user-provided one-liner in the involved AI's voice.
+    Speaker = the AI who won the book (random 12% book-win) or PapaCap (E) on a FALSE ACCUSATION.
+    Lines: "Brought that ass to the grinder, huh?", "Have heart, have money.", "I'm tryna eat,
+    homey! Back up!", "Y'all sweeter than bear meat!", "What y'all got on my spread tonight?".
+  - **"Snatchin' teeth!"** spoken (in the capturing AI's voice) whenever an AI captures an
+    opponent's Ace in a completed book — throttled to once per 3.5s to avoid spam; suppressed
+    while a cutscene/meld modal is up.
+  - TTS primed on the deal / new-hand button gesture (`act()`) so iOS/Safari unlock speech.
+- Verified: 10/10 Jest pass, clean compile, no console errors on load. NOTE: audible TTS cannot
+  be verified in the headless CI (Playwright Chromium ships no voices / no audio out); it works
+  on real Chrome/Safari/Edge/Firefox. Web Speech API presence confirmed; code fails open safely.
+
 ## Updates (2026-06 — Kitty Prayer threshold + Tablet/Landscape fan unification)
 - **Kitty Prayer trigger** (`useGame.js`): now fires strictly on `bid > 95` (was `>= 90`).
 - **Tablet/landscape hand** (`Table.jsx` HandTray): removed the old suit-tab filter branch
