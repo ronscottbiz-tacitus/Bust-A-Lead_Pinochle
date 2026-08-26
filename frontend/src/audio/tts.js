@@ -18,6 +18,11 @@ const VOICE = {
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
+// Dev-only visibility for TTS failures; silent in production so it never spams users.
+const ttsWarn = (e) => {
+  if (process.env.NODE_ENV !== 'production') console.warn('[TTS]', e);
+};
+
 export class TtsEngine {
   constructor() {
     this.enabled = true;
@@ -29,7 +34,7 @@ export class TtsEngine {
       try {
         window.speechSynthesis.onvoiceschanged = this._load;
       } catch (e) {
-        /* ignore */
+        ttsWarn(e);
       }
     }
   }
@@ -39,6 +44,7 @@ export class TtsEngine {
       this.voices = window.speechSynthesis.getVoices() || [];
     } catch (e) {
       this.voices = [];
+      ttsWarn(e);
     }
   }
 
@@ -48,7 +54,7 @@ export class TtsEngine {
       try {
         window.speechSynthesis.cancel();
       } catch (e) {
-        /* ignore */
+        ttsWarn(e);
       }
     }
   }
@@ -75,7 +81,7 @@ export class TtsEngine {
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(u);
     } catch (e) {
-      /* fail open — never block the game on TTS */
+      ttsWarn(e); // fail open — never block the game on TTS
     }
   }
 
@@ -96,7 +102,7 @@ export class TtsEngine {
       window.speechSynthesis.speak(u);
       this._primed = true;
     } catch (e) {
-      /* ignore */
+      ttsWarn(e);
     }
   }
 }
