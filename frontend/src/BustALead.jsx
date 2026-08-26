@@ -11,6 +11,7 @@ import {
   NewGameConfirmModal,
   MeldDrawer,
   YardCourtModal,
+  MeldPhaseModal,
 } from './components/Modals';
 import { legalPlays } from './game/trick';
 import { TABLE_BG_IMG } from './game/constants';
@@ -18,7 +19,7 @@ import { CutsceneOverlay, TitleVideo } from './components/CutsceneOverlay';
 import { Zap } from 'lucide-react';
 
 export default function BustALead() {
-  const { state, act, cutscene, clearCutscene, setPaused } = useGame();
+  const { state, act, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal } = useGame();
   const [showRules, setShowRules] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -125,6 +126,7 @@ export default function BustALead() {
         />
       )}
       <CutsceneOverlay cutscene={cutscene} onDone={clearCutscene} />
+      {meldReveal && <MeldPhaseModal reveal={meldReveal} onClose={clearMeldReveal} />}
     </div>
   );
 }

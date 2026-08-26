@@ -10,14 +10,29 @@ const CUTSCENE_FILE = {
   hardset: 'cutscene_hardset_canteen',
   concession: 'cutscene_hand_concede',
   trashtalk: 'cutscene_trashtalk_smirk',
+  kittyprayer: 'cutscene_kitty_prayer',
+  aces1000: 'cutscene_1000_aces',
+  nuts90: 'cutscene_90_nuts',
+  breakyoself: 'break_yo_self',
+  canteensweep: 'canteen_sweep',
+  chopper: 'get2_chopper',
 };
-// Auto-dismiss caps (ms) per the spec.
-const CUTSCENE_CAP = { renege: 5000, hardset: 5000, concession: 4500, trashtalk: 4500 };
+// Auto-dismiss caps (ms).
+const CUTSCENE_CAP = {
+  renege: 5000, hardset: 5000, concession: 4500, trashtalk: 4500,
+  kittyprayer: 5000, aces1000: 5000, nuts90: 5000, breakyoself: 5000, canteensweep: 5000, chopper: 5000,
+};
 const CUTSCENE_BANNER = {
   renege: "RENEGE! CAUGHT SLIPPIN' IN THE YARD",
   hardset: 'HARD SET — CANTEEN WIPED OUT',
   concession: 'HAND CONCEDED',
   trashtalk: "PAPACAP: \u201CTHAT ALL YOU GOT?\u201D",
+  kittyprayer: 'THE WIDOW PRAYER — FLIPPIN\u2019 THE KITTY',
+  aces1000: '1,000 ACES — LEGEND DROP',
+  nuts90: '90 NUTZ! TRIPLE PINOCHLE',
+  breakyoself: 'BREAK YO SELF! CLOWNED IN THE YARD',
+  canteensweep: 'THE CANTEEN SWEEP — G2 CASHES OUT',
+  chopper: 'THE GET2 EXTRACTION',
 };
 
 // Full-screen cinematic overlay for a single game event. Muted + playsInline so

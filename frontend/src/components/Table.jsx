@@ -279,7 +279,7 @@ export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGa
             onClick={onOpenMeld}
             className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 border border-amber-400/60 text-amber-200 hover:bg-amber-500/25 transition-colors flex items-center gap-1"
           >
-            Meld: {pillTotal} <ChevronDown size={12} />
+            <Layers size={12} /> {SEAT_LABEL[s.bidWinner]} Meld: {pillTotal} pts <ChevronDown size={12} />
           </button>
         )}
         <button

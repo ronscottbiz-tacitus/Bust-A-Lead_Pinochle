@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SEAT_LABEL, SEATS } from '../game/constants';
 import { computeMeld } from '../game/meld';
 import { Card } from './Card';
@@ -729,3 +729,64 @@ export function YardCourtModal({ state, onAccuse, onClose }) {
     </div>
   );
 }
+
+export function MeldPhaseModal({ reveal, onClose }) {
+  const [remaining, setRemaining] = useState(100);
+  useEffect(() => {
+    const dismiss = setTimeout(onClose, 3500);
+    const tick = setInterval(() => setRemaining((r) => Math.max(0, r - 100 / 35)), 100);
+    return () => {
+      clearTimeout(dismiss);
+      clearInterval(tick);
+    };
+  }, [onClose]);
+
+  const items = reveal?.items || [];
+  const total = reveal?.total || 0;
+  const name = SEAT_LABEL[reveal?.bidder] || 'Bidder';
+
+  return (
+    <div
+      className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3"
+      data-testid="meld-phase-modal"
+      onClick={onClose}
+    >
+      <div className={`${GTA_PANEL} w-full max-w-md pop-in overflow-hidden`} onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 py-3 border-b border-amber-500/30 flex items-center gap-2 text-amber-300 font-display font-black tracking-wide">
+          <Layers size={18} /> {name.toUpperCase()} — DECLARED MELD
+        </div>
+        <div className="p-5 max-h-[55vh] overflow-y-auto">
+          {items.length === 0 ? (
+            <div className="text-center text-zinc-400 text-sm py-6">No meld declared — playing off the strength of the hand.</div>
+          ) : (
+            <ul className="space-y-2">
+              {items.map((it, i) => (
+                <li
+                  key={`${it.name}-${i}`}
+                  data-testid={`meld-phase-item-${i}`}
+                  className="flex items-center justify-between text-sm border-b border-white/5 pb-2"
+                >
+                  <span className="text-zinc-200 font-sub">{it.name}</span>
+                  <span className="font-mono-stat text-emerald-300 font-bold">{it.pts}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-4 flex items-center justify-between rounded-xl bg-amber-500/10 border border-amber-500/40 px-4 py-3">
+            <span className="font-display font-black text-amber-200 uppercase tracking-wide">Total Meld</span>
+            <span data-testid="meld-phase-total" className="font-mono-stat text-2xl font-black text-yellow-300">{total}</span>
+          </div>
+        </div>
+        <button
+          data-testid="meld-phase-continue-btn"
+          onClick={onClose}
+          className="w-full py-3 bg-amber-500 text-black font-display font-black uppercase tracking-wide hover:bg-amber-400 active:scale-[0.99] flex items-center justify-center gap-2"
+        >
+          <Play size={16} /> Continue to Book 1
+        </button>
+        <div className="h-1 bg-amber-500/70" style={{ width: `${remaining}%`, transition: 'width 0.1s linear' }} />
+      </div>
+    </div>
+  );
+}
+

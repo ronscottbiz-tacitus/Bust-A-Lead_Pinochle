@@ -115,6 +115,31 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - P2: Difficulty-specific defender AI depth (Convict smarter card counting).
 - P2: Split `Table.jsx` (~850 lines) into per-component files (non-urgent).
 
+## Updates (2026-06 — Full 11-Cutscene Suite, Meld Phase Modal, Milestone/Signature Triggers)
+- **Cutscene suite expanded to 11** (`CutsceneOverlay.jsx` CUTSCENE_FILE/CAP/BANNER). New assets
+  under `/public/assets/cutscenes/` (each webm+mp4): `cutscene_kitty_prayer`, `cutscene_1000_aces`,
+  `cutscene_90_nuts`, `break_yo_self`, `canteen_sweep`. `get2_chopper` is referenced but NOT
+  uploaded — the `<video>` fails over to the SPA HTML and auto-skips gracefully (triple guard:
+  onError + 2s load timer + hard cap).
+- **New triggers** (`useGame.js`):
+  - `kittyprayer` — bidder collects the kitty on a 90+ contract (phase→discard, bid≥90).
+  - `aces1000` / `nuts90` — meld-reveal milestone: bidder meld (incl. pending Aces item) has
+    Double Aces / Triple Pinochle (also fires aces1000 if any defender declared double aces).
+  - `canteensweep` — G2 makes the contract at settlement.
+  - `breakyoself` — AI bidder Hard Set at final scoring (played out) while G2 defends.
+  - `chopper` — G2 eliminated at $0 bankroll (gameOver && bankrolls.P≤0), highest priority.
+  - Settlement priority: elimination → concession → renege/violation → canteensweep → hardset/
+    breakyoself (played-out only) → early-hard fallback = concession. SFX cue fires per key.
+- **Meld Phase Transition Modal** (`Modals.jsx` MeldPhaseModal, wired via useGame `meldReveal`):
+  shows the bidder's declared meld items + total for 3.5s when a hand enters play, pausing the
+  engine (added to the drive pause gate); dismiss via Continue button, click-anywhere, or timeout.
+  Milestone cutscene (if any) plays first, then the modal.
+- **Meld pill** label now `<BidderName> Meld: <total> pts` (desktop); mobile stays compact `Np`.
+- Verified: 10/10 Jest; node self-test of all 10 settlement mappings; testing agent iteration_17.json
+  100% on deterministic checks (meld modal appears/pauses/auto-dismisses at 3.50s/click-dismiss,
+  meld-pill label, missing-asset auto-skip, no regressions/console errors).
+- NOTE: `get2_chopper.mp4` still needs to be uploaded to enable the elimination cutscene.
+
 ## Updates (2026-06 — Canteen Table Bg, Renege Replay, Audit Highlight)
 - **New table surface**: `TABLE_BG_IMG` → `/assets/new_canteen_table.webp` (constants.js), the
   canteen-stakes overhead table. Rendered as the root `backgroundImage` in `BustALead.jsx`

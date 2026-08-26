@@ -14,9 +14,11 @@ function aiBidAction(s, seat) {
 }
 
 // Maps a settlement state to the cutscene { key, data } that should play (or null).
-// Priority: (1) early throw-in / concession, (2) renege & violation penalties,
-// (3) a Hard Set ONLY when the hand played out to the final trick.
+// Priority: elimination > concession > renege/violation > win/hard-set milestones.
 function settlementCutscene(s) {
+  // 0) G2 final elimination (zero bankroll) — routes back to the main menu.
+  if (s.gameOver && (s.bankrolls?.P ?? 1) <= 0) return { key: 'chopper' };
+
   // 1) Fold / concede / soft set / board set (thrown in before completing the hand).
   const isConcession = s.result === 'soft' || s.conceded || (s.result === 'hard' && s.boardSet);
   if (isConcession && s.result !== 'busted') return { key: 'concession' };
@@ -37,8 +39,14 @@ function settlementCutscene(s) {
     return { key: 'hardset' };
   }
 
-  // 3) Hard Set only after a fully played-out hand fails the contract floor.
-  if (s.result === 'hard' && s.playedOut) return { key: 'hardset' };
+  // 3) G2 makes the contract on a played-out hand — The Canteen Sweep.
+  if (s.result === 'made' && s.bidWinner === 'P') return { key: 'canteensweep' };
+
+  // 4) Hard Set only after a fully played-out hand fails the contract floor.
+  if (s.result === 'hard' && s.playedOut) {
+    // AI bidder busted while G2 is defending -> "Break Yo Self"; otherwise generic Hard Set.
+    return s.bidWinner !== 'P' ? { key: 'breakyoself' } : { key: 'hardset' };
+  }
   // Any remaining early hard result is treated as a concession (safety net).
   if (s.result === 'hard') return { key: 'concession' };
   return null;
@@ -144,7 +152,11 @@ export function useGame() {
   const prevPhase = useRef(state.phase);
   const [cutscene, setCutscene] = useState(null);
   const [paused, setPaused] = useState(false);
+  const [meldReveal, setMeldReveal] = useState(null);
   const trashRef = useRef(state.completedBooks.length);
+  const kittyRef = useRef(false);
+  const meldRef = useRef(false);
+  const meldPendingRef = useRef(null);
 
   useEffect(() => {
     saveGame({ bankrolls: state.bankrolls, settings: state.settings, dealer: state.dealer, stats: state.stats });
@@ -154,6 +166,16 @@ export function useGame() {
     soundRef.current.setEnabled(state.settings.sound);
   }, [state.settings.sound]);
 
+  // Reset the once-per-hand cutscene guards when a fresh hand is dealt.
+  useEffect(() => {
+    if (state.phase === 'dealing' || state.phase === 'config') {
+      kittyRef.current = false;
+      meldRef.current = false;
+      meldPendingRef.current = null;
+      setMeldReveal(null);
+    }
+  }, [state.phase]);
+
   // Settlement transition: trigger an event cutscene WITH its accompanying SFX cue.
   useEffect(() => {
     if (state.phase === 'settlement' && prevPhase.current !== 'settlement') {
@@ -161,8 +183,9 @@ export function useGame() {
       const snd = soundRef.current;
       if (cs) {
         setCutscene({ key: cs.key, blocking: true, data: cs.data });
-        if (cs.key === 'renege' || cs.key === 'trashtalk') snd.renege();
-        else if (cs.key === 'hardset') snd.busted();
+        if (cs.key === 'renege' || cs.key === 'trashtalk' || cs.key === 'chopper') snd.renege();
+        else if (cs.key === 'hardset' || cs.key === 'breakyoself') snd.busted();
+        else if (cs.key === 'canteensweep') snd.win();
         else if (cs.key === 'concession') snd.play();
       } else if (state.result === 'busted') snd.busted();
       else if (state.settlement && state.settlement.transfers.some((t) => t.to === 'P')) snd.win();
@@ -171,6 +194,38 @@ export function useGame() {
     prevPhase.current = state.phase;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase, state.result, state.settlement, state.busted]);
+
+  // "Kitty Prayer" — high bidder flips the kitty on a 90+ contract.
+  useEffect(() => {
+    if (state.phase === 'discard' && state.kittyCollected && !kittyRef.current) {
+      kittyRef.current = true;
+      if ((state.bid || 0) >= 90 && !cutscene) setCutscene({ key: 'kittyprayer', blocking: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase, state.kittyCollected]);
+
+  // Meld reveal phase — on the first entry into play, show milestone cutscenes
+  // (1000 Aces / 90 Nutz) then the Meld Phase modal.
+  useEffect(() => {
+    if (state.phase === 'play' && !meldRef.current) {
+      meldRef.current = true;
+      const meld = state.meld[state.bidWinner];
+      const items = [...(meld?.items || []), ...(state.bidderAcesItem ? [state.bidderAcesItem] : [])];
+      const total = items.reduce((n, i) => n + i.pts, 0);
+      const has1000 =
+        items.some((i) => i.name.startsWith('Double Aces')) ||
+        Object.values(state.defenderAces || {}).includes('double');
+      const has90 = items.some((i) => i.name.includes('90 Nuts'));
+      const reveal = { bidder: state.bidWinner, items, total };
+      if (has1000 || has90) {
+        meldPendingRef.current = reveal;
+        setCutscene({ key: has1000 ? 'aces1000' : 'nuts90', blocking: true });
+      } else {
+        setMeldReveal(reveal);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase]);
 
   // Random Convict trash-talk cutscene when an AI takes a book mid-hand.
   useEffect(() => {
@@ -181,21 +236,29 @@ export function useGame() {
     if (state.completedBooks.length > trashRef.current) {
       trashRef.current = state.completedBooks.length;
       const w = state.lastTrickWinner;
-      if (!cutscene && (w === 'W' || w === 'E') && Math.random() < 0.12) {
+      if (!cutscene && !meldReveal && (w === 'W' || w === 'E') && Math.random() < 0.12) {
         setCutscene({ key: 'trashtalk', blocking: true });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.completedBooks.length, state.phase]);
 
-  // Drive the game loop, but PAUSE it while a cutscene plays or the audit is open.
+  // Drive the game loop, but PAUSE it while a cutscene / meld modal / audit is open.
   useEffect(() => {
-    if (cutscene?.blocking || paused) return undefined;
+    if (cutscene?.blocking || paused || meldReveal) return undefined;
     const id = drive(state, dispatch, soundRef.current);
     return () => id && clearTimeout(id);
-  }, [state, cutscene, paused]);
+  }, [state, cutscene, paused, meldReveal]);
 
-  const clearCutscene = () => setCutscene(null);
+  const clearCutscene = () => {
+    setCutscene(null);
+    if (meldPendingRef.current) {
+      const reveal = meldPendingRef.current;
+      meldPendingRef.current = null;
+      setMeldReveal(reveal);
+    }
+  };
+  const clearMeldReveal = () => setMeldReveal(null);
 
   const act = (action) => {
     const snd = soundRef.current;
@@ -206,5 +269,5 @@ export function useGame() {
     dispatch(action);
   };
 
-  return { state, act, sound: soundRef.current, cutscene, clearCutscene, setPaused };
+  return { state, act, sound: soundRef.current, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal };
 }
