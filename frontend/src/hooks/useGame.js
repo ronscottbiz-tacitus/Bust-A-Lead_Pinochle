@@ -14,7 +14,14 @@ function aiBidAction(s, seat) {
 }
 
 // Maps a settlement state to the cutscene { key, data } that should play (or null).
+// Priority: (1) early throw-in / concession, (2) renege & violation penalties,
+// (3) a Hard Set ONLY when the hand played out to the final trick.
 function settlementCutscene(s) {
+  // 1) Fold / concede / soft set / board set (thrown in before completing the hand).
+  const isConcession = s.result === 'soft' || s.conceded || (s.result === 'hard' && s.boardSet);
+  if (isConcession && s.result !== 'busted') return { key: 'concession' };
+
+  // 2) Renege / Bus'-a-Lead violation penalties.
   if (s.result === 'busted') {
     const reason = s.busted?.reason || '';
     if (/FALSE ACCUSATION/i.test(reason)) return { key: 'trashtalk' };
@@ -29,8 +36,11 @@ function settlementCutscene(s) {
     }
     return { key: 'hardset' };
   }
-  if (s.result === 'hard') return { key: 'hardset' };
-  if (s.result === 'soft' && s.conceded) return { key: 'concession' };
+
+  // 3) Hard Set only after a fully played-out hand fails the contract floor.
+  if (s.result === 'hard' && s.playedOut) return { key: 'hardset' };
+  // Any remaining early hard result is treated as a concession (safety net).
+  if (s.result === 'hard') return { key: 'concession' };
   return null;
 }
 

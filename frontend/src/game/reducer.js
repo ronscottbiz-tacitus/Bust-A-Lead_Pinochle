@@ -78,6 +78,7 @@ function emptyRound() {
     conceded: false,
     playLog: [],
     aiConcedeChecked: false,
+    playedOut: false,
   };
 }
 
@@ -555,6 +556,7 @@ export function reducer(state, action) {
         const meldTotal = s.meld[s.bidWinner]?.total || 0;
         const bidderBooks = s.books[s.bidWinner] + s.buriedBooks;
         const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
+        s.playedOut = true; // hand ran to the final trick — a hard set here is a real Hard Set
         s.result = bidderBooks >= bench ? 'made' : 'hard';
         return settle(s);
       }
