@@ -1,7 +1,7 @@
 import { SEATS, nextSeat, leftOf, isCounter } from './constants';
 import { dealDeck } from './deck';
 import { computeMeld, acesAround, suitsWithMarriage } from './meld';
-import { legalPlays, currentWinnerIndex, trickBooks } from './trick';
+import { legalPlays, currentWinnerIndex, trickBooks, renegeReason } from './trick';
 import { saveTarget } from './scoring';
 import { loadSave } from './storage';
 
@@ -75,6 +75,9 @@ function emptyRound() {
     bidderAcesForfeited: false,
     trickReneges: [],
     renegeCall: null,
+    conceded: false,
+    playLog: [],
+    aiConcedeChecked: false,
   };
 }
 
@@ -398,6 +401,7 @@ export function reducer(state, action) {
 
     case 'CONCEDE_PREPLAY':
       s.result = 'soft';
+      s.conceded = true;
       return settle(s);
 
     case 'LAYDOWN_RESPONSE': {
@@ -441,14 +445,38 @@ export function reducer(state, action) {
     }
 
     case 'CALL_RENEGE': {
+      const { accuseSeat, book } = action;
+      // Yard Court audit: accuse a specific opponent for a specific book.
+      if (accuseSeat != null && book != null) {
+        const entry = (s.playLog || []).find((e) => e.seat === accuseSeat && e.book === book);
+        if (entry && !entry.legal) {
+          s.renegeCall = { result: 'confirmed', seat: accuseSeat, book, reason: entry.reason };
+          return bust(s, accuseSeat, `RENEGE CONFIRMED (Book ${book}) — ${entry.reason}`);
+        }
+        // Undeclared Aces: caught a defender who held Aces Around but never declared.
+        if (s.defenderAces[accuseSeat] === 'none') {
+          const first = (s.playLog || []).find((e) => e.seat === accuseSeat);
+          if (first && acesAround(first.handBefore)) {
+            s.renegeCall = { result: 'confirmed', seat: accuseSeat, book, reason: 'Undeclared Aces Around' };
+            return bust(s, accuseSeat, `RENEGE CONFIRMED (Book ${book}) — Undeclared Aces Around`);
+          }
+        }
+        s.renegeCall = { result: 'false', seat: 'P', book };
+        return bust(s, 'P', 'FALSE ACCUSATION — the play was legal');
+      }
+      // Legacy quick-call against the current trick.
       const reneger = (s.trickReneges || []).find((r) => r.seat !== 'P');
       if (reneger) {
         s.renegeCall = { result: 'confirmed', seat: reneger.seat };
-        return bust(s, reneger.seat, "RENEGE CONFIRMED — illegal card exposed");
+        return bust(s, reneger.seat, 'RENEGE CONFIRMED — illegal card exposed');
       }
       s.renegeCall = { result: 'false', seat: 'P' };
       return bust(s, 'P', 'FALSE ACCUSATION — the play was legal');
     }
+
+    case 'AI_CONCEDE_CHECKED':
+      s.aiConcedeChecked = true;
+      return s;
 
     case 'PLAY_CARD': {
       const { seat, card } = action;
@@ -476,6 +504,19 @@ export function reducer(state, action) {
       }
       const wasLeading = s.trick.length === 0;
       const winnerBefore = s.trick.length ? s.trick[currentWinnerIndex(s.trick, s.trump)].seat : null;
+      // Deep audit snapshot: the exact hand held at the moment of this play.
+      s.playLog.push({
+        book: s.trickNo,
+        playIndex: s.trick.length,
+        seat,
+        card: { ...card },
+        leadSeat: s.trick.length ? s.trick[0].seat : seat,
+        leadCard: s.trick.length ? { ...s.trick[0].card } : { ...card },
+        handBefore: s.hands[seat].map((c) => ({ ...c })),
+        trump: s.trump,
+        legal: isLegal,
+        reason: isLegal ? null : renegeReason(s.hands[seat], s.trick, s.trump, card),
+      });
       s.hands[seat] = s.hands[seat].filter((c) => c.id !== card.id);
       s.trick = [...s.trick, { seat, card }];
       s.playedIds.push(card.id);

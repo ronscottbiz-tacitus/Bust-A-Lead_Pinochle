@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { SEAT_LABEL, SEATS } from '../game/constants';
 import { computeMeld } from '../game/meld';
 import { Card } from './Card';
-import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers } from 'lucide-react';
+import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers, Gavel, ShieldAlert } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 
@@ -602,3 +602,112 @@ export function NewGameConfirmModal({ onRedeal, onMainMenu, onCancel }) {
   );
 }
 
+
+export function YardCourtModal({ state, onAccuse, onClose }) {
+  const s = state;
+  const books = [...new Set((s.playLog || []).map((e) => e.book))].sort((a, b) => a - b);
+  const [sel, setSel] = useState(books.length ? books[books.length - 1] : 1);
+  const entries = (s.playLog || []).filter((e) => e.book === sel).sort((a, b) => a.playIndex - b.playIndex);
+  const lead = entries[0];
+  const opps = entries.filter((e) => e.seat !== 'P');
+
+  return (
+    <div
+      className="fixed inset-0 z-[95] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3"
+      data-testid="yard-court-modal"
+    >
+      <div className={`${GTA_PANEL} w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col pop-in`}>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-amber-500/30">
+          <div className="flex items-center gap-2 text-amber-300 font-display font-black tracking-wide">
+            <Gavel size={18} /> YARD COURT — RENEGE AUDIT
+          </div>
+          <button data-testid="yard-court-close-btn" onClick={onClose} className="text-zinc-400 hover:text-white">
+            <X size={20} />
+          </button>
+        </div>
+
+        {books.length === 0 ? (
+          <div className="p-8 text-center text-zinc-400 text-sm">No books have been played yet.</div>
+        ) : (
+          <>
+            <div className="px-4 py-3 border-b border-white/5 overflow-x-auto">
+              <div className="flex gap-2">
+                {books.map((b) => (
+                  <button
+                    key={b}
+                    data-testid={`audit-book-${b}`}
+                    onClick={() => setSel(b)}
+                    className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-sub font-bold border transition-colors ${
+                      sel === b
+                        ? 'bg-amber-500 text-black border-amber-400'
+                        : 'bg-zinc-800/70 text-zinc-300 border-zinc-700 hover:bg-zinc-700'
+                    }`}
+                  >
+                    Book {b}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-5 overflow-y-auto">
+              {lead && (
+                <div className="mb-4 flex items-center gap-2 text-xs font-sub text-zinc-400">
+                  <span>
+                    Lead: <span className="text-amber-300 font-bold">{SEAT_LABEL[lead.leadSeat]}</span> played
+                  </span>
+                  <Card card={lead.leadCard} size="sm" />
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {opps.map((e) => (
+                  <div
+                    key={e.seat}
+                    data-testid={`audit-play-${e.seat}-${sel}`}
+                    className="rounded-xl border border-zinc-700/70 bg-zinc-900/60 p-4"
+                  >
+                    <div className="flex items-center justify-between mb-3 gap-2">
+                      <div className="flex items-center gap-3">
+                        <span className="font-display font-bold text-zinc-100">{SEAT_LABEL[e.seat]}</span>
+                        <span className="text-xs text-zinc-500 font-sub">played</span>
+                        <Card card={e.card} size="sm" />
+                        {!e.legal && (
+                          <span className="text-[10px] font-sub font-bold text-rose-400 uppercase tracking-wide">
+                            ⚠ suspicious
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        data-testid={`accuse-${e.seat}-btn`}
+                        onClick={() => onAccuse(e.seat, sel)}
+                        className="px-3 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-display font-black tracking-wide flex items-center gap-1.5 active:scale-95 shrink-0"
+                      >
+                        <ShieldAlert size={14} /> ACCUSE
+                      </button>
+                    </div>
+                    <div className="text-[10px] font-sub uppercase tracking-widest text-zinc-500 mb-1.5">
+                      Hand held at that moment
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {e.handBefore.map((c) => (
+                        <Card key={c.id} card={c} size="xs" />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {opps.length === 0 && (
+                  <div className="text-center text-zinc-500 text-sm py-6">
+                    No opponent plays recorded for this book yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+        <div className="px-5 py-3 border-t border-white/5 text-[11px] text-zinc-500 font-sub flex items-center gap-1.5">
+          <ShieldAlert size={13} className="text-rose-400" /> A valid call Hard-Sets the cheater. A false accusation Hard-Sets you.
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -163,11 +163,6 @@ export function ActionBar({ state, act }) {
         <Btn testid="declare-bidder-aces-btn" tone="gold" onClick={() => act({ type: 'DECLARE_BIDDER_ACES' })}>
           <Sparkles size={16} /> DECLARE ACES ({pts} PTS)
         </Btn>
-        {s.settings.difficulty === 'hard' && s.turn === 'P' && !s.trickPending && s.trick.length > 0 && (
-          <Btn testid="call-renege-btn" tone="red" onClick={() => act({ type: 'CALL_RENEGE' })}>
-            <Zap size={16} /> CALL RENEGE!
-          </Btn>
-        )}
       </Wrap>
     );
   }
@@ -175,22 +170,24 @@ export function ActionBar({ state, act }) {
   // PLAY hint
   if (s.phase === 'play' && s.turn === 'P' && !s.trickPending) {
     const hard = s.settings.difficulty === 'hard';
-    const canCall = hard && s.trick.length > 0;
+    const canConcede = isBidder && s.trickNo === 1 && s.trick.length === 0;
+    const concedeBtn = canConcede && (
+      <Btn testid="concede-hand-btn" tone="red" onClick={() => act({ type: 'CONCEDE_PREPLAY', seat: 'P' })}>
+        <Flag size={16} /> Concede Hand
+      </Btn>
+    );
     if (hard) {
       return (
         <Wrap pos="banner" hint="CONVICT MODE · no help — the yard is watching for reneges">
           <span className="text-xs font-sub text-rose-300">Play any card · renege at your own risk</span>
-          {canCall && (
-            <Btn testid="call-renege-btn" tone="red" onClick={() => act({ type: 'CALL_RENEGE' })}>
-              <Zap size={16} /> CALL RENEGE!
-            </Btn>
-          )}
+          {concedeBtn}
         </Wrap>
       );
     }
     return (
       <Wrap pos="banner" hint={s.trick.length === 0 ? 'Your lead — pick any highlighted card' : 'Follow suit · head the book if able'}>
         <span className="text-xs font-sub text-slate-400">Tap a glowing card to play</span>
+        {concedeBtn}
       </Wrap>
     );
   }

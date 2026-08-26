@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGame } from './hooks/useGame';
 import { Header, Table, HandTray, DealAnimation } from './components/Table';
 import { ActionBar } from './components/ActionBar';
@@ -10,18 +10,30 @@ import {
   BookReplayModal,
   NewGameConfirmModal,
   MeldDrawer,
+  YardCourtModal,
 } from './components/Modals';
 import { legalPlays } from './game/trick';
 import { TABLE_BG_IMG } from './game/constants';
+import { CutsceneOverlay, TitleVideo } from './components/CutsceneOverlay';
+import { Zap } from 'lucide-react';
 
 export default function BustALead() {
-  const { state, act } = useGame();
+  const { state, act, cutscene, clearCutscene, setPaused } = useGame();
   const [showRules, setShowRules] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showNewGame, setShowNewGame] = useState(false);
   const [showMeld, setShowMeld] = useState(false);
+  const [showAudit, setShowAudit] = useState(false);
   const s = state;
+
+  // Pause the game engine while the Yard Court audit is open.
+  useEffect(() => {
+    setPaused(showAudit);
+  }, [showAudit, setPaused]);
+
+  // The always-pinned CALL RENEGE button is available in Convict Mode during play.
+  const showRenegeButton = s.settings.difficulty === 'hard' && s.phase === 'play';
 
   const onCardClick = (card) => {
     if (s.phase === 'discard' && s.bidWinner === 'P') {
@@ -50,6 +62,7 @@ export default function BustALead() {
             'radial-gradient(ellipse at 50% 42%, rgba(4,8,11,0.42) 0%, rgba(4,8,11,0.62) 62%, rgba(4,8,11,0.82) 100%)',
         }}
       />
+      {s.phase === 'config' && <TitleVideo />}
       {s.phase !== 'config' && (
         <>
           <Header
@@ -79,6 +92,25 @@ export default function BustALead() {
       )}
       {showHistory && <BookReplayModal completedBooks={s.completedBooks} onClose={() => setShowHistory(false)} />}
       {showMeld && <MeldDrawer state={s} onClose={() => setShowMeld(false)} />}
+      {showRenegeButton && (
+        <button
+          data-testid="call-renege-btn"
+          onClick={() => setShowAudit(true)}
+          className="fixed bottom-6 right-6 z-[70] px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 border-2 border-rose-300/50 text-white font-display font-black tracking-wide flex items-center gap-2 shadow-[0_6px_0_rgba(0,0,0,0.5)] active:scale-95 animate-pulse"
+        >
+          <Zap size={18} /> CALL RENEGE!
+        </button>
+      )}
+      {showAudit && (
+        <YardCourtModal
+          state={s}
+          onClose={() => setShowAudit(false)}
+          onAccuse={(seat, book) => {
+            setShowAudit(false);
+            act({ type: 'CALL_RENEGE', accuseSeat: seat, book });
+          }}
+        />
+      )}
       {showNewGame && (
         <NewGameConfirmModal
           onCancel={() => setShowNewGame(false)}
@@ -92,6 +124,7 @@ export default function BustALead() {
           }}
         />
       )}
+      <CutsceneOverlay cutscene={cutscene} onDone={clearCutscene} />
     </div>
   );
 }

@@ -115,6 +115,36 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - P2: Difficulty-specific defender AI depth (Convict smarter card counting).
 - P2: Split `Table.jsx` (~850 lines) into per-component files (non-urgent).
 
+## Updates (2026-06 — Cutscene Video Engine, Yard Court Renege Audit, AI Concession)
+- **Cutscene Video Modal Engine** (`components/CutsceneOverlay.jsx`, wired in `BustALead.jsx`,
+  driven by `hooks/useGame.js`): 5 clips under `/public/assets/cutscenes/`.
+  - `cutscene_title_loop` — looping, muted background behind the config/splash (`TitleVideo`).
+  - `cutscene_renege_busted` — RENEGE CONFIRMED / VIOLATION (5.0s cap).
+  - `cutscene_hardset_canteen` — Hard Set / Busted / Board Set (5.0s cap).
+  - `cutscene_hand_concede` — hand conceded (human or AI fold) (4.5s cap).
+  - `cutscene_trashtalk_smirk` — false accusation + random AI book win (~12%) (4.5s cap).
+  - Full-screen z-[130] overlay, Skip button (`cutscene-skip-btn`) + tap-anywhere, dialogue
+    banner (`cutscene-banner`). Auto-dismiss on error/stall, 2s load-guard, hard cap. Game
+    engine PAUSED while a blocking cutscene plays; accompanying synth SFX cue fires on start.
+  - **CODEC NOTE**: each clip served as BOTH `.webm` (VP9, `<source>` first) and `.mp4`
+    (H.264/AAC fallback). Open-source Chromium (Playwright + preview screenshotter) lacks
+    proprietary H.264, so WebM is required for it to play; real Chrome/Safari/Edge use either.
+    WebMs generated with `ffmpeg -an -c:v libvpx-vp9 -crf 34 -vf scale=1280:-2`.
+- **Yard Court Renege Audit** (`Modals.jsx` `YardCourtModal`): pinned red `call-renege-btn`
+  (bottom-right, Convict Mode, all 25 books) opens a paused inspection modal. `reducer.js`
+  now records `s.playLog` per PLAY_CARD (book, lead, card, exact `handBefore` snapshot, legal
+  flag + `renegeReason`). Modal shows a Book selector (`audit-book-N`), each opponent's played
+  card + hand snapshot, and `accuse-<seat>-btn`. `CALL_RENEGE {accuseSeat, book}` validates
+  Off-Suit Renege / Failure to Head / Failure to Cut/Overtrump / Undeclared Aces → valid =
+  offender Hard Set (renege cutscene); false = accuser Hard Set (trashtalk cutscene).
+- **AI Concession** (`ai.js` `aiConcede`): before leading Book 1 the AI bidder audits book
+  equity; if 4+ below the save floor, DooLow(W) folds 75%, PapaCap(E) folds 35% →
+  CONCEDE_PREPLAY (concession cutscene). Human bidder gets a `concede-hand-btn` at Book-1 lead.
+- Verified: 10/10 Jest pass; testing agent iteration_15.json 7/8 (only failure was H.264
+  playback in open-source Chromium — resolved by adding VP9/WebM sources; title video confirmed
+  playing live). No app crashes/hangs; audit correctly pauses the engine.
+
+
 ## Updates (2026-06 — Request 7: Avatar Scaling & Table Prominence)
 - Enlarged seat portraits (`Table.jsx` `Seat`): bordered avatar cards (w-16→w-24 responsive)
   with nameplates ("Them"/"Ya'll"/"You"), live bankroll chips (`seat-bankroll-*`) and book

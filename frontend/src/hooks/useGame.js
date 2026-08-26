@@ -1,8 +1,9 @@
-import { useReducer, useEffect, useRef } from 'react';
+import { useReducer, useEffect, useRef, useState } from 'react';
 import { reducer, initState } from '../game/reducer';
 import { saveGame } from '../game/storage';
 import { SEATS, SPEED } from '../game/constants';
-import { evaluateBid, chooseTrump, chooseDiscards, shouldGoDouble, laydownChallenge, aiPlay } from '../game/ai';
+import { evaluateBid, chooseTrump, chooseDiscards, shouldGoDouble, laydownChallenge, aiPlay, aiConcede } from '../game/ai';
+import { saveTarget } from '../game/scoring';
 import { SoundEngine } from '../audio/sfx';
 
 function aiBidAction(s, seat) {
@@ -10,6 +11,19 @@ function aiBidAction(s, seat) {
   const nextVal = s.bid == null ? s.settings.bidBase : s.bid + 5;
   if (maxBid >= nextVal) return { type: 'PLACE_BID', seat };
   return { type: 'PASS', seat };
+}
+
+// Maps a settlement state to the cutscene that should play (or null).
+function settlementCutscene(s) {
+  if (s.result === 'busted') {
+    const reason = s.busted?.reason || '';
+    if (/FALSE ACCUSATION/i.test(reason)) return 'trashtalk';
+    if (/RENEGE|VIOLATION/i.test(reason)) return 'renege';
+    return 'hardset';
+  }
+  if (s.result === 'hard') return 'hardset';
+  if (s.result === 'soft' && s.conceded) return 'concession';
+  return null;
 }
 
 // Returns a timeout id (or null). Drives AI turns and timed transitions.
@@ -73,6 +87,21 @@ function drive(s, dispatch, sound) {
       if (s.bidderAcesPending && s.bidWinner && s.bidWinner !== 'P') {
         return setTimeout(() => dispatch({ type: 'DECLARE_BIDDER_ACES' }), Math.max(200, d.think / 2));
       }
+      // Personality-driven AI concession audit before leading Book 1.
+      if (
+        s.bidWinner && s.bidWinner !== 'P' && !s.aiConcedeChecked && !s.bidderAcesPending &&
+        s.trickNo === 1 && s.trick.length === 0 && s.turn === s.bidWinner
+      ) {
+        return setTimeout(() => {
+          const meldTotal = s.meld[s.bidWinner]?.total || 0;
+          const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
+          if (aiConcede(s.bidWinner, s.hands[s.bidWinner], s.trump, bench)) {
+            dispatch({ type: 'CONCEDE_PREPLAY', seat: s.bidWinner });
+          } else {
+            dispatch({ type: 'AI_CONCEDE_CHECKED' });
+          }
+        }, d.think);
+      }
       if (s.trickPending) {
         return setTimeout(() => dispatch({ type: 'RESOLVE_TRICK' }), d.trick);
       }
@@ -95,6 +124,9 @@ export function useGame() {
   const soundRef = useRef(null);
   if (!soundRef.current) soundRef.current = new SoundEngine();
   const prevPhase = useRef(state.phase);
+  const [cutscene, setCutscene] = useState(null);
+  const [paused, setPaused] = useState(false);
+  const trashRef = useRef(state.completedBooks.length);
 
   useEffect(() => {
     saveGame({ bankrolls: state.bankrolls, settings: state.settings, dealer: state.dealer, stats: state.stats });
@@ -104,24 +136,48 @@ export function useGame() {
     soundRef.current.setEnabled(state.settings.sound);
   }, [state.settings.sound]);
 
-  // Settlement sound (once on entering settlement)
+  // Settlement transition: trigger an event cutscene WITH its accompanying SFX cue.
   useEffect(() => {
     if (state.phase === 'settlement' && prevPhase.current !== 'settlement') {
+      const cs = settlementCutscene(state);
       const snd = soundRef.current;
-      if (state.result === 'busted') {
-        const reason = state.busted?.reason || '';
-        if (/RENEGE|FALSE ACCUSATION|VIOLATION/i.test(reason)) snd.renege();
-        else snd.busted();
-      } else if (state.settlement && state.settlement.transfers.some((t) => t.to === 'P')) snd.win();
+      if (cs) {
+        setCutscene({ key: cs, blocking: true });
+        if (cs === 'renege' || cs === 'trashtalk') snd.renege();
+        else if (cs === 'hardset') snd.busted();
+        else if (cs === 'concession') snd.play();
+      } else if (state.result === 'busted') snd.busted();
+      else if (state.settlement && state.settlement.transfers.some((t) => t.to === 'P')) snd.win();
       else snd.lose();
     }
     prevPhase.current = state.phase;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase, state.result, state.settlement, state.busted]);
 
+  // Random Convict trash-talk cutscene when an AI takes a book mid-hand.
   useEffect(() => {
+    if (state.phase !== 'play') {
+      trashRef.current = state.completedBooks.length;
+      return;
+    }
+    if (state.completedBooks.length > trashRef.current) {
+      trashRef.current = state.completedBooks.length;
+      const w = state.lastTrickWinner;
+      if (!cutscene && (w === 'W' || w === 'E') && Math.random() < 0.12) {
+        setCutscene({ key: 'trashtalk', blocking: true });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.completedBooks.length, state.phase]);
+
+  // Drive the game loop, but PAUSE it while a cutscene plays or the audit is open.
+  useEffect(() => {
+    if (cutscene?.blocking || paused) return undefined;
     const id = drive(state, dispatch, soundRef.current);
     return () => id && clearTimeout(id);
-  }, [state]);
+  }, [state, cutscene, paused]);
+
+  const clearCutscene = () => setCutscene(null);
 
   const act = (action) => {
     const snd = soundRef.current;
@@ -129,9 +185,8 @@ export function useGame() {
     if (action.type === 'PLACE_BID') snd.chip();
     else if (action.type === 'PLAY_CARD') snd.play();
     else if (action.type === 'DECLARE_TRUMP') snd.trump();
-    else if (action.type === 'CALL_RENEGE') snd.renege();
     dispatch(action);
   };
 
-  return { state, act, sound: soundRef.current };
+  return { state, act, sound: soundRef.current, cutscene, clearCutscene, setPaused };
 }

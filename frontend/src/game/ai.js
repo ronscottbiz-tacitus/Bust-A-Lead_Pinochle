@@ -74,6 +74,21 @@ export function shouldGoDouble(hand, trump) {
   return trumpLen >= 11 && aces >= 4;
 }
 
+// Personality-driven pre-Book-1 concession. Estimates the bidder's book equity and
+// folds a weak hand (4+ books below the save floor) at a seat-specific rate:
+//   W = DooLow "The Tactician"  -> folds 75% to minimise canteen bleed
+//   E = PapaCap "The Stubborn OG" -> folds only 35%, pushes through 65%
+export function aiConcede(seat, hand, trump, benchmark) {
+  const trumps = hand.filter((c) => c.suit === trump);
+  const topTrump = trumps.filter((c) => c.rank === 'A' || c.rank === '10').length;
+  const offAces = hand.filter((c) => c.rank === 'A' && c.suit !== trump).length;
+  const projected = trumps.length * 1.8 + topTrump * 1.2 + offAces * 2.0 + 6;
+  const deficit = benchmark - projected;
+  if (deficit < 4) return false; // hand is viable — push
+  const foldChance = seat === 'W' ? 0.75 : 0.35;
+  return Math.random() < foldChance;
+}
+
 // Defender decides whether to challenge an exposed lay-down.
 export function laydownChallenge(hand, trump) {
   const trumpLen = hand.filter((c) => c.suit === trump).length;

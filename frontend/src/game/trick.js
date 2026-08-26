@@ -60,6 +60,26 @@ export function trickBooks(trick) {
   return trick.reduce((n, p) => n + (COUNTER_RANKS.has(p.card.rank) ? 1 : 0), 0);
 }
 
+// Given the hand a seat HELD before playing `card` into `trick`, explain why the
+// play was an illegal renege (or return null if it was legal). Used by the Yard
+// Court audit to classify: Off-Suit Renege, Failure to Head, Failure to Cut/Overtrump.
+export function renegeReason(hand, trick, trump, card) {
+  const legal = legalPlays(hand, trick, trump);
+  if (legal.some((c) => c.id === card.id)) return null;
+  if (trick.length === 0) return null; // leading is always legal
+  const led = trick[0].card.suit;
+  const hadLed = hand.some((c) => c.suit === led);
+  if (hadLed && card.suit !== led) return 'Off-Suit Renege — held the led suit';
+  const winIdx = currentWinnerIndex(trick, trump);
+  const winCard = trick[winIdx].card;
+  if (hadLed && card.suit === led && winCard.suit === led)
+    return 'Failure to Head — could out-rank the book but underplayed';
+  const hadTrump = hand.some((c) => c.suit === trump);
+  if (!hadLed && hadTrump && card.suit !== trump) return 'Failure to Cut — void in suit but held trump';
+  if (!hadLed && hadTrump && card.suit === trump) return 'Failure to Overtrump — held a higher trump';
+  return 'Illegal play';
+}
+
 // Public alias — enforces the strict Cutthroat trick hierarchy:
 // 1) follow suit (and head the trick if able), 2) if void must trump & overtrump if able,
 // 3) may only slough an off-suit card when void in BOTH the led suit and trump.

@@ -1,0 +1,30 @@
+{
+  "summary": "Frontend-only regression + feature testing of Cutscene engine, Yard Court renege audit, and Concede flow in Convict/Inmate modes. Core flows PASS. One important asset-level bug found: every .mp4 in /assets/cutscenes/ fails to decode in Chromium (unsupported codec), causing the splash TitleVideo to be silently removed and all cutscene overlays to auto-dismiss without visible playback (skip-button + banner still work due to the 2s load guard).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "TitleVideo (components/CutsceneOverlay.jsx)", "issue": "data-testid=title-cutscene is NOT present in DOM on the splash/config screen. TitleVideo.onError removes the <video> element because Chromium reports 'PipelineStatus::DEMUXER_ERROR_NO_SUPPORTED_STREAMS: FFmpegDemuxer: no supported streams' for /assets/cutscenes/cutscene_title_loop.mp4. HTTP status is 200 (content-type video/mp4, 2.8MB) but the codec inside the container is unsupported by Chromium's stock ffmpeg (video.canPlayType('video/mp4; codecs=\"avc1.42E01E, mp4a.40.2\"') returns '', canPlayType('hev1') returns ''). Same issue affects cutscene_renege_busted, cutscene_hardset_canteen, cutscene_hand_concede, cutscene_trashtalk_smirk. All 5 files need to be re-encoded to H.264 baseline / AAC in a browser-friendly MP4 container (e.g. ffmpeg -i in.mp4 -c:v libx264 -profile:v baseline -pix_fmt yuv420p -movflags +faststart -c:a aac out.mp4).", "selector": "[data-testid=\"title-cutscene\"]", "priority": "HIGH"},
+      {"component": "CutsceneOverlay accusation/concession cutscenes", "issue": "Because of the same codec bug above, the video onError fires immediately, so the overlay is dismissed via the 2s load-guard/onError path instead of playing the intended clip. Skip button, banner, and z-index all work; the game reaches settlement correctly, but users never actually see the cutscene video content.", "selector": "[data-testid^=\"cutscene-\"]", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Re-encode all files in /app/frontend/public/assets/cutscenes/*.mp4 to H.264 (yuv420p, baseline/main profile) + AAC audio in MP4 with +faststart. Chromium currently reports DEMUXER_ERROR_NO_SUPPORTED_STREAMS on every one of them.",
+    "Optionally keep the TitleVideo.onError fallback but log a console.warn so this failure mode is visible during development."
+  ],
+  "critical_code_review_comments": [
+    "TitleVideo silently removes itself on any decode error (setOk(false)) with no logging — makes codec issues invisible in production. Add a console.warn or a visible poster fallback.",
+    "The Yard Court modal correctly pauses the engine (verified: Book counter frozen at 1 for 3s while modal open). Good.",
+    "The renege audit only exposes accuse-<seat>-btn for opponents who have already played in the currently viewed book — correct/expected, but might confuse users on the lead player's turn (only accuse-E was available when W had not yet played)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "88% (7/8 requirements met; title-cutscene DOM presence fails; cutscene overlays functionally work but do not visibly play video due to codec)"},
+  "seed_data_creation": "None",
+  "test_credentials": "None (no auth)",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "App: Bus' A Lead React card game. Difficulty testids are cfg-difficulty-easy/normal/hard (label 'Convict' = hard). To reach 'play' phase in Convict, spam pass-btn — AI often overbids to an Impossible Contract (books > 50) that auto-hard-sets to settlement; click next-hand-btn and retry until a viable contract lands. Then wait ~2.5s for the AI lead card so audit modal has book snapshots before opening. Verified working data-testids: config-screen, cfg-difficulty-hard, cfg-speed-fast, deal-btn, bid-btn, pass-btn, trump-S/H/D/C, call-renege-btn, yard-court-modal, audit-book-1..N, accuse-W-btn, accuse-E-btn, yard-court-close-btn, cutscene-trashtalk, cutscene-skip-btn, cutscene-banner, settlement-modal, next-hand-btn, concede-preplay-btn (concede-hand-btn only after burial+book1 lead by human bidder; same reducer CONCEDE_PREPLAY, verified via preplay button reaching Soft Set/Conceded settlement).",
+  "rca of the issue": "Splash video and cutscene videos never actually play in Chromium: `video.error.code=4`, message `PipelineStatus::DEMUXER_ERROR_NO_SUPPORTED_STREAMS: FFmpegDemuxer: no supported streams`. HTTP delivery is fine (200, video/mp4). The MP4 files use codecs Chromium's ffmpeg cannot demux (likely HEVC/AV1 in an MP4 container, or a non-standard track layout). Because TitleVideo has `onError={() => setOk(false)}`, the element disappears from the DOM entirely, causing the `title-cutscene` selector to be missing. CutsceneOverlay has a similar guard, so accusation/concession cutscenes appear only for a moment (during the 2s load guard) and then auto-dismiss without playback. Mitigation: re-encode the 5 mp4 files with H.264 (avc1) video + AAC audio, yuv420p, faststart. Verified via in-page `document.createElement('video')` + `canPlayType` and by attaching a fresh video element with the same src."
+}
