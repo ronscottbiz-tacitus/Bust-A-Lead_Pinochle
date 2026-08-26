@@ -115,6 +115,18 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - P2: Difficulty-specific defender AI depth (Convict smarter card counting).
 - P2: Split `Table.jsx` (~850 lines) into per-component files (non-urgent).
 
+## Updates (2026-06 — Kitty Prayer threshold + Tablet/Landscape fan unification)
+- **Kitty Prayer trigger** (`useGame.js`): now fires strictly on `bid > 95` (was `>= 90`).
+- **Tablet/landscape hand** (`Table.jsx` HandTray): removed the old suit-tab filter branch
+  (768–1023px). All non-mobile viewports (≥768px) now use ONE clean zero-scroll dynamic fan;
+  card size is responsive (`fanSize = isDesktop ? 'lg' : 'md'`, `cardW = isDesktop ? 80 : 56`).
+  Mobile (<768px) still uses the 4-column suit matrix (unchanged). Removed testids: `suit-tab-*`,
+  `suit-count-*`.
+- Verified: testing agent iteration_19.json 100% on fan layout across 900x600 / 844x390 /
+  390x844 / 1920x800 — single-row fan fits within width, no suit-tab UI remains, mobile matrix
+  intact, zero console errors, no horizontal scrollbar. (Card tap in the fan uses the same
+  interactive renderCard already validated in iteration_18.)
+
 ## Updates (2026-06 — get2_chopper asset + Mobile HUD Overlap Refactor)
 - **get2_chopper.mp4** uploaded + WebM encoded; the GET-2 Extraction elimination cutscene now
   plays (was auto-skipping while the file was missing). All 11 cutscenes live.

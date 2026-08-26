@@ -199,7 +199,7 @@ export function useGame() {
   useEffect(() => {
     if (state.phase === 'discard' && state.kittyCollected && !kittyRef.current) {
       kittyRef.current = true;
-      if ((state.bid || 0) >= 90 && !cutscene) setCutscene({ key: 'kittyprayer', blocking: true });
+      if ((state.bid || 0) > 95 && !cutscene) setCutscene({ key: 'kittyprayer', blocking: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase, state.kittyCollected]);

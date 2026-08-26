@@ -594,17 +594,16 @@ export function HandTray({ state, onCardClick }) {
   const n = hand.length;
   const idx = new Map(hand.map((c, i) => [c.id, i]));
   const { w: winW, h: winH, desktop: isDesktop, mobile: isMobile } = useViewport();
-  // Zero-scroll dynamic overlap: fit all cards inside the available width (desktop fan).
-  const cardW = 80;
+  // Zero-scroll dynamic overlap: fit all cards inside the available width.
+  // Desktop uses larger cards; tablet/landscape uses medium cards for the same clean fan.
+  const fanSize = isDesktop ? 'lg' : 'md';
+  const cardW = isDesktop ? 80 : 56;
   const avail = Math.min(winW - 32, 1500);
   const needed = n > 1 ? (n * cardW - avail) / (n - 1) : 0;
-  const overlap = -Math.min(Math.max(needed, 18), cardW - 22);
+  const overlap = -Math.min(Math.max(needed, 16), cardW - 20);
 
   const groups = { S: [], H: [], D: [], C: [] };
   hand.forEach((c) => groups[c.suit].push(c));
-  const [tab, setTab] = useState('ALL');
-  const activeTab = tab === 'ALL' ? 'ALL' : groups[tab]?.length ? tab : 'ALL';
-  const mobileCards = activeTab === 'ALL' ? hand : groups[activeTab];
 
   const renderCard = (c, size = 'lg') => {
     const i = idx.get(c.id);
@@ -624,11 +623,6 @@ export function HandTray({ state, onCardClick }) {
       />
     );
   };
-
-  const TABS = [
-    { key: 'ALL', label: 'All', count: n },
-    ...SUIT_KEYS.map((k) => ({ key: k, label: SUIT_BY_KEY[k].symbol, count: groups[k].length, suit: k })),
-  ];
 
   // Mobile (<768px): 4-column vertical suit matrix pinned to the bottom, zero-scroll.
   if (isMobile) {
@@ -668,75 +662,33 @@ export function HandTray({ state, onCardClick }) {
     );
   }
 
+  // Tablet / landscape / desktop (>=768px): one clean zero-scroll dynamic fan.
   return (
     <div data-testid="player-hand" className="fixed bottom-3 inset-x-0 z-30 px-2 pb-[env(safe-area-inset-bottom)] pointer-events-none">
-      {isDesktop ? (
-        /* Desktop (>=1024px): zero-scroll dynamic fan */
-        <div className="flex items-end justify-center overflow-visible pb-6 pointer-events-auto">
-          <div className="flex items-end justify-center">
-            {hand.map((c) => {
-              const i = idx.get(c.id);
-              const mid = (n - 1) / 2;
-              const rot = (i - mid) * 1.6;
-              const lift = Math.abs(i - mid) * 2.0;
-              return (
-                <div
-                  key={c.id}
-                  className="hover:-translate-y-8 hover:scale-110 hover:z-40 transition-all duration-150"
-                  style={{
-                    marginLeft: i === 0 ? 0 : overlap,
-                    transform: `rotate(${rot}deg) translateY(${lift}px)`,
-                    transformOrigin: 'bottom center',
-                    zIndex: i,
-                  }}
-                >
-                  {renderCard(c)}
-                </div>
-              );
-            })}
-          </div>
+      <div className="flex items-end justify-center overflow-visible pb-6 pointer-events-auto">
+        <div className="flex items-end justify-center">
+          {hand.map((c) => {
+            const i = idx.get(c.id);
+            const mid = (n - 1) / 2;
+            const rot = (i - mid) * 1.6;
+            const lift = Math.abs(i - mid) * 2.0;
+            return (
+              <div
+                key={c.id}
+                className="hover:-translate-y-8 hover:scale-110 hover:z-40 transition-all duration-150"
+                style={{
+                  marginLeft: i === 0 ? 0 : overlap,
+                  transform: `rotate(${rot}deg) translateY(${lift}px)`,
+                  transformOrigin: 'bottom center',
+                  zIndex: i,
+                }}
+              >
+                {renderCard(c, fanSize)}
+              </div>
+            );
+          })}
         </div>
-      ) : (
-        /* Tablet (768–1023px): suit-tab filter incl. an All two-row grid */
-        <div className="flex flex-col items-center gap-2 pointer-events-auto">
-          <div className="flex gap-1.5 glass rounded-xl px-2 py-1.5 flex-wrap justify-center max-w-[96vw]">
-            {TABS.map((t) => {
-              const active = activeTab === t.key;
-              const su = t.suit ? SUIT_BY_KEY[t.suit] : null;
-              return (
-                <button
-                  key={t.key}
-                  data-testid={`suit-tab-${t.key}`}
-                  onClick={() => setTab(t.key)}
-                  disabled={t.count === 0}
-                  className={`relative px-3 py-1.5 rounded-lg border text-sm font-bold transition-all disabled:opacity-30 ${
-                    active ? 'bg-cyan-500/20 border-cyan-400 neon-cyan' : 'bg-slate-800/60 border-slate-700'
-                  } ${t.suit === s.trump ? 'ring-1 ring-yellow-400/70' : ''}`}
-                >
-                  {su ? (
-                    <span style={{ color: su.neon }} className="text-lg">
-                      {su.symbol}
-                    </span>
-                  ) : (
-                    <span className="text-slate-200">All</span>
-                  )}
-                  <span
-                    data-testid={`suit-count-${t.key}`}
-                    className="absolute -top-1.5 -right-1.5 bg-slate-900 border border-slate-600 text-[9px] font-mono-stat text-slate-200 rounded-full w-4 h-4 flex items-center justify-center"
-                  >
-                    {t.count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex flex-wrap items-end justify-center gap-1 max-w-full max-h-[240px] overflow-y-auto pb-1">
-            {mobileCards.map((c) => (
-              <div key={c.id}>{renderCard(c)}</div>
-            ))}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
