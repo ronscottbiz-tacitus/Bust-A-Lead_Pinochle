@@ -207,6 +207,13 @@ export function ConfigScreen({ state, act }) {
               options={CFG_SOUND}
             />
             <Choice
+              label="Taunt Voices"
+              testidPrefix="cfg-voices"
+              value={s.voices !== false ? 'on' : 'off'}
+              onChange={(v) => set({ voices: v === 'on' })}
+              options={CFG_SOUND}
+            />
+            <Choice
               label="Table Stakes"
               testidPrefix="cfg-stakes"
               value={s.stakesBase || 1}

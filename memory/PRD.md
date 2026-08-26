@@ -131,6 +131,10 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Verified: 10/10 Jest pass, clean compile, no console errors on load. NOTE: audible TTS cannot
   be verified in the headless CI (Playwright Chromium ships no voices / no audio out); it works
   on real Chrome/Safari/Edge/Firefox. Web Speech API presence confirmed; code fails open safely.
+- **Taunt Voices toggle** (2026-06): added a separate `settings.voices` on/off Choice in
+  ConfigScreen (testid `cfg-voices-on`/`cfg-voices-off`, default On), independent of the Sound
+  (SFX) toggle. `useGame` sets `ttsRef.setEnabled(settings.voices !== false)` — players can keep
+  SFX while muting the trash talk. Verified rendering + clean compile.
 
 ## Updates (2026-06 — Kitty Prayer threshold + Tablet/Landscape fan unification)
 - **Kitty Prayer trigger** (`useGame.js`): now fires strictly on `bid > 95` (was `>= 90`).

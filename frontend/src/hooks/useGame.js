@@ -168,8 +168,8 @@ export function useGame() {
 
   useEffect(() => {
     soundRef.current.setEnabled(state.settings.sound);
-    ttsRef.current.setEnabled(state.settings.sound);
-  }, [state.settings.sound]);
+    ttsRef.current.setEnabled(state.settings.voices !== false);
+  }, [state.settings.sound, state.settings.voices]);
 
   // Reset the once-per-hand cutscene guards when a fresh hand is dealt.
   useEffect(() => {
