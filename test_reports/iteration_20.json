@@ -1,0 +1,21 @@
+{
+  "summary": "Verified the bottom-docked compact mobile G2 status bar fix on mobile (390x844) and desktop (1920x800). Mobile: mobile-g2-bar is VISIBLE at bottom-center (y=798, bottom=836 of 844 viewport, z-index=50, position=fixed, bottom:8px) and shows 'G2 / $100.00 / Bk 0 / D'. The player-hand is lifted to bottom:44px with z-index=30 so the bar paints above it (bar z=50 > hand z=30). All 4 suit columns render (S:6, H:7, D:4, C:8 cards) and cards are tappable — successfully clicked a card in suit S. Bar's top (798px) is well below the AI seats at the top and does not overlap the auction/action controls area. Desktop regression passes: mobile-g2-bar is NOT rendered in DOM, seat-books-P dock is visible, dealing/bidding/meld continue/play flow works and 25 cards render.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Mobile portrait play phase", "issues": ["Minor: player-hand bottom edge (y=800) barely overlaps the top of mobile-g2-bar (y=798) by ~2px. Bar's higher z-index (50 vs 30) ensures it paints above, so bar remains fully visible. Not a blocker but could be nudged (e.g., bottom-12) for a truly clear lane."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": ["Consider raising player-hand bottom offset from bottom-11 (44px) to bottom-12 (48px) to give the 38px-tall mobile-g2-bar a fully clear lane (currently 2px visual overlap, saved by z-index only)."],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "mobile-g2-bar now fixed bottom-2 left-1/2 -translate-x-1/2 z-50 and player-hand fixed bottom-11 z-30. On 390x844 the bar's bounding box is x=100.4 w=189.2 y=798 h=38 (bottom=836). Hand box y=445.5 h=354.5 (bottom=800) — 2px overlap saved by higher z-index. Desktop 1920x800: mobile-g2-bar absent (correct), seat-books-P present.",
+  "rca of the issue": "Previous bug: bar was buried among cards because it was in same stacking layer and vertical band as the hand. Fix (verified): raised bar to z-50 and lifted hand up (bottom-0 -> bottom-11) so the bar sits in its own bottom lane and paints above the hand. Reproduction attempt on the current build shows the bar is now visible at the bottom-center in play phase."
+}

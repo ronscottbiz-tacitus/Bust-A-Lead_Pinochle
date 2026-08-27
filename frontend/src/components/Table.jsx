@@ -632,7 +632,7 @@ export function HandTray({ state, onCardClick }) {
     return (
       <div
         data-testid="player-hand"
-        className="fixed inset-x-0 bottom-0 z-30 h-[42%] px-1 pb-[env(safe-area-inset-bottom)] pointer-events-auto overflow-hidden"
+        className="fixed inset-x-0 bottom-12 z-30 h-[42%] px-1 pb-[env(safe-area-inset-bottom)] pointer-events-auto overflow-hidden"
       >
         <div className="grid grid-cols-4 gap-1 h-full">
           {SUIT_KEYS.map((k) => {
@@ -945,7 +945,7 @@ export function Table({ state, onOpenHistory }) {
       {s.phase !== 'config' && isMobile && (
         <div
           data-testid="mobile-g2-bar"
-          className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5"
+          className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5"
         >
           <div
             className={`relative glass rounded-full pl-1 pr-2.5 py-1 flex items-center gap-1.5 transition-all duration-200 ${
