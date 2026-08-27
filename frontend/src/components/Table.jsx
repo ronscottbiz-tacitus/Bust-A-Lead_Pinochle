@@ -945,7 +945,7 @@ export function Table({ state, onOpenHistory }) {
       {s.phase !== 'config' && isMobile && (
         <div
           data-testid="mobile-g2-bar"
-          className="fixed top-[52px] left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5"
+          className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5"
         >
           <div
             className={`relative glass rounded-full pl-1 pr-2.5 py-1 flex items-center gap-1.5 transition-all duration-200 ${
