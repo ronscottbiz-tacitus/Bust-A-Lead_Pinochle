@@ -17,8 +17,10 @@ function aiBidAction(s, seat) {
 // Maps a settlement state to the cutscene { key, data } that should play (or null).
 // Priority: elimination > concession > renege/violation > win/hard-set milestones.
 function settlementCutscene(s) {
-  // 0) G2 final elimination (zero bankroll) — routes back to the main menu.
-  if (s.gameOver && (s.bankrolls?.P ?? 1) <= 0) return { key: 'chopper' };
+  // 0) Match over — G2 extracted at $0 (chopper) or G2 survives + an opponent busts (portal win).
+  if (s.gameOver) {
+    return (s.bankrolls?.P ?? 1) <= 0 ? { key: 'chopper' } : { key: 'portal' };
+  }
 
   // 1) Fold / concede / soft set / board set (thrown in before completing the hand).
   const isConcession = s.result === 'soft' || s.conceded || (s.result === 'hard' && s.boardSet);
@@ -27,7 +29,7 @@ function settlementCutscene(s) {
   // 2) Renege / Bus'-a-Lead violation penalties.
   if (s.result === 'busted') {
     const reason = s.busted?.reason || '';
-    if (/FALSE ACCUSATION/i.test(reason)) return { key: 'trashtalk', data: { speaker: 'E' } };
+    if (/FALSE ACCUSATION/i.test(reason)) return { key: 'falseaccuse', data: { speaker: 'E' } };
     if (/RENEGE|VIOLATION/i.test(reason)) {
       const rc = s.renegeCall;
       let data = null;
@@ -41,12 +43,13 @@ function settlementCutscene(s) {
   }
 
   // 3) G2 makes the contract on a played-out hand — The Canteen Sweep.
-  if (s.result === 'made' && s.bidWinner === 'P') return { key: 'canteensweep' };
+  if (s.result === 'made' && s.bidWinner === 'P') return { key: 'sweep' };
 
-  // 4) Hard Set only after a fully played-out hand fails the contract floor.
+  // 4) Hard Set on a fully played-out hand — character-specific taunt for the busted bidder.
   if (s.result === 'hard' && s.playedOut) {
-    // AI bidder busted while G2 is defending -> "Break Yo Self"; otherwise generic Hard Set.
-    return s.bidWinner !== 'P' ? { key: 'breakyoself' } : { key: 'hardset' };
+    if (s.bidWinner === 'W') return { key: 'doolow_set' };
+    if (s.bidWinner === 'E') return { key: 'papacap_set' };
+    return { key: 'g2_hardset' };
   }
   // Any remaining early hard result is treated as a concession (safety net).
   if (s.result === 'hard') return { key: 'concession' };
@@ -154,6 +157,7 @@ export function useGame() {
   if (!ttsRef.current) ttsRef.current = new TtsEngine();
   const prevPhase = useRef(state.phase);
   const [cutscene, setCutscene] = useState(null);
+  const [taunt, setTaunt] = useState(null);
   const [paused, setPaused] = useState(false);
   const [meldReveal, setMeldReveal] = useState(null);
   const trashRef = useRef(state.completedBooks.length);
@@ -161,6 +165,9 @@ export function useGame() {
   const kittyRef = useRef(false);
   const meldRef = useRef(false);
   const meldPendingRef = useRef(null);
+  const pStreakRef = useRef(0);
+  const bidLogRef = useRef(state.bidLog?.length || 0);
+  const fireTaunt = (key) => setTaunt({ key });
 
   useEffect(() => {
     saveGame({ bankrolls: state.bankrolls, settings: state.settings, dealer: state.dealer, stats: state.stats });
@@ -188,11 +195,11 @@ export function useGame() {
       const snd = soundRef.current;
       if (cs) {
         setCutscene({ key: cs.key, blocking: true, data: cs.data });
-        if (cs.key === 'renege' || cs.key === 'trashtalk' || cs.key === 'chopper') snd.renege();
-        else if (cs.key === 'hardset' || cs.key === 'breakyoself') snd.busted();
-        else if (cs.key === 'canteensweep') snd.win();
+        if (cs.key === 'renege' || cs.key === 'falseaccuse' || cs.key === 'chopper') snd.renege();
+        else if (cs.key === 'hardset' || cs.key === 'doolow_set' || cs.key === 'papacap_set' || cs.key === 'g2_hardset') snd.busted();
+        else if (cs.key === 'sweep' || cs.key === 'portal') snd.win();
         else if (cs.key === 'concession') snd.play();
-        if (cs.key === 'trashtalk') ttsRef.current.taunt(cs.data?.speaker || 'E');
+        if (cs.key === 'falseaccuse') ttsRef.current.taunt(cs.data?.speaker || 'E');
       } else if (state.result === 'busted') snd.busted();
       else if (state.settlement && state.settlement.transfers.some((t) => t.to === 'P')) snd.win();
       else snd.lose();
@@ -233,10 +240,28 @@ export function useGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
 
-  // Random Convict trash-talk cutscene when an AI takes a book mid-hand.
+  // Non-blocking taunt clips when an AI opponent places a bid (DooLow / PapaCap / big bid).
+  useEffect(() => {
+    const log = state.bidLog || [];
+    if (log.length > bidLogRef.current) {
+      const last = log[log.length - 1];
+      bidLogRef.current = log.length;
+      if (last && last.kind === 'bid' && (last.seat === 'W' || last.seat === 'E')) {
+        const val = parseInt((/\$(\d+)/.exec(last.text) || [])[1] || '0', 10);
+        if (last.seat === 'W') fireTaunt('doolow_bid');
+        else fireTaunt(val >= 80 ? 'papacap_bigbid' : 'papacap_bid');
+      }
+    } else {
+      bidLogRef.current = log.length;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.bidLog]);
+
+  // AI trash-talk + non-blocking taunt clips as books complete mid-hand.
   useEffect(() => {
     if (state.phase !== 'play') {
       trashRef.current = state.completedBooks.length;
+      pStreakRef.current = 0;
       return;
     }
     if (state.completedBooks.length > trashRef.current) {
@@ -244,17 +269,28 @@ export function useGame() {
       const last = state.completedBooks[state.completedBooks.length - 1];
       const w = last?.winner;
       const isAI = w === 'W' || w === 'E';
-      const busy = cutscene || meldReveal;
-      if (!busy && isAI && Math.random() < 0.12) {
-        // Full trash-talk cutscene + spoken taunt from the AI who took the book.
-        setCutscene({ key: 'trashtalk', blocking: true, data: { speaker: w } });
-        ttsRef.current.taunt(w);
-      } else if (!busy && isAI && last?.plays?.some((p) => p.card.rank === 'A' && p.seat !== w)) {
-        // An opponent's Ace got captured — "Snatchin' teeth!" (throttled to avoid spam).
-        const now = Date.now();
-        if (now - snatchRef.current > 3500) {
-          snatchRef.current = now;
-          ttsRef.current.snatch(w);
+      const busy = cutscene?.blocking || meldReveal;
+
+      // G2 takes 3 books in a row -> "3 Bang" celebratory taunt (non-blocking).
+      if (w === 'P') {
+        pStreakRef.current += 1;
+        if (pStreakRef.current === 3 && !busy) fireTaunt('g2_3bang');
+      } else {
+        pStreakRef.current = 0;
+      }
+
+      if (isAI) {
+        // Opponent Ace captured -> "Snatchin' teeth!" clip + spoken taunt (throttled).
+        if (last?.plays?.some((p) => p.card.rank === 'A' && p.seat !== w)) {
+          const now = Date.now();
+          if (now - snatchRef.current > 3500) {
+            snatchRef.current = now;
+            if (!busy) fireTaunt('g2_teeth');
+            ttsRef.current.snatch(w);
+          }
+        } else if (!busy && Math.random() < 0.12) {
+          // Minor book win -> spoken trash-talk only (non-blocking, no full-screen cutscene).
+          ttsRef.current.taunt(w);
         }
       }
     }
@@ -277,6 +313,7 @@ export function useGame() {
     }
   };
   const clearMeldReveal = () => setMeldReveal(null);
+  const clearTaunt = () => setTaunt(null);
 
   const act = (action) => {
     const snd = soundRef.current;
@@ -290,5 +327,5 @@ export function useGame() {
     dispatch(action);
   };
 
-  return { state, act, sound: soundRef.current, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal };
+  return { state, act, sound: soundRef.current, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt };
 }

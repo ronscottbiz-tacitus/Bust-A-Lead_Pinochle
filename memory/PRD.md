@@ -111,7 +111,33 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   "60"/"65", subtitle "CUTTHROAT PINOCHLE • CDCR PRISON RULES".
 - Verified: all 7 Jest engine tests pass; frontend testing agent 100% (iteration_9.json).
 
+## Updates (2026-06 — New Taunt Library Rewire + Full-Width Mobile Bottom Bar)
+- **Cutscene key remap** (`useGame.js settlementCutscene`): new keys wired — `portal` (G2 wins the
+  match: gameOver && P bankroll > 0), `chopper` (G2 eliminated), `sweep` (G2 makes contract),
+  `doolow_set` / `papacap_set` (DooLow/PapaCap hard-set, played out), `g2_hardset` (G2 hard-set),
+  `falseaccuse` (false accusation), `renege`, `concession`, `hardset`. SFX cue switch updated to match.
+- **Non-blocking TauntLayer** (`CutsceneOverlay.jsx` `TauntLayer`, wired in `BustALead.jsx`): small
+  bottom-left clip that does NOT pause the game loop. Triggers in `useGame.js`:
+  - AI bid → `doolow_bid` (W) / `papacap_bid` (E) / `papacap_bigbid` (E, bid ≥ $80). Detected via
+    `state.bidLog` growth (last entry kind='bid').
+  - AI captures an opponent Ace → `g2_teeth` (throttled 3.5s) + TTS snatch.
+  - G2 wins 3 books in a row → `g2_3bang`.
+  - Random AI book win (12%) now spoken-taunt only (removed the old blocking `trashtalk` cutscene).
+- **New taunt/cutscene assets NOT yet uploaded** (`doolow_taunt_1/2`, `papacap_taunt_1/2`,
+  `g2_portal`, `g2_renege`, `g2_sweep`, `g2_3bang`, `g2_teeth`) — both overlays triple-guard
+  auto-skip (onError + load timer + hard cap) so missing files never hang the game. Old assets
+  (canteen_sweep, cutscene_renege_busted, hand_concede, hardset_canteen, get2_chopper, kitty_prayer,
+  1000_aces, 90_nuts, trashtalk_smirk) still serve as fallbacks/plays where referenced.
+- **Mobile G2 bar → full-width bottom status bar** (`Table.jsx`): `mobile-g2-bar` now
+  `fixed inset-x-0 bottom-0 z-50 border-t` edge-to-edge console-HUD; mobile `player-hand` raised to
+  `bottom-14` (15px gap, no overlap). Desktop dock unchanged.
+- Verified: 10/10 Jest; testing agent iteration_21.json 100% — mobile bar full-width no-overlap,
+  cards tappable, 5 hands to settlement with no cutscene hang, non-blocking bid taunt observed while
+  auction continued, desktop non-regression, zero console errors / zero asset 404s.
+
 ## Backlog (P1/P2)
+- P0 (pending user upload): remaining 4 MP4 taunt/cutscene assets (doolow/papacap taunts, g2_portal,
+  etc.) — drop into `/public/assets/cutscenes/` (webm+mp4); triggers already wired, will play once present.
 - P2: Difficulty-specific defender AI depth (Convict smarter card counting).
 - P2: Split `Table.jsx` (~850 lines) into per-component files (non-urgent).
 

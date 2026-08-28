@@ -632,7 +632,7 @@ export function HandTray({ state, onCardClick }) {
     return (
       <div
         data-testid="player-hand"
-        className="fixed inset-x-0 bottom-12 z-30 h-[42%] px-1 pb-[env(safe-area-inset-bottom)] pointer-events-auto overflow-hidden"
+        className="fixed inset-x-0 bottom-14 z-30 h-[42%] px-1 pb-[env(safe-area-inset-bottom)] pointer-events-auto overflow-hidden"
       >
         <div className="grid grid-cols-4 gap-1 h-full">
           {SUIT_KEYS.map((k) => {
@@ -945,16 +945,14 @@ export function Table({ state, onOpenHistory }) {
       {s.phase !== 'config' && isMobile && (
         <div
           data-testid="mobile-g2-bar"
-          className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5"
+          className={`fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-2 px-3 py-2 border-t backdrop-blur-md bg-slate-950/85 pb-[env(safe-area-inset-bottom)] transition-all duration-200 ${
+            pTurn ? 'border-cyan-400/80 shadow-[0_-2px_16px_rgba(34,211,238,0.35)]' : pBidder ? 'border-yellow-400/70' : 'border-slate-700/70'
+          }`}
         >
-          <div
-            className={`relative glass rounded-full pl-1 pr-2.5 py-1 flex items-center gap-1.5 transition-all duration-200 ${
-              pTurn ? 'ring-2 ring-cyan-400 neon-cyan' : pBidder ? 'ring-2 ring-yellow-400/70' : ''
-            }`}
-          >
-            <ReactionBadge reaction={reactions.P} testid="reaction-P" className="-top-3 left-4" />
+          <div className="relative flex items-center gap-2 min-w-0">
+            <ReactionBadge reaction={reactions.P} testid="reaction-P" className="-top-5 left-4" />
             <div
-              className={`relative w-7 h-7 rounded-full overflow-hidden border-2 bg-slate-900 flex items-center justify-center font-display font-black text-[10px] ${
+              className={`relative w-8 h-8 rounded-full overflow-hidden border-2 bg-slate-900 flex items-center justify-center font-display font-black text-[10px] shrink-0 ${
                 pTurn ? 'border-cyan-300' : pBidder ? 'border-yellow-400/80' : 'border-cyan-400/50'
               }`}
             >
@@ -969,44 +967,46 @@ export function Table({ state, onOpenHistory }) {
                 }}
               />
             </div>
-            <span className="text-[11px] font-display font-black text-slate-100">G2</span>
-            <span data-testid="seat-books-P" className="text-[11px] font-mono-stat text-emerald-300 flex items-center gap-0.5">
-              <Coins size={9} className="text-yellow-400" />
-              {money(s.bankrolls.P)}
-            </span>
-            {showBooks && (
-              <span className="text-[10px] font-mono-stat text-cyan-300 whitespace-nowrap">
-                Bk {s.books.P}
-                {pBidder ? `/${bench}` : ''}
-              </span>
-            )}
+            <span className="text-[13px] font-display font-black text-slate-100 shrink-0">G2</span>
             {pBidder && (
-              <span className="bg-yellow-400 text-black text-[8px] font-black px-1 rounded-full">BID</span>
-            )}
-            {(s.defenderAces.P === 'single' || s.defenderAces.P === 'double') && (
-              <span data-testid="aces-badge-P" className="text-yellow-200 flex items-center" title={s.defenderAces.P === 'double' ? '1000 Aces!' : 'Aces Declared'}>
-                <Sparkles size={12} />
-              </span>
+              <span className="bg-yellow-400 text-black text-[8px] font-black px-1 rounded-full shrink-0">BID</span>
             )}
             {s.dealer === 'P' && (
               <span
                 data-testid="dealer-chip-P"
-                className="text-[8px] font-black uppercase tracking-wide px-1 py-0.5 rounded-full bg-yellow-500/20 border border-yellow-400/60 text-yellow-200"
+                className="text-[8px] font-black uppercase tracking-wide px-1 py-0.5 rounded-full bg-yellow-500/20 border border-yellow-400/60 text-yellow-200 shrink-0"
               >
                 D
               </span>
             )}
+            {(s.defenderAces.P === 'single' || s.defenderAces.P === 'double') && (
+              <span data-testid="aces-badge-P" className="text-yellow-200 flex items-center shrink-0" title={s.defenderAces.P === 'double' ? '1000 Aces!' : 'Aces Declared'}>
+                <Sparkles size={13} />
+              </span>
+            )}
           </div>
-          {s.completedBooks.length > 0 && (
-            <button
-              data-testid="book-history-btn"
-              onClick={onOpenHistory}
-              className="glass rounded-full p-1.5 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-500/50"
-              aria-label="Book History"
-            >
-              <History size={14} />
-            </button>
-          )}
+          <div className="flex items-center gap-3 shrink-0">
+            <span data-testid="seat-books-P" className="text-[13px] font-mono-stat text-emerald-300 flex items-center gap-1">
+              <Coins size={11} className="text-yellow-400" />
+              {money(s.bankrolls.P)}
+            </span>
+            {showBooks && (
+              <span className="text-[12px] font-mono-stat text-cyan-300 whitespace-nowrap">
+                Bk {s.books.P}
+                {pBidder ? `/${bench}` : ''}
+              </span>
+            )}
+            {s.completedBooks.length > 0 && (
+              <button
+                data-testid="book-history-btn"
+                onClick={onOpenHistory}
+                className="glass rounded-full p-1.5 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-500/50"
+                aria-label="Book History"
+              >
+                <History size={15} />
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
