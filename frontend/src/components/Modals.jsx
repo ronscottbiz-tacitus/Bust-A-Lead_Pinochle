@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { SEAT_LABEL, SEATS } from '../game/constants';
 import { computeMeld } from '../game/meld';
 import { Card } from './Card';
-import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers, Gavel, ShieldAlert } from 'lucide-react';
+import { videoSources, CUTSCENE_LIBRARY } from './CutsceneOverlay';
+import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers, Gavel, ShieldAlert, Film, SkipForward } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 
@@ -790,3 +791,115 @@ export function MeldPhaseModal({ reveal, onClose }) {
   );
 }
 
+
+// Full-screen player for a single reel — plays with audio + native controls; Skip
+// returns to the gallery grid, Close (X) shuts the whole modal.
+function ReelPlayer({ clip, onBack, onClose }) {
+  return (
+    <div
+      data-testid={`reel-player-${clip.base}`}
+      className="fixed inset-0 z-[135] flex items-center justify-center bg-black animate-[fadeIn_0.2s_ease]"
+      onClick={onBack}
+    >
+      <video
+        key={clip.base}
+        autoPlay
+        playsInline
+        controls
+        preload="auto"
+        onEnded={onBack}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full h-full max-w-[100vw] max-h-[100vh] object-contain"
+      >
+        {videoSources(clip.base).map((s) => (
+          <source key={s.src} src={s.src} type={s.type} />
+        ))}
+      </video>
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full bg-black/70 border border-amber-500/50 text-amber-300 text-sm font-display font-black tracking-wide backdrop-blur pointer-events-none">
+        {clip.title}
+      </div>
+      <button
+        data-testid="reel-skip-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          onBack();
+        }}
+        className="absolute bottom-6 right-6 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/30 text-white text-sm font-display font-bold flex items-center gap-2 backdrop-blur transition-colors active:scale-95"
+      >
+        Skip <SkipForward size={16} />
+      </button>
+      <button
+        data-testid="reel-close-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur transition-colors active:scale-95"
+      >
+        <X size={18} />
+      </button>
+    </div>
+  );
+}
+
+// "Yard Reels" — interactive cinematics gallery. Thumbnails seek to a frame (#t=0.5);
+// tapping one opens the full-screen ReelPlayer.
+export function CinematicsModal({ onClose }) {
+  const [selected, setSelected] = useState(null);
+  return (
+    <div data-testid="cinematics-modal" className="fixed inset-0 z-[90] flex">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative m-auto w-full max-w-5xl max-h-[88vh] ${GTA_PANEL} p-5 flex flex-col`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2 text-amber-400">
+            <Film size={20} />
+            <div className="font-display font-black text-xl uppercase tracking-wide">Yard Reels</div>
+            <span className="text-slate-500 text-xs font-sub">{CUTSCENE_LIBRARY.length} clips</span>
+          </div>
+          <button
+            data-testid="close-cinematics-btn"
+            onClick={onClose}
+            className="p-1.5 rounded-lg bg-zinc-800 border border-amber-500/30 text-amber-200 hover:text-white"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pr-1">
+          {CUTSCENE_LIBRARY.map((c) => (
+            <button
+              key={c.base}
+              data-testid={`reel-thumb-${c.base}`}
+              onClick={() => setSelected(c)}
+              className="group relative rounded-xl overflow-hidden border border-amber-500/20 bg-black/50 hover:border-amber-400/70 transition-all active:scale-95 text-left"
+            >
+              <div className="relative aspect-video bg-slate-900">
+                <video muted playsInline preload="metadata" className="w-full h-full object-cover opacity-90 group-hover:opacity-100">
+                  <source src={`/assets/cutscenes/${c.base}.webm#t=0.5`} type="video/webm" />
+                  <source src={`/assets/cutscenes/${c.base}.mp4#t=0.5`} type="video/mp4" />
+                </video>
+                <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover:bg-black/10 transition-colors">
+                  <div className="w-9 h-9 rounded-full bg-amber-500/90 text-black flex items-center justify-center shadow-lg">
+                    <Play size={16} className="ml-0.5" />
+                  </div>
+                </div>
+                <span
+                  className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wide ${
+                    c.tag === 'Taunt'
+                      ? 'bg-fuchsia-500/80 text-white'
+                      : c.tag === 'Ambient'
+                      ? 'bg-slate-600/80 text-white'
+                      : 'bg-amber-500/90 text-black'
+                  }`}
+                >
+                  {c.tag}
+                </span>
+              </div>
+              <div className="px-2 py-1.5 text-[11px] font-sub font-bold text-slate-200 truncate">{c.title}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+      {selected && <ReelPlayer clip={selected} onBack={() => setSelected(null)} onClose={onClose} />}
+    </div>
+  );
+}

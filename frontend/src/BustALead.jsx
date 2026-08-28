@@ -12,10 +12,15 @@ import {
   MeldDrawer,
   YardCourtModal,
   MeldPhaseModal,
+  CinematicsModal,
 } from './components/Modals';
 import { legalPlays } from './game/trick';
 import { TABLE_BG_IMG } from './game/constants';
-import { CutsceneOverlay, TauntOverlay, TitleVideo } from './components/CutsceneOverlay';
+import {
+  CutsceneOverlay,
+  TauntOverlay,
+  TitleVideo,
+} from './components/CutsceneOverlay';
 import { Zap } from 'lucide-react';
 
 export default function BustALead() {
@@ -26,6 +31,7 @@ export default function BustALead() {
   const [showNewGame, setShowNewGame] = useState(false);
   const [showMeld, setShowMeld] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
+  const [showCinematics, setShowCinematics] = useState(false);
   const s = state;
 
   // Pause the game engine while the Yard Court audit is open.
@@ -73,6 +79,7 @@ export default function BustALead() {
             onOpenStats={() => setShowStats(true)}
             onNewGame={() => setShowNewGame(true)}
             onOpenMeld={() => setShowMeld(true)}
+            onOpenCinematics={() => setShowCinematics(true)}
           />
           <Table state={s} onOpenHistory={() => setShowHistory(true)} taunt={taunt} onTauntDone={clearTaunt} />
           <HandTray state={s} onCardClick={onCardClick} />
@@ -93,6 +100,7 @@ export default function BustALead() {
       )}
       {showHistory && <BookReplayModal completedBooks={s.completedBooks} onClose={() => setShowHistory(false)} />}
       {showMeld && <MeldDrawer state={s} onClose={() => setShowMeld(false)} />}
+      {showCinematics && <CinematicsModal onClose={() => setShowCinematics(false)} />}
       {showRenegeButton && (
         <button
           data-testid="call-renege-btn"

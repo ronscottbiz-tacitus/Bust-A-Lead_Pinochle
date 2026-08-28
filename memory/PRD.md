@@ -164,6 +164,27 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   settlement reached across 5 hands with no hang, no SpeechSynthesis, zero console errors, mobile bar +
   tappable cards non-regression. (taunt-overlay-P code path validated; 3-book streak is rare in play.)
 
+## Updates (2026-06 — Full-Length Playback, Muted Avatar Taunts, Yard Reels Gallery)
+- **Full-length video playback** (`CutsceneOverlay.jsx`): removed the premature hard-cap timeouts on
+  ALL `<video>` wrappers (major cutscenes + `useTauntTimers`). Clips now play to their natural
+  `onEnded` or until the user taps Skip. Only a short load-guard remains (dismiss ONLY if playback
+  never starts, e.g. a missing asset) so the game still never hangs. Removed the unused `CAP` map.
+- **Muted avatar taunts** (`AvatarTaunt`, `TauntOverlay`): both now carry the `muted` attribute so the
+  in-frame opponent reaction clips and the player overlay never fight the game SFX. Full-screen major
+  cutscenes (`CutsceneOverlay`) stay UNMUTED and keep their native audio track.
+- **Yard Reels cinematics gallery**: new `Film`-icon nav button (`cinematics-btn`, both desktop +
+  mobile Header clusters) opens `CinematicsModal` (`Modals.jsx`) — a grid of ~20 thumbnail cards
+  (`reel-thumb-<base>`, thumbnail seeks to `#t=0.5` for a poster frame, tagged Cinematic/Taunt/Ambient).
+  Tapping a thumbnail opens `ReelPlayer` (`reel-player-<base>`): full-screen, native controls, audio,
+  a Skip button (`reel-skip-btn`, back to grid) and a Close button (`reel-close-btn`, closes modal).
+  Library manifest = `CUTSCENE_LIBRARY` + `videoSources(basename)` exported from `CutsceneOverlay.jsx`.
+- **Media prep**: all WebMs remuxed to VP9 video + opus audio (copied video) so preview Chromium also
+  gets sound; MP4s carry H.264/AAC. All ~20 assets serve 200.
+- Verified: 10/10 Jest; testing agent iteration_23.json 100% — gallery opens with 20 thumbs (desktop +
+  mobile), reel Skip/Close both work, major cutscenes render full-viewport UNMUTED and are not cut short
+  (reached settlement without a premature-timeout hang), avatar taunts render with `video.muted===true`
+  while the auction keeps running, zero console errors, mobile bar non-regression.
+
 ## Backlog (P1/P2)
 - P2: Difficulty-specific defender AI depth (Convict smarter card counting).
 - P2: Split `Table.jsx` (~850 lines) into per-component files (non-urgent).

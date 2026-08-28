@@ -6,7 +6,7 @@ import { sortHand } from '../game/deck';
 import { computeMeld } from '../game/meld';
 import { saveTarget, booksToMake } from '../game/scoring';
 import { AvatarTaunt } from './CutsceneOverlay';
-import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles, AlertTriangle, ChevronDown, MoreVertical } from 'lucide-react';
+import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles, AlertTriangle, ChevronDown, MoreVertical, Film } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 const STAKE_LABEL = { 1: '$1/$2', 2: '$2/$4', 5: '$5/$10' };
@@ -129,7 +129,7 @@ function TrumpBadge({ trump }) {
   );
 }
 
-export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGame, onOpenMeld }) {
+export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGame, onOpenMeld, onOpenCinematics }) {
   const s = state;
   const { mobile } = useViewport();
   const [menu, setMenu] = useState(false);
@@ -179,6 +179,9 @@ export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGa
               {pillTotal}p
             </button>
           )}
+          <button data-testid="cinematics-btn" onClick={onOpenCinematics} className="p-1.5 rounded-md bg-amber-500/15 border border-amber-400/50 text-amber-200" aria-label="Yard Reels">
+            <Film size={15} />
+          </button>
           <button data-testid="rules-btn" onClick={onOpenRules} className="p-1.5 rounded-md bg-slate-800/70 border border-slate-700 text-slate-300">
             <BookOpen size={15} />
           </button>
@@ -283,6 +286,13 @@ export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGa
             <Layers size={12} /> {SEAT_LABEL[s.bidWinner]} Meld: {pillTotal} pts <ChevronDown size={12} />
           </button>
         )}
+        <button
+          data-testid="cinematics-btn"
+          onClick={onOpenCinematics}
+          className="px-2.5 py-2 rounded-md bg-amber-500/15 border border-amber-400/50 text-amber-200 hover:bg-amber-500/25 transition-colors flex items-center gap-1 text-[11px] font-bold"
+        >
+          <Film size={16} /> <span className="hidden lg:inline">Yard Reels</span>
+        </button>
         <button
           data-testid="stats-btn"
           onClick={onOpenStats}

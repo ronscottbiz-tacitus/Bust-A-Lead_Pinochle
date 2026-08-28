@@ -35,10 +35,38 @@ export function sourcesFor(key) {
   ]);
 }
 
-const CAP = {
-  renege: 5000, concession: 4500, sweep: 5000, portal: 6000,
-  aces1000: 5000, nuts90: 5000, kittyprayer: 5000, chopper: 5000,
-};
+// Direct webm+mp4 sources for a raw asset basename (used by the Yard Reels gallery).
+export function videoSources(basename) {
+  return [
+    { src: `/assets/cutscenes/${basename}.webm`, type: 'video/webm' },
+    { src: `/assets/cutscenes/${basename}.mp4`, type: 'video/mp4' },
+  ];
+}
+
+// The full cinematic library shown in the Yard Reels gallery modal.
+export const CUTSCENE_LIBRARY = [
+  { base: 'g2_portal', title: 'The Get-2 (Match Won)', tag: 'Cinematic' },
+  { base: 'g2_sweep', title: 'The Canteen Sweep', tag: 'Cinematic' },
+  { base: 'g2_renege', title: 'Renege Busted', tag: 'Cinematic' },
+  { base: 'get2_chopper', title: 'The Get-2 Extraction', tag: 'Cinematic' },
+  { base: 'cutscene_hardset_canteen', title: 'Hard Set — Canteen', tag: 'Cinematic' },
+  { base: 'break_yo_self', title: 'Break Yo Self', tag: 'Cinematic' },
+  { base: 'canteen_sweep', title: 'Canteen Sweep (Classic)', tag: 'Cinematic' },
+  { base: 'cutscene_hand_concede', title: 'Hand Conceded', tag: 'Cinematic' },
+  { base: 'cutscene_renege_busted', title: 'Renege (Classic)', tag: 'Cinematic' },
+  { base: 'cutscene_kitty_prayer', title: 'The Widow Prayer', tag: 'Cinematic' },
+  { base: 'cutscene_1000_aces', title: '1,000 Aces', tag: 'Cinematic' },
+  { base: 'cutscene_90_nuts', title: '90 Nutz', tag: 'Cinematic' },
+  { base: 'cutscene_trashtalk_smirk', title: 'Trash Talk', tag: 'Cinematic' },
+  { base: 'doolow_taunt_1', title: 'DooLow — Taunt I', tag: 'Taunt' },
+  { base: 'doolow_taunt_2', title: 'DooLow — Taunt II', tag: 'Taunt' },
+  { base: 'papacap_taunt_1', title: 'PapaCap — Taunt I', tag: 'Taunt' },
+  { base: 'papacap_taunt_2', title: 'PapaCap — Taunt II', tag: 'Taunt' },
+  { base: 'g2_teeth', title: 'Snatchin\u2019 Teeth', tag: 'Taunt' },
+  { base: 'g2_3bang', title: 'G2 — 3 Bang', tag: 'Taunt' },
+  { base: 'cutscene_title_loop', title: 'Title Loop', tag: 'Ambient' },
+];
+
 const BANNER = {
   doolow_set: "DOOLOW GOT SET — TALKIN' NOISE ANYWAY",
   papacap_set: 'SOMEBODY GOT SET IN THE YARD',
@@ -62,14 +90,12 @@ export function CutsceneOverlay({ cutscene, onDone }) {
   const key = cutscene?.key || null;
   const doneRef = useRef(false);
   const startedRef = useRef(false);
-  const capTimer = useRef(null);
   const loadTimer = useRef(null);
   const [failed, setFailed] = useState(false);
 
   const finish = () => {
     if (doneRef.current) return;
     doneRef.current = true;
-    clearTimeout(capTimer.current);
     clearTimeout(loadTimer.current);
     onDone?.();
   };
@@ -79,12 +105,12 @@ export function CutsceneOverlay({ cutscene, onDone }) {
     doneRef.current = false;
     startedRef.current = false;
     setFailed(false);
-    capTimer.current = setTimeout(finish, CAP[key] || 5000);
+    // No hard cap — the clip plays to its natural end (onEnded) or until the user taps Skip.
+    // The only guard is a short load timer that dismisses if playback never starts (missing asset).
     loadTimer.current = setTimeout(() => {
       if (!startedRef.current) finish();
-    }, 2000);
+    }, 2500);
     return () => {
-      clearTimeout(capTimer.current);
       clearTimeout(loadTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -160,14 +186,12 @@ export function CutsceneOverlay({ cutscene, onDone }) {
 function useTauntTimers(active, onDone) {
   const doneRef = useRef(false);
   const startedRef = useRef(false);
-  const cap = useRef(null);
   const load = useRef(null);
   const [failed, setFailed] = useState(false);
 
   const finish = () => {
     if (doneRef.current) return;
     doneRef.current = true;
-    clearTimeout(cap.current);
     clearTimeout(load.current);
     onDone?.();
   };
@@ -177,12 +201,11 @@ function useTauntTimers(active, onDone) {
     doneRef.current = false;
     startedRef.current = false;
     setFailed(false);
-    cap.current = setTimeout(finish, 5000);
+    // Play to the clip's natural end; only dismiss early if playback never starts (missing asset).
     load.current = setTimeout(() => {
       if (!startedRef.current) finish();
-    }, 1500);
+    }, 2000);
     return () => {
-      clearTimeout(cap.current);
       clearTimeout(load.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -205,6 +228,7 @@ export function AvatarTaunt({ taunt, seat, onDone }) {
       <video
         key={active}
         autoPlay
+        muted
         playsInline
         preload="auto"
         onPlaying={() => {
@@ -239,6 +263,7 @@ export function TauntOverlay({ taunt, seats = ['P'], onDone }) {
       <video
         key={active}
         autoPlay
+        muted
         playsInline
         preload="auto"
         onPlaying={() => {

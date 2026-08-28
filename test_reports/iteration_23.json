@@ -1,0 +1,24 @@
+{
+  "summary": "Verified the Bust'a'Lead 'Yard Reels' cinematics gallery + full-length playback + muted avatar taunts. Desktop 1920x1080 and Mobile 390x844 both pass. (1) Yard Reels button (cinematics-btn) renders in the in-game top nav on both desktop and mobile; clicking it opens cinematics-modal with exactly 20 reel-thumb-* cards (base list includes g2_portal, g2_sweep, g2_renege, get2_chopper, cutscene_hardset_canteen, ...). (2) Reel playback: clicking reel-thumb-g2_portal opens full-screen reel-player-g2_portal with a video autoplaying from /assets/cutscenes/g2_portal.webm; reel-skip-btn returns to the grid (modal still open); reel-close-btn closes the entire modal. Both controls confirmed. (3) Full-length major cutscenes: during a Convict hand where the human passes the auction, cutscene-aces1000 and cutscene-renege both rendered as full-viewport overlays with cutscene-skip-btn available; they are unmuted (video.muted === false) as required and the hand ultimately reached settlement-modal (BUS' A LEAD VIOLATION render). No premature timeout hang observed. (4) Avatar taunts: both avatar-taunt-W (DooLow) and avatar-taunt-E (PapaCap) rendered during the auction; inner <video> element has muted === true (JS property set), matching the spec (avatar/overlay taunts muted). Game loop was not frozen — auction advanced through PASS clicks while taunts were visible. (5) Mobile 390x844: cinematics-btn appears once (in the compact mobile header), opens the same 20-thumb gallery; mobile-g2-bar remains present after closing the modal (non-regression). (6) Zero uncaught pageerrors and zero console errors across all runs.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "CUTSCENE_LIBRARY is defined inline inside CutsceneOverlay.jsx. Since gameplay hooks (useGame.js) also key into cutscenes by base name, consider extracting the library into cutscenes.config.js so hooks and overlay/gallery share a single source of truth for keys.",
+    "Modals.jsx now exceeds 800 lines with the added CinematicsModal and ReelPlayer — approaching the 700-line split threshold. Consider extracting the cinematics gallery into its own file (CinematicsModal.jsx).",
+    "Table.jsx renders cinematics-btn in both a mobile cluster (line 182) and a desktop cluster (line 290). This is intentional but ensure only ONE is visible per breakpoint (currently visibility appears to be handled by wrapping visibility classes) — during mobile testing exactly 1 was found, which is correct.",
+    "The full-screen reel-player <video> element does not have preload='metadata' or a poster, so the thumbnail #t=0.5 fragment technique only helps on the grid. Consider adding preload='metadata' to the grid thumbnails to reduce initial bandwidth if many users open the gallery."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Selectors of interest: cinematics-btn (top nav, both desktop and mobile header clusters — mobile shows exactly 1), cinematics-modal (fixed inset-0 z-[90] gallery), reel-thumb-<base> (20 total; bases include g2_portal, g2_sweep, g2_renege, get2_chopper, cutscene_hardset_canteen, cutscene_hand_concede, doolow_taunt_1, papacap_taunt_1). reel-player-<base> full-screen with native controls + reel-skip-btn (returns to grid) + reel-close-btn (closes whole modal). Muted policy: avatar-taunt-W/E and taunt-overlay-P inner <video>.muted === true; full-screen cutscene-<key> inner <video>.muted === false. muted attribute on element may not be present (React sets the DOM property directly) — verify via v.muted, not v.hasAttribute('muted'). To reach settlement fastest: Convict difficulty → DEAL CARDS → PASS auction repeatedly → handle 'Declare Aces Around' if prompted. In one run the AI took contract and a renege cutscene fired then settled to BUS' A LEAD VIOLATION modal.",
+  "rca of the issue": "N/A — all six review items pass."
+}
