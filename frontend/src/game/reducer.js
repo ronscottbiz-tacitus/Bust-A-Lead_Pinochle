@@ -91,7 +91,6 @@ export function initState() {
       sortMode: 'suit',
       animSpeed: 'normal',
       sound: true,
-      voices: true,
       stakesBase: 1,
       difficulty: 'normal',
       ...(saved?.settings || {}),

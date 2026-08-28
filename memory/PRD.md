@@ -141,6 +141,29 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   `g2_3bang`, `g2_teeth` (each mp4 + vp9 webm in `/public/assets/cutscenes/`). Every cutscene/taunt
   trigger now has a real video; nothing skips for missing assets anymore.
 
+## Updates (2026-06 — Cutscene Presentation Rework + Full TTS Purge)
+- **Removed the corner PiP taunt box** (`TauntLayer` deleted from `CutsceneOverlay.jsx`). Minor taunts
+  now render as reaction clips INSIDE the opponent avatar portrait frames:
+  - `AvatarTaunt` (new, exported) fills a seat's rounded avatar frame (`absolute inset-0 object-cover`)
+    when `taunt.seat === seat`. `data-testid=avatar-taunt-<seat>`. Wired into `Seat` (W/E) in `Table.jsx`;
+    `Table` now takes `taunt`/`onTauntDone` props passed from `BustALead`.
+  - `TauntOverlay` (new, exported) = transparent, centered, non-blocking clip (no box/border) for the
+    player's own celebration (`g2_3bang`, seat P). `data-testid=taunt-overlay-P`. Rendered in `BustALead`.
+  - Taunt→seat mapping (`useGame.fireTaunt(key, seat)`): `doolow_bid`→W, `papacap_bid`/`papacap_bigbid`→E,
+    `g2_teeth`→capturing AI seat, `g2_3bang`→P.
+- **Major cutscenes stay full-screen** (`CutsceneOverlay`): full-viewport `z-[130]` overlay with a dark
+  radial vignette backdrop, `cutscene-banner`, `cutscene-skip-btn`, triple-guard auto-dismiss.
+- **Native video audio**: all cutscene/taunt `<video>` elements are now UNMUTED so the clip's embedded
+  audio plays (title loop stays muted/ambient). Every WebM was remuxed to VP9 video + **opus audio**
+  (copied video, fast) so the preview Chromium also gets sound; MP4s carry H.264/AAC.
+- **TTS fully purged**: deleted `src/audio/tts.js`; removed all `TtsEngine`/SpeechSynthesis calls from
+  `useGame.js`; removed the "Taunt Voices" config toggle (`Modals.jsx`) and the `settings.voices`
+  default (`reducer.js`). Grep confirms 0 SpeechSynthesis references remain.
+- Verified: 10/10 Jest; testing agent iteration_22.json 100% — corner box gone, avatar-taunt-W/E render
+  inside seats while the auction keeps running, concession cutscene full-viewport (1920x1080) with skip,
+  settlement reached across 5 hands with no hang, no SpeechSynthesis, zero console errors, mobile bar +
+  tappable cards non-regression. (taunt-overlay-P code path validated; 3-book streak is rare in play.)
+
 ## Backlog (P1/P2)
 - P2: Difficulty-specific defender AI depth (Convict smarter card counting).
 - P2: Split `Table.jsx` (~850 lines) into per-component files (non-urgent).

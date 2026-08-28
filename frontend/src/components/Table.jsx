@@ -5,6 +5,7 @@ import { legalPlays } from '../game/trick';
 import { sortHand } from '../game/deck';
 import { computeMeld } from '../game/meld';
 import { saveTarget, booksToMake } from '../game/scoring';
+import { AvatarTaunt } from './CutsceneOverlay';
 import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles, AlertTriangle, ChevronDown, MoreVertical } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
@@ -345,7 +346,7 @@ function ReactionBadge({ reaction, testid, className = '' }) {
   );
 }
 
-function Seat({ state, seat, corner, reaction }) {
+function Seat({ state, seat, corner, reaction, taunt, onTauntDone }) {
   const s = state;
   const meldTotal = s.meld[s.bidWinner]?.total || 0;
   const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
@@ -423,6 +424,7 @@ function Seat({ state, seat, corner, reaction }) {
           {isTurn && (
             <div className="absolute inset-0 rounded-2xl ring-4 ring-inset ring-cyan-400/50 animate-pulse pointer-events-none" />
           )}
+          <AvatarTaunt taunt={taunt} seat={seat} onDone={onTauntDone} />
           {isBidder && (
             <div className="absolute top-0.5 right-0.5 bg-yellow-400 text-black text-[8px] font-black px-1 rounded-full shadow">
               BID
@@ -823,7 +825,7 @@ export function DealAnimation({ state }) {
   );
 }
 
-export function Table({ state, onOpenHistory }) {
+export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
   const s = state;
   const meldTotal = s.meld[s.bidWinner]?.total || 0;
   const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
@@ -841,8 +843,8 @@ export function Table({ state, onOpenHistory }) {
         data-testid="table-watermark"
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-15 mix-blend-luminosity pointer-events-none w-96 max-w-full z-0"
       />
-      <Seat state={state} seat="W" corner="top-2 left-2 sm:top-4 sm:left-6" reaction={reactions.W} />
-      <Seat state={state} seat="E" corner="top-2 right-2 sm:top-4 sm:right-6" reaction={reactions.E} />
+      <Seat state={state} seat="W" corner="top-2 left-2 sm:top-4 sm:left-6" reaction={reactions.W} taunt={taunt} onTauntDone={onTauntDone} />
+      <Seat state={state} seat="E" corner="top-2 right-2 sm:top-4 sm:right-6" reaction={reactions.E} taunt={taunt} onTauntDone={onTauntDone} />
       <CenterArea state={state} />
       <SaveHUD state={state} />
       <DiscardHUD state={state} />

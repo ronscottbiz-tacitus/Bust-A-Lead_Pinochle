@@ -15,7 +15,7 @@ import {
 } from './components/Modals';
 import { legalPlays } from './game/trick';
 import { TABLE_BG_IMG } from './game/constants';
-import { CutsceneOverlay, TauntLayer, TitleVideo } from './components/CutsceneOverlay';
+import { CutsceneOverlay, TauntOverlay, TitleVideo } from './components/CutsceneOverlay';
 import { Zap } from 'lucide-react';
 
 export default function BustALead() {
@@ -74,7 +74,7 @@ export default function BustALead() {
             onNewGame={() => setShowNewGame(true)}
             onOpenMeld={() => setShowMeld(true)}
           />
-          <Table state={s} onOpenHistory={() => setShowHistory(true)} />
+          <Table state={s} onOpenHistory={() => setShowHistory(true)} taunt={taunt} onTauntDone={clearTaunt} />
           <HandTray state={s} onCardClick={onCardClick} />
           <ActionBar state={s} act={act} />
           <DealAnimation state={s} />
@@ -126,7 +126,7 @@ export default function BustALead() {
         />
       )}
       <CutsceneOverlay cutscene={cutscene} onDone={clearCutscene} />
-      <TauntLayer taunt={taunt} onDone={clearTaunt} />
+      <TauntOverlay taunt={taunt} seats={['P']} onDone={clearTaunt} />
       {meldReveal && <MeldPhaseModal reveal={meldReveal} onClose={clearMeldReveal} />}
     </div>
   );

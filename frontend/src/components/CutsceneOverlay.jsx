@@ -20,7 +20,7 @@ const FILE = {
   kittyprayer: ['cutscene_kitty_prayer'],
   chopper: ['get2_chopper'],
   hardset: ['cutscene_hardset_canteen'],
-  // Non-blocking taunt layer — frequent events.
+  // Non-blocking taunt layer — frequent events (rendered in avatar frames / transparent overlay).
   doolow_bid: ['doolow_taunt_2'],
   papacap_bid: ['papacap_taunt_1'],
   papacap_bigbid: ['papacap_taunt_2'],
@@ -55,7 +55,8 @@ const BANNER = {
   hardset: 'HARD SET — CANTEEN WIPED OUT',
 };
 
-// Full-screen blocking cinematic. Muted+playsInline so autoplay is never blocked;
+// Full-screen blocking cinematic. UNMUTED so the clip's native audio plays (SFX/voice
+// live inside the MP4/WebM containers). playsInline so mobile never full-screens it;
 // auto-dismisses on end / error / stall / cap so the game NEVER freezes.
 export function CutsceneOverlay({ cutscene, onDone }) {
   const key = cutscene?.key || null;
@@ -94,14 +95,15 @@ export function CutsceneOverlay({ cutscene, onDone }) {
 
   return (
     <div
-      className="fixed inset-0 z-[130] bg-black flex items-center justify-center animate-[fadeIn_0.2s_ease]"
+      className="fixed inset-0 z-[130] flex items-center justify-center animate-[fadeIn_0.2s_ease]"
       data-testid={`cutscene-${key}`}
       onClick={finish}
     >
+      {/* Dark vignette backdrop behind the centered cinematic. */}
+      <div className="absolute inset-0 bg-black/85" style={{ background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.94) 100%)' }} />
       <video
         key={key}
         autoPlay
-        muted
         playsInline
         preload="auto"
         onPlaying={() => {
@@ -115,7 +117,7 @@ export function CutsceneOverlay({ cutscene, onDone }) {
         onStalled={() => {
           if (!startedRef.current) finish();
         }}
-        className="w-full h-full object-contain"
+        className="relative w-full h-full max-w-[100vw] max-h-[100vh] object-contain"
       >
         {sourcesFor(key).map((s) => (
           <source key={s.src} src={s.src} type={s.type} />
@@ -154,10 +156,8 @@ export function CutsceneOverlay({ cutscene, onDone }) {
   );
 }
 
-// Compact NON-BLOCKING taunt clip (does not pause game logic). Auto-dismisses
-// on end/error/stall/cap; missing files vanish instantly.
-export function TauntLayer({ taunt, onDone }) {
-  const key = taunt?.key || null;
+// Shared auto-dismiss timer logic for the non-blocking taunt clips.
+function useTauntTimers(active, onDone) {
   const doneRef = useRef(false);
   const startedRef = useRef(false);
   const cap = useRef(null);
@@ -173,11 +173,11 @@ export function TauntLayer({ taunt, onDone }) {
   };
 
   useEffect(() => {
-    if (!key) return;
+    if (!active) return undefined;
     doneRef.current = false;
     startedRef.current = false;
     setFailed(false);
-    cap.current = setTimeout(finish, 3200);
+    cap.current = setTimeout(finish, 5000);
     load.current = setTimeout(() => {
       if (!startedRef.current) finish();
     }, 1500);
@@ -186,35 +186,72 @@ export function TauntLayer({ taunt, onDone }) {
       clearTimeout(load.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [active]);
 
-  if (!key || failed) return null;
+  return { failed, startedRef, finish };
+}
 
+// Non-blocking reaction clip rendered INSIDE an opponent's avatar portrait frame.
+// Fills the rounded frame (object-cover). Unmuted so the clip's own audio plays.
+export function AvatarTaunt({ taunt, seat, onDone }) {
+  const active = taunt && taunt.seat === seat ? taunt.key : null;
+  const { failed, startedRef, finish } = useTauntTimers(active, onDone);
+  if (!active || failed) return null;
   return (
     <div
-      data-testid={`taunt-${key}`}
-      className="fixed bottom-24 left-3 z-[120] w-40 sm:w-52 rounded-xl overflow-hidden border-2 border-amber-500/60 shadow-2xl pointer-events-none animate-[fadeIn_0.2s_ease]"
+      data-testid={`avatar-taunt-${seat}`}
+      className="absolute inset-0 z-30 rounded-2xl overflow-hidden animate-[fadeIn_0.15s_ease]"
     >
       <video
-        key={key}
+        key={active}
         autoPlay
-        muted
         playsInline
         preload="auto"
         onPlaying={() => {
           startedRef.current = true;
         }}
         onEnded={finish}
-        onError={() => {
-          setFailed(true);
-          finish();
-        }}
+        onError={finish}
         onStalled={() => {
           if (!startedRef.current) finish();
         }}
-        className="w-full h-auto"
+        className="w-full h-full object-cover"
       >
-        {sourcesFor(key).map((s) => (
+        {sourcesFor(active).map((s) => (
+          <source key={s.src} src={s.src} type={s.type} />
+        ))}
+      </video>
+    </div>
+  );
+}
+
+// Non-blocking, transparent, centered reaction clip (used for G2's own celebratory
+// taunts). No corner box, no border — a clean overlay that does not pause the game.
+export function TauntOverlay({ taunt, seats = ['P'], onDone }) {
+  const active = taunt && seats.includes(taunt.seat) ? taunt.key : null;
+  const { failed, startedRef, finish } = useTauntTimers(active, onDone);
+  if (!active || failed) return null;
+  return (
+    <div
+      data-testid={`taunt-overlay-${taunt.seat}`}
+      className="fixed inset-0 z-[110] flex items-center justify-center pointer-events-none animate-[fadeIn_0.15s_ease]"
+    >
+      <video
+        key={active}
+        autoPlay
+        playsInline
+        preload="auto"
+        onPlaying={() => {
+          startedRef.current = true;
+        }}
+        onEnded={finish}
+        onError={finish}
+        onStalled={() => {
+          if (!startedRef.current) finish();
+        }}
+        className="w-[62vw] max-w-md h-auto max-h-[60vh] object-contain drop-shadow-[0_10px_40px_rgba(0,0,0,0.8)]"
+      >
+        {sourcesFor(active).map((s) => (
           <source key={s.src} src={s.src} type={s.type} />
         ))}
       </video>

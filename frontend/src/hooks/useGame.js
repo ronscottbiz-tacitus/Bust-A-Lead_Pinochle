@@ -5,7 +5,6 @@ import { SEATS, SPEED } from '../game/constants';
 import { evaluateBid, chooseTrump, chooseDiscards, shouldGoDouble, laydownChallenge, aiPlay, aiConcede } from '../game/ai';
 import { saveTarget } from '../game/scoring';
 import { SoundEngine } from '../audio/sfx';
-import { TtsEngine } from '../audio/tts';
 
 function aiBidAction(s, seat) {
   const { maxBid } = evaluateBid(s.hands[seat], s.settings.bidBase, s.settings.difficulty);
@@ -153,8 +152,6 @@ export function useGame() {
   const [state, dispatch] = useReducer(reducer, undefined, initState);
   const soundRef = useRef(null);
   if (!soundRef.current) soundRef.current = new SoundEngine();
-  const ttsRef = useRef(null);
-  if (!ttsRef.current) ttsRef.current = new TtsEngine();
   const prevPhase = useRef(state.phase);
   const [cutscene, setCutscene] = useState(null);
   const [taunt, setTaunt] = useState(null);
@@ -167,7 +164,7 @@ export function useGame() {
   const meldPendingRef = useRef(null);
   const pStreakRef = useRef(0);
   const bidLogRef = useRef(state.bidLog?.length || 0);
-  const fireTaunt = (key) => setTaunt({ key });
+  const fireTaunt = (key, seat) => setTaunt({ key, seat });
 
   useEffect(() => {
     saveGame({ bankrolls: state.bankrolls, settings: state.settings, dealer: state.dealer, stats: state.stats });
@@ -175,8 +172,7 @@ export function useGame() {
 
   useEffect(() => {
     soundRef.current.setEnabled(state.settings.sound);
-    ttsRef.current.setEnabled(state.settings.voices !== false);
-  }, [state.settings.sound, state.settings.voices]);
+  }, [state.settings.sound]);
 
   // Reset the once-per-hand cutscene guards when a fresh hand is dealt.
   useEffect(() => {
@@ -199,7 +195,6 @@ export function useGame() {
         else if (cs.key === 'hardset' || cs.key === 'doolow_set' || cs.key === 'papacap_set' || cs.key === 'g2_hardset') snd.busted();
         else if (cs.key === 'sweep' || cs.key === 'portal') snd.win();
         else if (cs.key === 'concession') snd.play();
-        if (cs.key === 'falseaccuse') ttsRef.current.taunt(cs.data?.speaker || 'E');
       } else if (state.result === 'busted') snd.busted();
       else if (state.settlement && state.settlement.transfers.some((t) => t.to === 'P')) snd.win();
       else snd.lose();
@@ -248,8 +243,8 @@ export function useGame() {
       bidLogRef.current = log.length;
       if (last && last.kind === 'bid' && (last.seat === 'W' || last.seat === 'E')) {
         const val = parseInt((/\$(\d+)/.exec(last.text) || [])[1] || '0', 10);
-        if (last.seat === 'W') fireTaunt('doolow_bid');
-        else fireTaunt(val >= 80 ? 'papacap_bigbid' : 'papacap_bid');
+        if (last.seat === 'W') fireTaunt('doolow_bid', 'W');
+        else fireTaunt(val >= 80 ? 'papacap_bigbid' : 'papacap_bid', 'E');
       }
     } else {
       bidLogRef.current = log.length;
@@ -257,7 +252,7 @@ export function useGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.bidLog]);
 
-  // AI trash-talk + non-blocking taunt clips as books complete mid-hand.
+  // Non-blocking taunt clips (rendered in avatar frames / transparent overlay) as books complete.
   useEffect(() => {
     if (state.phase !== 'play') {
       trashRef.current = state.completedBooks.length;
@@ -271,26 +266,20 @@ export function useGame() {
       const isAI = w === 'W' || w === 'E';
       const busy = cutscene?.blocking || meldReveal;
 
-      // G2 takes 3 books in a row -> "3 Bang" celebratory taunt (non-blocking).
+      // G2 takes 3 books in a row -> "3 Bang" celebratory taunt (transparent overlay).
       if (w === 'P') {
         pStreakRef.current += 1;
-        if (pStreakRef.current === 3 && !busy) fireTaunt('g2_3bang');
+        if (pStreakRef.current === 3 && !busy) fireTaunt('g2_3bang', 'P');
       } else {
         pStreakRef.current = 0;
       }
 
-      if (isAI) {
-        // Opponent Ace captured -> "Snatchin' teeth!" clip + spoken taunt (throttled).
-        if (last?.plays?.some((p) => p.card.rank === 'A' && p.seat !== w)) {
-          const now = Date.now();
-          if (now - snatchRef.current > 3500) {
-            snatchRef.current = now;
-            if (!busy) fireTaunt('g2_teeth');
-            ttsRef.current.snatch(w);
-          }
-        } else if (!busy && Math.random() < 0.12) {
-          // Minor book win -> spoken trash-talk only (non-blocking, no full-screen cutscene).
-          ttsRef.current.taunt(w);
+      // Opponent Ace captured by an AI -> "Snatchin' teeth!" clip in the captor's avatar (throttled).
+      if (isAI && last?.plays?.some((p) => p.card.rank === 'A' && p.seat !== w)) {
+        const now = Date.now();
+        if (now - snatchRef.current > 3500 && !busy) {
+          snatchRef.current = now;
+          fireTaunt('g2_teeth', w);
         }
       }
     }
@@ -319,7 +308,6 @@ export function useGame() {
     const snd = soundRef.current;
     if (action.type === 'START_ROUND' || action.type === 'NEXT_HAND' || action.type === 'RESET_TABLE') {
       snd.ensure();
-      ttsRef.current.prime();
     }
     if (action.type === 'PLACE_BID') snd.chip();
     else if (action.type === 'PLAY_CARD') snd.play();

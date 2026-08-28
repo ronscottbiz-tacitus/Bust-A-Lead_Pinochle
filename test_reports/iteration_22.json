@@ -1,0 +1,23 @@
+{
+  "summary": "Verified the presentation rework for Bust'a'Lead: (a) the old bottom-left corner PiP taunt box (data-testid taunt-<key>) is GONE — no matching testid seen across ~5 hands on desktop or mobile; (b) minor taunts now render INSIDE the opponent avatar frames — avatar-taunt-W (DooLow) and avatar-taunt-E (PapaCap) were both observed during the auction and the auction proceeded to completion (contract taken, hand played on); (c) MAJOR cutscene tested: cutscene-concession rendered as a full-viewport overlay with dimensions {w:1920,h:1080,x:0,y:0} on desktop 1920x1080, contained cutscene-skip-btn and cutscene-banner, and auto-dismissed / was skippable so the game reached the SettlementModal on multiple hands; (d) TTS fully purged — grep across /app/frontend/src returns 0 hits for SpeechSynthesis / TtsEngine / tts.js / 'Taunt Voices' / voices setting, and 0 SpeechSynthesis-related console messages during play; (e) Config screen does not contain 'Taunt Voices' anywhere in the DOM; (f) Zero uncaught page errors, zero console errors across the runs; (g) Mobile 390x844: mobile-g2-bar is present, player-hand present, first card bounding box (24,449,52x74) — cards remain tappable; avatar-taunt-W/E also observed on mobile. Videos are unmuted per spec — Chromium autoplayed VP9/opus WebM sources with sound with no autoplay-block errors; the game loop was never frozen (auction advanced while avatar-taunts were visible, and full-screen cutscenes auto-cleared).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Table.jsx is ~1015 lines — still above the 700-line split threshold. Suggest extracting Seat, HandTray, and the mobile-g2-bar into their own files for maintainability.",
+    "CutsceneOverlay.jsx cleanly separates CutsceneOverlay / AvatarTaunt / TauntOverlay with shared useTauntTimers — good factoring. Consider extracting the FILE map and BANNER map to a config file (cutscenes.config.js) so gameplay hooks and the overlay share a single source of truth for keys.",
+    "useGame.js fireTaunt logic parses the bid amount by regex on a display string ('/\\\\$(\\\\d+)/.exec(last.text)'). Fragile if the bidLog text format ever changes. Prefer storing the numeric bid value directly on the bidLog entry."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Selectors of interest: cutscene-<key> is a fixed inset-0 z-[130] full-viewport overlay, contains cutscene-skip-btn (bottom-right) and cutscene-banner (top-center). avatar-taunt-<seat> renders absolute inset-0 INSIDE the seat's avatar div (inside seat-W / seat-E). taunt-overlay-P is a transparent centered overlay for the human seat P (only fires on 3-book streak — rare; not observed in this run but code path validated). To force AI-takes-contract: choose Convict difficulty then click PASS every auction round. To reach settlement quickly: pass through auction, then click 'Declare Aces Around' if the yellow banner prompts (otherwise the human eats a Bus'-a-Lead renege). Old corner-box testid pattern 'taunt-<key>' (e.g. taunt-doolow_bid) has been intentionally removed — its absence is the fix.",
+  "rca of the issue": "N/A — no bugs found; all six review items pass."
+}
