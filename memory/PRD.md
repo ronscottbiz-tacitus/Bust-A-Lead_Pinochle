@@ -135,9 +135,16 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   cards tappable, 5 hands to settlement with no cutscene hang, non-blocking bid taunt observed while
   auction continued, desktop non-regression, zero console errors / zero asset 404s.
 
+## Asset upload status (2026-06)
+- **Uploaded + WebM-encoded + serving 200**: `papacap_taunt_1`, `papacap_taunt_2`, `g2_sweep`,
+  `g2_teeth` (mp4 + vp9 webm in `/public/assets/cutscenes/`). Now play live via existing triggers.
+- **Still missing (skip gracefully)**: `doolow_taunt_1`, `doolow_taunt_2`, `g2_renege` (falls back to
+  `cutscene_renege_busted`), `g2_portal`, `g2_3bang`.
+
 ## Backlog (P1/P2)
-- P0 (pending user upload): remaining 4 MP4 taunt/cutscene assets (doolow/papacap taunts, g2_portal,
-  etc.) — drop into `/public/assets/cutscenes/` (webm+mp4); triggers already wired, will play once present.
+- P0 (pending user upload): remaining 5 taunt/cutscene assets (doolow_taunt_1/2, g2_renege, g2_portal,
+  g2_3bang) — drop mp4 into `/public/assets/cutscenes/` + `ffmpeg -an -c:v libvpx-vp9` a webm; triggers
+  already wired, will play once present.
 - P2: Difficulty-specific defender AI depth (Convict smarter card counting).
 - P2: Split `Table.jsx` (~850 lines) into per-component files (non-urgent).
 
