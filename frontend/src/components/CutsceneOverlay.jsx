@@ -9,7 +9,8 @@ const FILE = {
   // Blocking (full-screen) — rare, major moments.
   doolow_set: ['doolow_taunt_1'],
   papacap_set: ['doolow_taunt_2'],
-  g2_hardset: ['papacap_taunt_2'],  renege: ['g2_renege_2', 'g2_renege', 'cutscene_renege_busted'],
+  g2_hardset: ['papacap_taunt_2'],
+  renege: ['g2_renege_2', 'g2_renege', 'cutscene_renege_busted'],
   falseaccuse: ['papacap_taunt_2', 'cutscene_trashtalk_smirk'],
   sweep: ['g2_sweep', 'canteen_sweep'],
   portal: ['g2_portal_2', 'g2_portal'],
@@ -17,7 +18,6 @@ const FILE = {
   aces1000: ['cutscene_1000_aces'],
   nuts90: ['cutscene_90_nuts'],
   kittyprayer: ['cutscene_kitty_prayer'],
-  chopper: ['get2_chopper'],
   hardset: ['cutscene_hardset_canteen'],
   // Non-blocking taunt layer — frequent events (rendered in avatar frames / transparent overlay).
   doolow_bid: ['doolow_taunt_2'],
@@ -51,7 +51,6 @@ export const CUTSCENE_LIBRARY = [
   { base: 'g2_portal_2', title: 'The Get-2 (Match Won)', tag: 'Cinematic' },
   { base: 'g2_sweep', title: 'The Canteen Sweep', tag: 'Cinematic' },
   { base: 'g2_renege_2', title: 'Renege Busted', tag: 'Cinematic' },
-  { base: 'get2_chopper', title: 'The Get-2 Extraction', tag: 'Cinematic' },
   { base: 'cutscene_hardset_canteen', title: 'Hard Set — Canteen', tag: 'Cinematic' },
   { base: 'break_yo_self', title: 'Break Yo Self', tag: 'Cinematic' },
   { base: 'canteen_sweep', title: 'Canteen Sweep (Classic)', tag: 'Cinematic' },
@@ -86,7 +85,6 @@ const BANNER = {
   aces1000: '1,000 ACES — LEGEND DROP',
   nuts90: '90 NUTZ! TRIPLE PINOCHLE',
   kittyprayer: 'THE WIDOW PRAYER — FLIPPIN\u2019 THE KITTY',
-  chopper: 'THE GET2 EXTRACTION',
   hardset: 'HARD SET — CANTEEN WIPED OUT',
   g2_3bang: 'G2 — 3 BANG! COUNTERS SNATCHED',
 };

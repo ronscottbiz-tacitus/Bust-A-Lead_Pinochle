@@ -8,6 +8,9 @@ import { SoundEngine } from '../audio/sfx';
 
 // Convict-tuning renege probabilities per play (settings.convictRenege).
 const RENEGE_RATE = { off: 0, low: 0.02, high: 0.06 };
+// PapaCap's silent avatar taunt pool.
+const PAPACAP_SCENES = ['papacap_scene_1', 'papacap_scene_2', 'papacap_scene_3', 'papacap_scene_4'];
+const pickPapacapScene = () => PAPACAP_SCENES[Math.floor(Math.random() * PAPACAP_SCENES.length)];
 
 function aiBidAction(s, seat) {
   const { maxBid } = evaluateBid(s.hands[seat], s.settings.bidBase, s.settings.difficulty, s.settings.convictBoldness);
@@ -160,10 +163,10 @@ export function useGame() {
   const [taunt, setTaunt] = useState(null);
   const [paused, setPaused] = useState(false);
   const [meldReveal, setMeldReveal] = useState(null);
+  const [lastCutscene, setLastCutscene] = useState(null);
   const trashRef = useRef(state.completedBooks.length);
   const snatchRef = useRef(0);
-  const papacapLastHandRef = useRef(-999);
-  const papacapGapRef = useRef(0);
+  const papacapTsRef = useRef(0);
   const aiRenegeSeenRef = useRef(0);
   const kittyRef = useRef(false);
   const meldRef = useRef(false);
@@ -186,6 +189,7 @@ export function useGame() {
       meldRef.current = false;
       meldPendingRef.current = null;
       setMeldReveal(null);
+      setLastCutscene(null);
     }
   }, [state.phase]);
 
@@ -196,7 +200,8 @@ export function useGame() {
       const snd = soundRef.current;
       if (cs) {
         setCutscene({ key: cs.key, blocking: true, data: cs.data });
-        if (cs.key === 'renege' || cs.key === 'falseaccuse' || cs.key === 'chopper') {
+        setLastCutscene({ key: cs.key, data: cs.data });
+        if (cs.key === 'renege' || cs.key === 'falseaccuse') {
           snd.renege();
           if (cs.key === 'renege') snd.tableSlamThunder();
         } else if (cs.key === 'hardset' || cs.key === 'doolow_set' || cs.key === 'papacap_set' || cs.key === 'g2_hardset') snd.busted();
@@ -216,7 +221,10 @@ export function useGame() {
   useEffect(() => {
     if (state.phase === 'discard' && state.kittyCollected && !kittyRef.current) {
       kittyRef.current = true;
-      if ((state.bid || 0) > 95 && !cutscene) setCutscene({ key: 'kittyprayer', blocking: true });
+      if ((state.bid || 0) > 95 && !cutscene) {
+        setCutscene({ key: 'kittyprayer', blocking: true });
+        setLastCutscene({ key: 'kittyprayer' });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase, state.kittyCollected]);
@@ -236,7 +244,9 @@ export function useGame() {
       const reveal = { bidder: state.bidWinner, items, total };
       if (has1000 || has90) {
         meldPendingRef.current = reveal;
-        setCutscene({ key: has1000 ? 'aces1000' : 'nuts90', blocking: true });
+        const mkey = has1000 ? 'aces1000' : 'nuts90';
+        setCutscene({ key: mkey, blocking: true });
+        setLastCutscene({ key: mkey });
       } else {
         setMeldReveal(reveal);
       }
@@ -253,7 +263,11 @@ export function useGame() {
       if (last && last.kind === 'bid' && (last.seat === 'W' || last.seat === 'E')) {
         const val = parseInt((/\$(\d+)/.exec(last.text) || [])[1] || '0', 10);
         if (last.seat === 'W') fireTaunt('doolow_bid', 'W');
-        else fireTaunt(val >= 80 ? 'papacap_bigbid' : 'papacap_bid', 'E');
+        else if (val >= 70 && Date.now() - papacapTsRef.current > 7000) {
+          // PapaCap slaps down a big bid -> pull a silent scene taunt (shares the cooldown).
+          papacapTsRef.current = Date.now();
+          fireTaunt(pickPapacapScene(), 'E');
+        } else fireTaunt(val >= 80 ? 'papacap_bigbid' : 'papacap_bid', 'E');
       }
     } else {
       bidLogRef.current = log.length;
@@ -278,6 +292,7 @@ export function useGame() {
       // G2 wins a book holding 3+ counters (Aces / 10s / Kings) -> full-screen "3 Bang" cinematic.
       if (w === 'P' && counters >= 3 && !busy) {
         setCutscene({ key: 'g2_3bang', blocking: true });
+        setLastCutscene({ key: 'g2_3bang' });
       } else if (
         // G2 plays an Ace AND captures an opponent's Ace in the same book -> "Snatchin' teeth" taunt.
         w === 'P' &&
@@ -292,15 +307,14 @@ export function useGame() {
         }
       }
 
-      // PapaCap (E) wins a book -> randomized taunt from the scene pool, throttled to
-      // every 3-5 hands so it never spams back-to-back. Rendered silent in E's avatar frame.
+      // PapaCap (E) wins a book -> randomized SILENT taunt from the scene pool. Light
+      // ~7s cooldown (not a multi-hand lockout) + 50% roll so it shows up several times
+      // per session without spamming back-to-back.
       if (w === 'E' && !busy) {
-        const hand = state.stats?.handsPlayed ?? 0;
-        if (hand - papacapLastHandRef.current >= papacapGapRef.current) {
-          const pool = ['papacap_scene_1', 'papacap_scene_2', 'papacap_scene_3', 'papacap_scene_4'];
-          papacapLastHandRef.current = hand;
-          papacapGapRef.current = 3 + Math.floor(Math.random() * 3); // gap of 3-5 hands
-          fireTaunt(pool[Math.floor(Math.random() * pool.length)], 'E');
+        const now = Date.now();
+        if (now - papacapTsRef.current > 7000 && Math.random() < 0.5) {
+          papacapTsRef.current = now;
+          fireTaunt(pickPapacapScene(), 'E');
         }
       }
     }
@@ -347,6 +361,10 @@ export function useGame() {
   };
   const clearMeldReveal = () => setMeldReveal(null);
   const clearTaunt = () => setTaunt(null);
+  // Re-watch the last blocking cutscene that fired this hand (Settlement "Replay" button).
+  const replayLastCutscene = () => {
+    if (lastCutscene) setCutscene({ key: lastCutscene.key, blocking: true, data: lastCutscene.data });
+  };
 
   const act = (action) => {
     const snd = soundRef.current;
@@ -359,5 +377,5 @@ export function useGame() {
     dispatch(action);
   };
 
-  return { state, act, sound: soundRef.current, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt };
+  return { state, act, sound: soundRef.current, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt, lastCutscene, replayLastCutscene };
 }

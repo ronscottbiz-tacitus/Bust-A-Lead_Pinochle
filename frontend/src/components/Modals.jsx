@@ -270,7 +270,7 @@ export function ConfigScreen({ state, act }) {
   );
 }
 
-export function SettlementModal({ state, act }) {
+export function SettlementModal({ state, act, onReplay, canReplay }) {
   const s = state;
   const r = s.settlement;
   if (!r) return null;
@@ -384,6 +384,15 @@ export function SettlementModal({ state, act }) {
           ))}
         </div>
 
+        {canReplay && (
+          <button
+            data-testid="replay-cutscene-btn"
+            onClick={onReplay}
+            className="w-full mb-2 py-2.5 rounded-xl bg-amber-500/15 border border-amber-400/60 text-amber-100 font-display font-bold flex items-center justify-center gap-2 hover:bg-amber-500/25 active:scale-95"
+          >
+            <Film size={16} /> Replay Cutscene
+          </button>
+        )}
         {r.gameOver ? (
           <button
             data-testid="new-game-btn"

@@ -24,7 +24,7 @@ import {
 import { Zap } from 'lucide-react';
 
 export default function BustALead() {
-  const { state, act, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt } = useGame();
+  const { state, act, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt, lastCutscene, replayLastCutscene } = useGame();
   const [showRules, setShowRules] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -90,7 +90,7 @@ export default function BustALead() {
       )}
 
       {s.phase === 'config' && <ConfigScreen state={s} act={act} />}
-      {s.phase === 'settlement' && <SettlementModal state={s} act={act} />}
+      {s.phase === 'settlement' && <SettlementModal state={s} act={act} onReplay={replayLastCutscene} canReplay={!!lastCutscene} />}
       {showRules && <RulebookModal onClose={() => setShowRules(false)} />}
       {showStats && (
         <StatsModal

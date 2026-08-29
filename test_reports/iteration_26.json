@@ -1,0 +1,23 @@
+{
+  "summary": "Verified all 4 review targets against preview URL. (1) PAPACAP TAUNT PLAYBACK BUG FIX — avatar-taunt-E rendered 14 times across 4 hands in Convict/fast mode, confirming the previously permanent multi-hand lockout is gone; the ~7s cooldown + 50% roll pool (PAPACAP_SCENES x4) at useGame.js:315 fires silently inside PapaCap's (E) avatar frame (AvatarTaunt in CutsceneOverlay.jsx, muted=true, non-blocking); the game loop continues (no cutscene?.blocking triggered). Zero 4xx responses for /assets/cutscenes/papacap_scene_[1-4].(webm|mp4). Zero console errors. (2) CHOPPER RETIRED — cinematics-modal opens; reel-thumb-get2_chopper is NOT present. All other clips present including reel-thumb-papacap_scene_1..4 (all True), portal, sweep, renege, hardset, taunts. No references to 'chopper' remain in CutsceneOverlay FILE map, BANNER, or CUTSCENE_LIBRARY. Only leftover mention is in the gameover.test.js comment/test (which asserts chopper is NEVER selected — good regression guard). (3) REPLAY CUTSCENE BUTTON — Played 4 hands to completion; ALL 4 settlement-modal instances showed data-testid=replay-cutscene-btn (canReplay wired via !!lastCutscene in BustALead.jsx:93, lastCutscene set on every setCutscene blocking path in useGame.js and cleared on new-hand at dealing/config phase). Clicking replay-cutscene-btn re-opens the fullscreen cutscene overlay; clicking cutscene-skip-btn returns to settlement-modal (verified True in all 4 runs). (4) REGRESSION SMOKE — deal-btn starts match, cfg-difficulty-hard reveals convict-tuning-dial, cfg-taunt-audio-on/off both present, header shows 'Stake: $1' and 'Table: $1/$2' with NO 'Pot' word, taunt-audio-toggle button renders in-game header. Zero console errors across the whole session.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/frontend/src/game/__tests__/gameover.test.js"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Modals.jsx remains >900 lines (ConfigScreen + SettlementModal + MeldDrawer + RulebookModal + CinematicsModal + YardCourtModal + BookReplayModal + NewGameConfirmModal + MeldPhaseModal + ReelPlayer + StatsModal). Splitting into per-modal files is strongly recommended for maintainability.",
+    "useGame.js has two PapaCap scene-trigger sites (bid >=70 at line 266 and E book-win at line 315) that both share papacapTsRef cooldown — consider extracting a small helper (fireSceneWithCooldown(seat, key)) to DRY the 7s+50% logic and avoid future drift between the two paths.",
+    "gameover.test.js still references 'chopper' by name (as a negative assertion). Fine as regression guard, but consider renaming the descriptive text now that get2_chopper is fully removed to avoid confusion."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Fast repro path for PapaCap taunts + replay button: cfg-speed-fast + cfg-difficulty-hard -> deal-btn -> loop clicking cutscene-skip-btn / meld-phase-continue-btn / 'Declare Aces Around' text button / pass-btn / first visible non-disabled card in [data-testid=player-hand] button[data-testid^=card-]. Almost every completed hand fires a blocking cutscene (portal/sweep/hardset/renege/etc.) so replay-cutscene-btn is essentially always present in settlement-modal. avatar-taunt-E flashes non-blocking (200-1500ms) so poll on a short interval to catch it. papacapTsRef is a MODULE-level useRef; scene cooldown is shared across bid and book-win triggers.",
+  "rca of the issue": "Original regression: PapaCap scene taunts were gated by a 3-5 HAND counter that after the first fire could not decrement fast enough with the game's short hands, effectively permanently suppressing them. Fix (useGame.js:315) replaced the hand-counter with Date.now() cooldown of 7000ms plus Math.random()<0.5 roll, and added a second trigger on E high bid (>=70) at line 266. Verified working: 14 avatar-taunt-E renders in a single 4-hand session, no permanent lockout observed."
+}

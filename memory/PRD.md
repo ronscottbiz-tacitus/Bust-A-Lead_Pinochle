@@ -406,3 +406,17 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   optional boldness/renegeRate params (defaults keep existing tests valid).
 - Verified: 14/14 jest tests pass; testing agent iteration_25.json 100% (game-over fix via
   code+jest, tuning dial visibility + control highlighting, taunt-audio + no-Pot regression).
+
+## Updates (2026-06 — Request 13: PapaCap taunt fix, chopper removal, Replay button)
+- BUG FIX (PapaCap taunts): the 3-5 HAND lockout permanently suppressed papacap_scene_1..4.
+  Replaced with a light ~7s time cooldown (papacapTsRef, module-shared) + 50% roll on E
+  book-wins, PLUS a scene taunt on PapaCap high bids (val>=70). Renders silent/non-blocking
+  in E's avatar (AvatarTaunt, muted). Verified: 14 renders across 4 hands, no lockout.
+- Chopper retired: removed get2_chopper from FILE map, BANNER, and CUTSCENE_LIBRARY; deleted
+  the physical get2_chopper.mp4/.webm. gameOver already forces portal (kept as regression
+  guard in gameover.test.js). No missing-asset errors.
+- NEW: Replay Cutscene button in SettlementModal (data-testid replay-cutscene-btn). useGame
+  tracks lastCutscene on every blocking setCutscene (settlement/kitty/meld-milestone/3bang),
+  cleared on new hand; replayLastCutscene() re-opens it full-screen. Wired via BustALead.
+- Verified: 14/14 jest pass; testing agent iteration_26.json 100% on all 4 targets, zero
+  console errors.
