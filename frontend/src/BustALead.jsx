@@ -23,6 +23,9 @@ import {
 } from './components/CutsceneOverlay';
 import { Zap } from 'lucide-react';
 
+// Hoisted so the same array reference is passed on every render (no needless re-renders).
+const PLAYER_SEAT = ['P'];
+
 export default function BustALead() {
   const { state, act, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt, lastCutscene, replayLastCutscene } = useGame();
   const [showRules, setShowRules] = useState(false);
@@ -135,7 +138,7 @@ export default function BustALead() {
         />
       )}
       <CutsceneOverlay cutscene={cutscene} onDone={clearCutscene} muted={s.settings.muteTaunts} />
-      <TauntOverlay taunt={taunt} seats={['P']} onDone={clearTaunt} />
+      <TauntOverlay taunt={taunt} seats={PLAYER_SEAT} onDone={clearTaunt} />
       {meldReveal && <MeldPhaseModal reveal={meldReveal} onClose={clearMeldReveal} />}
     </div>
   );

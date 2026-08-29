@@ -1,0 +1,17 @@
+{
+  "summary": "Regression sweep after single-line refactor in BustALead.jsx (hoisted seats={['P']} to module-level const PLAYER_SEAT = ['P']). Verified change in source at line 27 (const PLAYER_SEAT) and line 141 (<TauntOverlay ... seats={PLAYER_SEAT} />). Ran full frontend smoke on preview URL: (1) config-screen renders, cfg-speed-fast + cfg-difficulty-hard applied, convict-tuning-dial appears under Convict difficulty; sound + taunt-audio on/off toggles all present. (2) deal-btn starts match, player-hand renders. (3) Header shows 'Stake: $1' and 'Table: $1/$2' with NO 'Pot' word. (4) cinematics-btn opens cinematics-modal with 23 reel thumbnails; reel-thumb-get2_chopper is NOT present (correctly retired). (5) Played through 10 completed hands via cutscene-skip / meld-phase-continue / pass / player-hand cards; settlement-modal appeared 10/10 times and replay-cutscene-btn appeared 10/10 times (100% presence). (6) avatar-taunt-E fired 195 times across the run (PapaCap silent taunts fully functional). (7) TauntOverlay for seat P did not crash - no errors around PLAYER_SEAT usage. (8) ZERO console errors and ZERO page errors across the entire session. Behavior is identical to iteration_26; the hoisted array constant is a safe, transparent optimization.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/frontend/src/BustALead.jsx"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Refactor is minimal, correct, and defensive: PLAYER_SEAT frozen at module scope means TauntOverlay's props.seats keeps referential equality across BustALead renders, avoiding needless child effect re-runs / re-renders. No functional risk.",
+    "Modals.jsx remains >900 lines (carry-over from iteration_26). Splitting into per-modal files still recommended, but out of scope for this regression."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Iteration_27 confirmed the PLAYER_SEAT hoist is behavior-neutral. All iteration_26 regression baselines hold: 10/10 settlement-modal instances show replay-cutscene-btn, avatar-taunt-E fires prolifically (195 in a 10-hand run with cfg-speed-fast + cfg-difficulty-hard), cinematics-modal has 23 reel thumbs with no chopper, header uses Stake/Table (no 'Pot'), 0 console errors. Fast repro path unchanged from iteration_26 notes."
+}

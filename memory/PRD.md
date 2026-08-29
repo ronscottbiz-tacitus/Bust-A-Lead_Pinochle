@@ -420,3 +420,21 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   cleared on new hand; replayLastCutscene() re-opens it full-screen. Wired via BustALead.
 - Verified: 14/14 jest pass; testing agent iteration_26.json 100% on all 4 targets, zero
   console errors.
+
+## Updates (2026-06 — Request 14: Code-quality report triage)
+- Reviewed auto-generated code-quality report. Applied the ONE safe fix: hoisted inline
+  array prop seats={['P']} in BustALead.jsx to module const PLAYER_SEAT (referential stability).
+- Intentionally NOT applied (documented as false positives / deferred):
+  * useGame.js exhaustive-deps: effects drive a useReducer state machine; adding
+    state/dispatch/setCutscene to the game-loop deps causes infinite loops / duplicate turns.
+    The eslint-disable directives are correct and deliberate.
+  * Table.jsx deps: resize listener ([] one-time) and ref-based prev comparisons are standard
+    correct patterns.
+  * storage.js "sensitive data in localStorage": false positive — stores only a single-player
+    game save (bankrolls/settings/stats); no auth/PII/tokens. No encryption needed.
+  * Complexity refactors (ActionBar/Modals/SettlementModal/YardCourtModal/BustALead/
+    CutsceneOverlay): deliberately deferred to protect the verified, heavily-tested engine.
+    Backlog: split Modals.jsx (>900 lines) into per-modal files when a dedicated refactor pass
+    is scheduled.
+- Verified: 14/14 jest pass; testing agent iteration_27.json 100% regression (10/10 hands,
+  replay button 10/10, 195 PapaCap taunts, zero console errors).
