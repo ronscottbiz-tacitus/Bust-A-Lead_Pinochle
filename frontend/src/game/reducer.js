@@ -94,6 +94,8 @@ export function initState() {
       stakesBase: 1,
       difficulty: 'normal',
       muteTaunts: false,
+      convictBoldness: 'balanced',
+      convictRenege: 'low',
       ...(saved?.settings || {}),
     },
     bankrolls: saved?.bankrolls || { W: 100, E: 100, P: 100 },

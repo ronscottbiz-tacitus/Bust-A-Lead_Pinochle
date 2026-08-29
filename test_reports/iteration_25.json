@@ -1,0 +1,22 @@
+{
+  "summary": "Verified game-over cutscene fix (code inspection + jest test) and Convict Tuning Dial feature (interactive UI on config screen at 1920x1080). (1) GAME-OVER FIX: src/hooks/useGame.js settlementCutscene() returns { key: 'portal' } on s.gameOver with NO chopper branch reachable on game over (chopper key still exists in FILE map but is unreachable in settlement code path). CutsceneOverlay FILE.portal = ['g2_portal_2','g2_portal'] and snd.portalHum() fires when cs.key==='portal'. Jest suite src/game/__tests__/gameover.test.js PASSED (1/1) confirming portal returned for all bankroll permutations on game over. (2) CONVICT TUNING VISIBILITY: convict-tuning-dial hidden for New Booty (easy)=False, Inmate (normal)=False; shown for Convict (hard)=True. Toggles correctly. (3) CONTROLS: All six sub-controls render — cfg-convict-boldness-cautious/-balanced/-bold and cfg-convict-renege-off/-low/-high. Defaults: 'balanced' and 'low' have the amber active class (bg-amber-500 border-amber-400 text-black). Clicking 'bold' promoted it to amber active and demoted 'balanced' to neutral; clicking 'high' promoted it and demoted 'low'. Highlight state swaps as expected. (4) TAUNT AUDIO: cfg-taunt-audio-on and cfg-taunt-audio-off both visible on config. In-game header shows taunt-audio-toggle button. (5) REGRESSION SMOKE: deal-btn started match, auction began (High Bid — No bids yet), header displays 'Stake: $1' and 'Table: $1/$2' (NO 'Pot:' present). No console errors, no pageerrors.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/frontend/src/game/__tests__/gameover.test.js"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "CutsceneOverlay.jsx still keeps 'chopper' entries in FILE map, CINEMATICS list, and title map. Harmless (unreachable via settlementCutscene) but dead code — consider removing to prevent regressions where someone re-adds a chopper trigger.",
+    "Modals.jsx remains >700 lines (ConfigScreen + tuning dial + meld modal + settlement, etc.). Splitting recommended for maintainability."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "convict-tuning-dial only mounts under [data-testid=cfg-difficulty-hard]. Active state class contains 'bg-amber-500 border-amber-400 text-black'; inactive is 'bg-neutral-900/80'. Defaults from initState: convictBoldness='balanced', convictRenege='low'. Jest tests run via `CI=true yarn test --testPathPattern=<pattern>` (not raw jest — craco config needed). Header uses 'Stake: $X • Trump: — • Table: $1/$2' (no 'Pot' word).",
+  "rca of the issue": "N/A — feature and bug fix verified working."
+}

@@ -6,8 +6,11 @@ import { evaluateBid, chooseTrump, chooseDiscards, shouldGoDouble, laydownChalle
 import { saveTarget } from '../game/scoring';
 import { SoundEngine } from '../audio/sfx';
 
+// Convict-tuning renege probabilities per play (settings.convictRenege).
+const RENEGE_RATE = { off: 0, low: 0.02, high: 0.06 };
+
 function aiBidAction(s, seat) {
-  const { maxBid } = evaluateBid(s.hands[seat], s.settings.bidBase, s.settings.difficulty);
+  const { maxBid } = evaluateBid(s.hands[seat], s.settings.bidBase, s.settings.difficulty, s.settings.convictBoldness);
   const nextVal = s.bid == null ? s.settings.bidBase : s.bid + 5;
   if (maxBid >= nextVal) return { type: 'PLACE_BID', seat };
   return { type: 'PASS', seat };
@@ -15,10 +18,10 @@ function aiBidAction(s, seat) {
 
 // Maps a settlement state to the cutscene { key, data } that should play (or null).
 // Priority: elimination > concession > renege/violation > win/hard-set milestones.
-function settlementCutscene(s) {
-  // 0) Match over — G2 extracted at $0 (chopper) or G2 survives + an opponent busts (portal win).
+export function settlementCutscene(s) {
+  // 0) Match over — the definitive full-screen finale is always The Get-2 portal.
   if (s.gameOver) {
-    return (s.bankrolls?.P ?? 1) <= 0 ? { key: 'chopper' } : { key: 'portal' };
+    return { key: 'portal' };
   }
 
   // 1) Fold / concede / soft set / board set (thrown in before completing the hand).
@@ -136,7 +139,7 @@ function drive(s, dispatch, sound) {
       }
       if (s.turn && s.turn !== 'P') {
         return setTimeout(() => {
-          const card = aiPlay(s.turn, s.hands[s.turn], s.trick, s.trump, s.bidWinner, s.signals?.[s.turn], s.settings.difficulty, s.playedIds);
+          const card = aiPlay(s.turn, s.hands[s.turn], s.trick, s.trump, s.bidWinner, s.signals?.[s.turn], s.settings.difficulty, s.playedIds, RENEGE_RATE[s.settings.convictRenege] ?? 0.02);
           sound.play();
           dispatch({ type: 'PLAY_CARD', seat: s.turn, card });
         }, d.think);

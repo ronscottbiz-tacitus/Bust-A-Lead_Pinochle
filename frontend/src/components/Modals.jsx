@@ -147,6 +147,16 @@ const CFG_TAUNTS = [
   { value: 'on', label: 'On' },
   { value: 'off', label: 'Muted' },
 ];
+const CFG_BOLDNESS = [
+  { value: 'cautious', label: 'Cautious' },
+  { value: 'balanced', label: 'Balanced' },
+  { value: 'bold', label: 'Bold' },
+];
+const CFG_RENEGE = [
+  { value: 'off', label: 'Off' },
+  { value: 'low', label: 'Low' },
+  { value: 'high', label: 'High' },
+];
 const CFG_STAKES = [
   { value: 1, label: 'Low $1/$2' },
   { value: 2, label: 'Mid $2/$4' },
@@ -183,6 +193,27 @@ export function ConfigScreen({ state, act }) {
               onChange={(v) => set({ difficulty: v })}
               options={CFG_DIFFICULTY}
             />
+            {s.difficulty === 'hard' && (
+              <div data-testid="convict-tuning-dial" className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-3">
+                <div className="text-[11px] font-sub uppercase tracking-widest text-amber-400/90 font-bold">
+                  Convict Tuning
+                </div>
+                <Choice
+                  label="Bid Boldness"
+                  testidPrefix="cfg-convict-boldness"
+                  value={s.convictBoldness || 'balanced'}
+                  onChange={(v) => set({ convictBoldness: v })}
+                  options={CFG_BOLDNESS}
+                />
+                <Choice
+                  label="Renege Rate"
+                  testidPrefix="cfg-convict-renege"
+                  value={s.convictRenege || 'low'}
+                  onChange={(v) => set({ convictRenege: v })}
+                  options={CFG_RENEGE}
+                />
+              </div>
+            )}
             <Choice
               label="Opening Bid Base"
               testidPrefix="cfg-bid"

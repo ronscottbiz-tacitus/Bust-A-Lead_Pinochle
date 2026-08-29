@@ -11,7 +11,7 @@ function countRank(cards, rank) {
 }
 
 // Evaluate hand and return the max bid this seat is willing to make.
-export function evaluateBid(hand, base, difficulty = 'normal') {
+export function evaluateBid(hand, base, difficulty = 'normal', boldness = 'balanced') {
   const m = bySuit(hand);
   let hasMarriage = false;
   let bestSuitScore = 0;
@@ -32,12 +32,26 @@ export function evaluateBid(hand, base, difficulty = 'normal') {
   if (!hasMarriage) return { maxBid: 0 };
   const totalAces = hand.filter((c) => c.rank === 'A').length;
   const score = bestSuitScore + totalAces * 1.4;
-  // Convict ("Yard Master") now bids conservatively — it needs more real hand strength
-  // per step so it stops chasing unrealistic contracts. Easy bids timidly.
-  const div = difficulty === 'hard' ? 4.6 : 3.5;
+  // Convict ("Yard Master") boldness is player-tunable: cautious needs far more hand
+  // strength per step, bold plays like the old aggressive AI. Easy bids timidly.
+  let div = 3.5;
+  let diffAdj = 0;
+  if (difficulty === 'easy') {
+    diffAdj = -2;
+  } else if (difficulty === 'hard') {
+    if (boldness === 'cautious') {
+      div = 5.0;
+      diffAdj = -2;
+    } else if (boldness === 'bold') {
+      div = 3.5;
+      diffAdj = 0;
+    } else {
+      div = 4.6;
+      diffAdj = -1;
+    }
+  }
   const extra = Math.max(0, Math.floor((score - 15) / div));
   const jitter = Math.random() < 0.4 ? -1 : 0;
-  const diffAdj = difficulty === 'easy' ? -2 : difficulty === 'hard' ? -1 : 0;
   const steps = Math.min(Math.max(extra + jitter + diffAdj, 0), 8);
   return { maxBid: base + 5 * steps };
 }
@@ -130,14 +144,14 @@ function pickStrongSuit(cards, trump) {
 
 // AI card selection during trick play. Defenders cooperate against the bidder.
 // `played` is the list of card ids seen so far this hand (for Convict card counting).
-export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit, difficulty = 'normal', played = []) {
+export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit, difficulty = 'normal', played = [], renegeRate = 0.02) {
   const legal = legalPlays(hand, trick, trump);
   if (legal.length === 1) return legal[0];
   const isDefender = bidWinner != null && seat !== bidWinner;
 
   // Convict ("Yard Master"): AI rarely sneaks an illegal card (renege) mid-trick,
   // daring the human to Call Renege. Kept infrequent so it never bogs down play.
-  if (difficulty === 'hard' && trick.length > 0 && Math.random() < 0.02) {
+  if (difficulty === 'hard' && trick.length > 0 && renegeRate > 0 && Math.random() < renegeRate) {
     const illegal = hand.filter((c) => !legal.some((l) => l.id === c.id));
     if (illegal.length) {
       const safe = illegal.filter((c) => !COUNTER_RANKS.has(c.rank));

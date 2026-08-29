@@ -392,3 +392,17 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   mobile menu item, testid taunt-audio-toggle). CutsceneOverlay video now honors `muted`.
 - Verified: 13/13 jest tests pass (engine/counters/payouts); compiles clean; scene_4 serves
   HTTP 200; config + header UI confirmed via screenshot.
+
+## Updates (2026-06 — Request 12: Game-over cutscene fix + Convict Tuning Dial)
+- BUG FIX (game over): settlementCutscene() in useGame.js now returns {key:'portal'} on any
+  s.gameOver (removed the chopper branch that fired when P was bankrupt). 'portal' resolves to
+  g2_portal_2 with portalHum() SFX. Locked with unit test src/game/__tests__/gameover.test.js.
+  (chopper asset/key remain but are unreachable via settlement — noted as dead code.)
+- FEATURE (Convict Tuning Dial): new settings convictBoldness (cautious/balanced/bold) and
+  convictRenege (off/low/high), shown in ConfigScreen ONLY under Convict difficulty
+  (testid convict-tuning-dial). Boldness tunes evaluateBid hard-mode div/adjust
+  (cautious 5.0/-2, balanced 4.6/-1, bold 3.5/0); renege maps to per-play probability
+  RENEGE_RATE {off:0, low:0.02, high:0.06} threaded into aiPlay. evaluateBid/aiPlay gained
+  optional boldness/renegeRate params (defaults keep existing tests valid).
+- Verified: 14/14 jest tests pass; testing agent iteration_25.json 100% (game-over fix via
+  code+jest, tuning dial visibility + control highlighting, taunt-audio + no-Pot regression).
