@@ -24,7 +24,7 @@ export const Card = ({
       <div
         style={{ ...style, backgroundImage: `url(${CARD_BACK_IMG})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
         data-testid={testid}
-        className={`${SIZES[size]} shrink-0 border border-cyan-500/25 shadow-lg overflow-hidden ${className}`}
+        className={`${SIZES[size]} shrink-0 border-2 border-slate-800 shadow-lg overflow-hidden ${className}`}
       />
     );
   }

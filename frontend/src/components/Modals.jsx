@@ -881,7 +881,7 @@ export function CinematicsModal({ onClose }) {
               onClick={() => setSelected(c)}
               className="group relative rounded-xl overflow-hidden border border-amber-500/20 bg-black/50 hover:border-amber-400/70 transition-all active:scale-95 text-left"
             >
-              <div className="relative w-full bg-slate-900 overflow-hidden" style={{ aspectRatio: '16 / 9' }}>
+              <div className="relative w-full aspect-video bg-slate-900 overflow-hidden" style={{ aspectRatio: '16 / 9' }}>
                 <video muted playsInline preload="metadata" className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100">
                   <source src={`/assets/cutscenes/${c.base}.webm#t=0.5`} type="video/webm" />
                   <source src={`/assets/cutscenes/${c.base}.mp4#t=0.5`} type="video/mp4" />

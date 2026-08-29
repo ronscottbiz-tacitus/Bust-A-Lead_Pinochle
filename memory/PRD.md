@@ -346,3 +346,13 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Verified: engine.test.js + counters.test.js (12 tests) pass; testing agent iteration_24.json
   100% on all 4 deterministically reachable items (card borders, meld visual breakdown,
   mobile bid glow, Yard Reels 16:9 thumbnails). No console errors/regressions.
+
+## Updates (2026-06 — Request 9: Yard Reels grid + universal card strokes)
+- Yard Reels (`Modals.jsx` CinematicsModal): responsive grid `grid-cols-2 sm:grid-cols-3
+  lg:grid-cols-4`; each thumbnail container locked to 16:9 via `aspect-video` class + inline
+  `aspectRatio: '16 / 9'` with an absolutely-positioned `object-cover` video (inner frame
+  measured ~1.78 ratio).
+- Card strokes (`Card.jsx`): face-down branch now uses `border-2 border-slate-800` (was
+  `border border-cyan-500/25`), so opponent hands (DooLow/PapaCap) and kitty cards share the
+  same crisp high-contrast stroke as the player's face-up hand.
+- Verified: compiles clean, mobile screenshot confirms 16:9 thumbnails + bordered opponent/kitty cards.
