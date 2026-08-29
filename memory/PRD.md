@@ -356,3 +356,19 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   `border border-cyan-500/25`), so opponent hands (DooLow/PapaCap) and kitty cards share the
   same crisp high-contrast stroke as the player's face-up hand.
 - Verified: compiles clean, mobile screenshot confirms 16:9 thumbnails + bordered opponent/kitty cards.
+
+## Updates (2026-06 — Request 10: New cutscene assets, PapaCap pool, SFX layering)
+- Replaced major cinematics: `portal` key now prefers `g2_portal_2` (match-won) and `renege`
+  key now prefers `g2_renege_2`; old files kept as fallbacks. Both encoded to VP9/Opus WebM +
+  MP4 in public/assets/cutscenes/. Yard Reels library updated to the new bases (23 clips).
+- PapaCap dynamic taunt pool (`useGame.js`): on a PapaCap (E) book win, a random clip from
+  {papacap_scene_1,_2,_3} fires as a SILENT AvatarTaunt inside E's portrait, throttled to a
+  random gap of 3-5 hands (papacapLastHandRef/papacapGapRef) so it never spams. Pool is
+  data-driven — add papacap_scene_4 (FILE key + library entry + pool array) when uploaded.
+- Programmatic SFX (`audio/sfx.js`): `tableSlamThunder()` (heavy slam + distant thunder,
+  mixed under the voice) fires when the g2_renege_2 cutscene starts; `portalHum()` (detuned
+  pad hum + rising swoosh + shimmer chime) fires when the g2_portal_2 match-won cutscene
+  starts. Wired in the settlement-cutscene effect.
+- NOTE: only papacap_scene_1..3 were provided (scene_4 pending upload).
+- Verified: all 5 WebMs valid VP9/Opus, assets serve HTTP 200, frontend compiles clean,
+  gallery renders all 5 new thumbnails.

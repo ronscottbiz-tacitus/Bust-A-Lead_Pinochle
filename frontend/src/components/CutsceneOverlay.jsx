@@ -9,10 +9,10 @@ const FILE = {
   // Blocking (full-screen) — rare, major moments.
   doolow_set: ['doolow_taunt_1'],
   papacap_set: ['doolow_taunt_2'],
-  g2_hardset: ['papacap_taunt_2'],  renege: ['g2_renege', 'cutscene_renege_busted'],
+  g2_hardset: ['papacap_taunt_2'],  renege: ['g2_renege_2', 'g2_renege', 'cutscene_renege_busted'],
   falseaccuse: ['papacap_taunt_2', 'cutscene_trashtalk_smirk'],
   sweep: ['g2_sweep', 'canteen_sweep'],
-  portal: ['g2_portal'],
+  portal: ['g2_portal_2', 'g2_portal'],
   concession: ['cutscene_hand_concede'],
   aces1000: ['cutscene_1000_aces'],
   nuts90: ['cutscene_90_nuts'],
@@ -23,6 +23,9 @@ const FILE = {
   doolow_bid: ['doolow_taunt_2'],
   papacap_bid: ['papacap_taunt_1'],
   papacap_bigbid: ['papacap_taunt_2'],
+  papacap_scene_1: ['papacap_scene_1'],
+  papacap_scene_2: ['papacap_scene_2'],
+  papacap_scene_3: ['papacap_scene_3'],
   g2_3bang: ['g2_3bang'],
   g2_teeth: ['g2_teeth'],
 };
@@ -44,9 +47,9 @@ export function videoSources(basename) {
 
 // The full cinematic library shown in the Yard Reels gallery modal.
 export const CUTSCENE_LIBRARY = [
-  { base: 'g2_portal', title: 'The Get-2 (Match Won)', tag: 'Cinematic' },
+  { base: 'g2_portal_2', title: 'The Get-2 (Match Won)', tag: 'Cinematic' },
   { base: 'g2_sweep', title: 'The Canteen Sweep', tag: 'Cinematic' },
-  { base: 'g2_renege', title: 'Renege Busted', tag: 'Cinematic' },
+  { base: 'g2_renege_2', title: 'Renege Busted', tag: 'Cinematic' },
   { base: 'get2_chopper', title: 'The Get-2 Extraction', tag: 'Cinematic' },
   { base: 'cutscene_hardset_canteen', title: 'Hard Set — Canteen', tag: 'Cinematic' },
   { base: 'break_yo_self', title: 'Break Yo Self', tag: 'Cinematic' },
@@ -61,6 +64,9 @@ export const CUTSCENE_LIBRARY = [
   { base: 'doolow_taunt_2', title: 'DooLow — Taunt II', tag: 'Taunt' },
   { base: 'papacap_taunt_1', title: 'PapaCap — Taunt I', tag: 'Taunt' },
   { base: 'papacap_taunt_2', title: 'PapaCap — Taunt II', tag: 'Taunt' },
+  { base: 'papacap_scene_1', title: 'PapaCap — Scene I', tag: 'Taunt' },
+  { base: 'papacap_scene_2', title: 'PapaCap — Scene II', tag: 'Taunt' },
+  { base: 'papacap_scene_3', title: 'PapaCap — Scene III', tag: 'Taunt' },
   { base: 'g2_teeth', title: 'Snatchin\u2019 Teeth', tag: 'Taunt' },
   { base: 'g2_3bang', title: 'G2 — 3 Bang', tag: 'Taunt' },
   { base: 'cutscene_title_loop', title: 'Title Loop', tag: 'Ambient' },

@@ -132,4 +132,67 @@ export class SoundEngine {
     [360, 300, 240].forEach((f, i) => this._tone(f, 'sawtooth', 0.32, 0.2, i * 0.15, f * 0.85));
     this._tone(60, 'sine', 0.45, 0.22, 0);
   }
+  // Renege cinematic (g2_renege_2) — heavy table slam + distant thunderclap, mixed
+  // cleanly UNDER the clip's voice track.
+  tableSlamThunder() {
+    if (!this.enabled) return;
+    const ctx = this.ensure();
+    if (!ctx) return;
+    // Heavy table slam.
+    this._tone(60, 'sine', 0.45, 0.5, 0, 32);
+    this._noise(0.18, 0.5, 'lowpass', 300, 1, 0);
+    this._clank(140, 0.4, 0.01);
+    // Distant thunderclap — low rumble that swells then decays over a long tail.
+    const dur = 2.4;
+    const buf = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * dur)), ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      const t = i / data.length;
+      const env = Math.min(1, t * 6) * Math.pow(1 - t, 1.6);
+      data[i] = (Math.random() * 2 - 1) * env;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'lowpass';
+    filt.frequency.value = 220;
+    filt.Q.value = 0.7;
+    const g = ctx.createGain();
+    g.gain.value = 0.3;
+    src.connect(filt);
+    filt.connect(g);
+    g.connect(ctx.destination);
+    src.start(ctx.currentTime + 0.12);
+  }
+  // Match-won cinematic (g2_portal_2) — clean portal hum/swoosh as G2 steps through.
+  portalHum() {
+    if (!this.enabled) return;
+    const ctx = this.ensure();
+    if (!ctx) return;
+    // Shimmering detuned low pad hum.
+    [110, 110.6, 165, 220].forEach((f, i) => this._tone(f, 'sine', 1.8, 0.13, 0.05 * i, f * 1.02));
+    // Rising portal swoosh — noise through a sweeping bandpass.
+    const dur = 1.4;
+    const buf = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * dur)), ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'bandpass';
+    filt.Q.value = 6;
+    const t0 = ctx.currentTime;
+    filt.frequency.setValueAtTime(300, t0);
+    filt.frequency.exponentialRampToValueAtTime(4000, t0 + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.3);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(filt);
+    filt.connect(g);
+    g.connect(ctx.destination);
+    src.start(t0);
+    // Bright shimmer chime on step-through.
+    [1568, 2093, 2637].forEach((f, i) => this._tone(f, 'triangle', 0.5, 0.08, 0.5 + i * 0.12));
+  }
 }

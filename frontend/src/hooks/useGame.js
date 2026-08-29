@@ -159,6 +159,8 @@ export function useGame() {
   const [meldReveal, setMeldReveal] = useState(null);
   const trashRef = useRef(state.completedBooks.length);
   const snatchRef = useRef(0);
+  const papacapLastHandRef = useRef(-999);
+  const papacapGapRef = useRef(0);
   const kittyRef = useRef(false);
   const meldRef = useRef(false);
   const meldPendingRef = useRef(null);
@@ -190,10 +192,14 @@ export function useGame() {
       const snd = soundRef.current;
       if (cs) {
         setCutscene({ key: cs.key, blocking: true, data: cs.data });
-        if (cs.key === 'renege' || cs.key === 'falseaccuse' || cs.key === 'chopper') snd.renege();
-        else if (cs.key === 'hardset' || cs.key === 'doolow_set' || cs.key === 'papacap_set' || cs.key === 'g2_hardset') snd.busted();
-        else if (cs.key === 'sweep' || cs.key === 'portal') snd.win();
-        else if (cs.key === 'concession') snd.play();
+        if (cs.key === 'renege' || cs.key === 'falseaccuse' || cs.key === 'chopper') {
+          snd.renege();
+          if (cs.key === 'renege') snd.tableSlamThunder();
+        } else if (cs.key === 'hardset' || cs.key === 'doolow_set' || cs.key === 'papacap_set' || cs.key === 'g2_hardset') snd.busted();
+        else if (cs.key === 'sweep' || cs.key === 'portal') {
+          snd.win();
+          if (cs.key === 'portal') snd.portalHum();
+        } else if (cs.key === 'concession') snd.play();
       } else if (state.result === 'busted') snd.busted();
       else if (state.settlement && state.settlement.transfers.some((t) => t.to === 'P')) snd.win();
       else snd.lose();
@@ -279,6 +285,18 @@ export function useGame() {
         if (now - snatchRef.current > 3500) {
           snatchRef.current = now;
           fireTaunt('g2_teeth', 'P');
+        }
+      }
+
+      // PapaCap (E) wins a book -> randomized taunt from the scene pool, throttled to
+      // every 3-5 hands so it never spams back-to-back. Rendered silent in E's avatar frame.
+      if (w === 'E' && !busy) {
+        const hand = state.stats?.handsPlayed ?? 0;
+        if (hand - papacapLastHandRef.current >= papacapGapRef.current) {
+          const pool = ['papacap_scene_1', 'papacap_scene_2', 'papacap_scene_3'];
+          papacapLastHandRef.current = hand;
+          papacapGapRef.current = 3 + Math.floor(Math.random() * 3); // gap of 3-5 hands
+          fireTaunt(pool[Math.floor(Math.random() * pool.length)], 'E');
         }
       }
     }
