@@ -93,6 +93,7 @@ export function initState() {
       sound: true,
       stakesBase: 1,
       difficulty: 'normal',
+      muteTaunts: false,
       ...(saved?.settings || {}),
     },
     bankrolls: saved?.bankrolls || { W: 100, E: 100, P: 100 },

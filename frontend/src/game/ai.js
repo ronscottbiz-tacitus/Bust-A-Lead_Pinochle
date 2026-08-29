@@ -32,10 +32,12 @@ export function evaluateBid(hand, base, difficulty = 'normal') {
   if (!hasMarriage) return { maxBid: 0 };
   const totalAces = hand.filter((c) => c.rank === 'A').length;
   const score = bestSuitScore + totalAces * 1.4;
-  const extra = Math.max(0, Math.floor((score - 15) / 3.5));
+  // Convict ("Yard Master") now bids conservatively — it needs more real hand strength
+  // per step so it stops chasing unrealistic contracts. Easy bids timidly.
+  const div = difficulty === 'hard' ? 4.6 : 3.5;
+  const extra = Math.max(0, Math.floor((score - 15) / div));
   const jitter = Math.random() < 0.4 ? -1 : 0;
-  // Easy AI ("New Booty") bids more timidly.
-  const diffAdj = difficulty === 'easy' ? -2 : 0;
+  const diffAdj = difficulty === 'easy' ? -2 : difficulty === 'hard' ? -1 : 0;
   const steps = Math.min(Math.max(extra + jitter + diffAdj, 0), 8);
   return { maxBid: base + 5 * steps };
 }
@@ -133,9 +135,9 @@ export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit, difficul
   if (legal.length === 1) return legal[0];
   const isDefender = bidWinner != null && seat !== bidWinner;
 
-  // Convict ("Yard Master"): AI occasionally sneaks an illegal card (renege) mid-trick,
-  // daring the human to Call Renege. It dumps a low non-counter to avoid feeding points.
-  if (difficulty === 'hard' && trick.length > 0 && Math.random() < 0.09) {
+  // Convict ("Yard Master"): AI rarely sneaks an illegal card (renege) mid-trick,
+  // daring the human to Call Renege. Kept infrequent so it never bogs down play.
+  if (difficulty === 'hard' && trick.length > 0 && Math.random() < 0.02) {
     const illegal = hand.filter((c) => !legal.some((l) => l.id === c.id));
     if (illegal.length) {
       const safe = illegal.filter((c) => !COUNTER_RANKS.has(c.rank));

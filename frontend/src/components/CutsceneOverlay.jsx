@@ -26,6 +26,7 @@ const FILE = {
   papacap_scene_1: ['papacap_scene_1'],
   papacap_scene_2: ['papacap_scene_2'],
   papacap_scene_3: ['papacap_scene_3'],
+  papacap_scene_4: ['papacap_scene_4'],
   g2_3bang: ['g2_3bang'],
   g2_teeth: ['g2_teeth'],
 };
@@ -67,6 +68,7 @@ export const CUTSCENE_LIBRARY = [
   { base: 'papacap_scene_1', title: 'PapaCap — Scene I', tag: 'Taunt' },
   { base: 'papacap_scene_2', title: 'PapaCap — Scene II', tag: 'Taunt' },
   { base: 'papacap_scene_3', title: 'PapaCap — Scene III', tag: 'Taunt' },
+  { base: 'papacap_scene_4', title: 'PapaCap — Scene IV', tag: 'Taunt' },
   { base: 'g2_teeth', title: 'Snatchin\u2019 Teeth', tag: 'Taunt' },
   { base: 'g2_3bang', title: 'G2 — 3 Bang', tag: 'Taunt' },
   { base: 'cutscene_title_loop', title: 'Title Loop', tag: 'Ambient' },
@@ -92,7 +94,7 @@ const BANNER = {
 // Full-screen blocking cinematic. UNMUTED so the clip's native audio plays (SFX/voice
 // live inside the MP4/WebM containers). playsInline so mobile never full-screens it;
 // auto-dismisses on end / error / stall / cap so the game NEVER freezes.
-export function CutsceneOverlay({ cutscene, onDone }) {
+export function CutsceneOverlay({ cutscene, onDone, muted = false }) {
   const key = cutscene?.key || null;
   const doneRef = useRef(false);
   const startedRef = useRef(false);
@@ -136,6 +138,7 @@ export function CutsceneOverlay({ cutscene, onDone }) {
       <video
         key={key}
         autoPlay
+        muted={muted}
         playsInline
         preload="auto"
         onPlaying={() => {

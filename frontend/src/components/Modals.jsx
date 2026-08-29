@@ -143,6 +143,10 @@ const CFG_SOUND = [
   { value: 'on', label: 'On' },
   { value: 'off', label: 'Off' },
 ];
+const CFG_TAUNTS = [
+  { value: 'on', label: 'On' },
+  { value: 'off', label: 'Muted' },
+];
 const CFG_STAKES = [
   { value: 1, label: 'Low $1/$2' },
   { value: 2, label: 'Mid $2/$4' },
@@ -206,6 +210,13 @@ export function ConfigScreen({ state, act }) {
               value={s.sound ? 'on' : 'off'}
               onChange={(v) => set({ sound: v === 'on' })}
               options={CFG_SOUND}
+            />
+            <Choice
+              label="Cutscene Audio"
+              testidPrefix="cfg-taunt-audio"
+              value={s.muteTaunts ? 'off' : 'on'}
+              onChange={(v) => set({ muteTaunts: v === 'off' })}
+              options={CFG_TAUNTS}
             />
             <Choice
               label="Table Stakes"

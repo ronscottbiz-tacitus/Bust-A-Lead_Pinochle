@@ -372,3 +372,23 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - NOTE: only papacap_scene_1..3 were provided (scene_4 pending upload).
 - Verified: all 5 WebMs valid VP9/Opus, assets serve HTTP 200, frontend compiles clean,
   gallery renders all 5 new thumbnails.
+
+## Updates (2026-06 — Request 11: Payout clarity, Convict rebalance, mute toggle, scene 4)
+- PapaCap scene 4: papacap_scene_4 added (VP9/Opus WebM + MP4), wired into FILE map, Yard
+  Reels library, and the E taunt pool (now 4 clips) in useGame.js.
+- Payout rules: confirmed settlement is already pure player-to-player (no central pot in
+  bankrolls) — Made = each opponent pays bidder 1x stake; Soft Set = bidder pays each opponent
+  1x; Hard Set/Renege/False Accusation = offender pays each opponent 2x. Locked with new test
+  src/game/__tests__/payouts.test.js (240 hands x 3 stake levels). Removed the misleading
+  "Pot" label from the header: mobile+desktop now show "Stake: $X" and the table level is
+  labelled "Table: $1/$2".
+- Convict AI rebalance (ai.js): evaluateBid now uses a larger per-step divisor (4.6 vs 3.5)
+  and a -1 step adjustment in hard mode so AI stops overbidding; aiPlay renege chance lowered
+  0.09 -> 0.02 so reneges are far rarer.
+- AI-on-AI renege catching (useGame.js): in Convict mode a fellow AI now catches an AI
+  reneger ~40% of the time (dispatches CALL_RENEGE), instead of only the human being able to.
+- Mute Taunts toggle: new setting `muteTaunts` (persisted). Added to ConfigScreen
+  ("Cutscene Audio" On/Muted, testid cfg-taunt-audio-*) and to the header (desktop button +
+  mobile menu item, testid taunt-audio-toggle). CutsceneOverlay video now honors `muted`.
+- Verified: 13/13 jest tests pass (engine/counters/payouts); compiles clean; scene_4 serves
+  HTTP 200; config + header UI confirmed via screenshot.

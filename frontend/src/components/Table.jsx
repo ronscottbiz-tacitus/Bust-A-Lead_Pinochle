@@ -6,7 +6,7 @@ import { sortHand } from '../game/deck';
 import { computeMeld } from '../game/meld';
 import { saveTarget, booksToMake } from '../game/scoring';
 import { AvatarTaunt } from './CutsceneOverlay';
-import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles, AlertTriangle, ChevronDown, MoreVertical, Film } from 'lucide-react';
+import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles, AlertTriangle, ChevronDown, MoreVertical, Film, Video, VideoOff } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 const STAKE_LABEL = { 1: '$1/$2', 2: '$2/$4', 5: '$5/$10' };
@@ -129,7 +129,7 @@ function TrumpBadge({ trump }) {
   );
 }
 
-export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGame, onOpenMeld, onOpenCinematics }) {
+export function Header({ state, onToggleSound, onToggleTaunts, onOpenRules, onOpenStats, onNewGame, onOpenMeld, onOpenCinematics }) {
   const s = state;
   const { mobile } = useViewport();
   const [menu, setMenu] = useState(false);
@@ -163,7 +163,7 @@ export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGa
           data-testid="mobile-status-pill"
           className="flex items-center gap-1.5 text-[11px] font-mono-stat text-slate-200 bg-slate-900/70 rounded-full px-2.5 py-1 border border-slate-700"
         >
-          <span className="text-emerald-300">Pot: ${pot}</span>
+          <span className="text-emerald-300">Stake: ${pot}</span>
           <span className="text-slate-600">•</span>
           <span style={{ color: su ? su.neon : '#64748b' }} className="text-sm font-black leading-none">
             {su ? su.symbol : '—'}
@@ -200,6 +200,13 @@ export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGa
                   className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-slate-200 hover:bg-white/5"
                 >
                   {s.settings.sound ? <Volume2 size={14} /> : <VolumeX size={14} />} Sound: {s.settings.sound ? 'On' : 'Off'}
+                </button>
+                <button
+                  data-testid="taunt-audio-toggle"
+                  onClick={onToggleTaunts}
+                  className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-slate-200 hover:bg-white/5"
+                >
+                  {s.settings.muteTaunts ? <VideoOff size={14} /> : <Video size={14} />} Cutscenes: {s.settings.muteTaunts ? 'Muted' : 'On'}
                 </button>
                 <button
                   data-testid="new-game-header-btn"
@@ -248,7 +255,7 @@ export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGa
           data-testid="status-capsule"
           className="flex items-center gap-2 font-mono-stat text-[11px] lg:text-xs bg-slate-900/60 border border-slate-700 rounded-full px-3 py-1.5 max-w-full overflow-hidden whitespace-nowrap"
         >
-          <span className="text-emerald-300">Pot: ${pot}</span>
+          <span className="text-emerald-300">Stake: ${pot}</span>
           <span className="text-slate-600">•</span>
           <span className="text-slate-300">
             Trump:{' '}
@@ -258,7 +265,7 @@ export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGa
           </span>
           <span className="text-slate-600">•</span>
           <span className="text-slate-300">
-            Stake: {STAKE_LABEL[stakes] || `$${stakes}`}
+            Table: {STAKE_LABEL[stakes] || `$${stakes}`}
             {mult > 1 ? ` ×${mult}` : ''}
           </span>
           {(s.phase === 'play' || s.phase === 'settlement') && (
@@ -313,6 +320,14 @@ export function Header({ state, onToggleSound, onOpenRules, onOpenStats, onNewGa
           className="p-2 rounded-md bg-slate-800/70 border border-slate-700 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/50 transition-colors"
         >
           {s.settings.sound ? <Volume2 size={16} /> : <VolumeX size={16} />}
+        </button>
+        <button
+          data-testid="taunt-audio-toggle"
+          onClick={onToggleTaunts}
+          title={s.settings.muteTaunts ? 'Cutscene audio muted' : 'Cutscene audio on'}
+          className="p-2 rounded-md bg-slate-800/70 border border-slate-700 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/50 transition-colors"
+        >
+          {s.settings.muteTaunts ? <VideoOff size={16} /> : <Video size={16} />}
         </button>
         <button
           data-testid="new-game-header-btn"

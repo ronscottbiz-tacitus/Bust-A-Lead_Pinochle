@@ -75,6 +75,7 @@ export default function BustALead() {
           <Header
             state={s}
             onToggleSound={() => act({ type: 'UPDATE_SETTINGS', settings: { sound: !s.settings.sound } })}
+            onToggleTaunts={() => act({ type: 'UPDATE_SETTINGS', settings: { muteTaunts: !s.settings.muteTaunts } })}
             onOpenRules={() => setShowRules(true)}
             onOpenStats={() => setShowStats(true)}
             onNewGame={() => setShowNewGame(true)}
@@ -133,7 +134,7 @@ export default function BustALead() {
           }}
         />
       )}
-      <CutsceneOverlay cutscene={cutscene} onDone={clearCutscene} />
+      <CutsceneOverlay cutscene={cutscene} onDone={clearCutscene} muted={s.settings.muteTaunts} />
       <TauntOverlay taunt={taunt} seats={['P']} onDone={clearTaunt} />
       {meldReveal && <MeldPhaseModal reveal={meldReveal} onClose={clearMeldReveal} />}
     </div>

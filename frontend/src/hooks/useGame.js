@@ -161,6 +161,7 @@ export function useGame() {
   const snatchRef = useRef(0);
   const papacapLastHandRef = useRef(-999);
   const papacapGapRef = useRef(0);
+  const aiRenegeSeenRef = useRef(0);
   const kittyRef = useRef(false);
   const meldRef = useRef(false);
   const meldPendingRef = useRef(null);
@@ -293,7 +294,7 @@ export function useGame() {
       if (w === 'E' && !busy) {
         const hand = state.stats?.handsPlayed ?? 0;
         if (hand - papacapLastHandRef.current >= papacapGapRef.current) {
-          const pool = ['papacap_scene_1', 'papacap_scene_2', 'papacap_scene_3'];
+          const pool = ['papacap_scene_1', 'papacap_scene_2', 'papacap_scene_3', 'papacap_scene_4'];
           papacapLastHandRef.current = hand;
           papacapGapRef.current = 3 + Math.floor(Math.random() * 3); // gap of 3-5 hands
           fireTaunt(pool[Math.floor(Math.random() * pool.length)], 'E');
@@ -302,6 +303,29 @@ export function useGame() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.completedBooks.length, state.phase]);
+
+  // AI-on-AI renege catching (Convict Mode): a fellow convict occasionally busts an AI
+  // that slipped an illegal card, rather than only the human being able to Call Renege.
+  useEffect(() => {
+    if (state.phase !== 'play' || state.settings.difficulty !== 'hard') {
+      aiRenegeSeenRef.current = 0;
+      return undefined;
+    }
+    const aiRen = (state.trickReneges || []).filter((r) => r.seat !== 'P');
+    if (aiRen.length === 0) {
+      aiRenegeSeenRef.current = 0;
+      return undefined;
+    }
+    if (aiRen.length > aiRenegeSeenRef.current) {
+      aiRenegeSeenRef.current = aiRen.length;
+      if (Math.random() < 0.4) {
+        const t = setTimeout(() => dispatch({ type: 'CALL_RENEGE' }), 550);
+        return () => clearTimeout(t);
+      }
+    }
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.trickReneges, state.phase, state.settings.difficulty]);
 
   // Drive the game loop, but PAUSE it while a cutscene / meld modal / audit is open.
   useEffect(() => {
