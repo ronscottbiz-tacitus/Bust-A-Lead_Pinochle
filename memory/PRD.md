@@ -438,3 +438,17 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
     is scheduled.
 - Verified: 14/14 jest pass; testing agent iteration_27.json 100% regression (10/10 hands,
   replay button 10/10, 195 PapaCap taunts, zero console errors).
+
+## Updates (2026-06 — Request 15: PapaCap taunts -> full-screen cinematics)
+- BUG FIX: PapaCap scene taunts (papacap_scene_1..4) were rendering as tiny SILENT avatar
+  clips. Now they fire as FULL-SCREEN blocking CutsceneOverlay cinematics WITH AUDIO (same as
+  g2_portal_2/g2_renege_2). useGame.js both triggers (E book-win ~50%/7s cooldown; E high bid
+  >=70 guarded by !cutscene + cooldown) now call setCutscene({key,blocking:true}) +
+  setLastCutscene({key}) instead of fireTaunt. Added BANNER captions for the 4 scenes.
+- Audio follows the Cutscene Audio setting (muted={s.settings.muteTaunts}): unmuted when On,
+  muted when Off — verified.
+- Verified: 14/14 jest pass; testing agent iteration_28.json 100% — 16/16 full-screen (0 in
+  avatar), skip+banner present, muted toggles correctly, zero console errors, no chopper.
+- Minor backlog noted by QA: taunt-audio-toggle shares one data-testid in desktop+mobile
+  headers (harmless, both call onToggleTaunts); extract a fireSceneWithCooldown helper to DRY
+  the two PapaCap trigger sites.

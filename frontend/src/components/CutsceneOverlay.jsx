@@ -87,6 +87,10 @@ const BANNER = {
   kittyprayer: 'THE WIDOW PRAYER — FLIPPIN\u2019 THE KITTY',
   hardset: 'HARD SET — CANTEEN WIPED OUT',
   g2_3bang: 'G2 — 3 BANG! COUNTERS SNATCHED',
+  papacap_scene_1: "PAPACAP TALKIN' NOISE",
+  papacap_scene_2: "PAPACAP TALKIN' NOISE",
+  papacap_scene_3: "PAPACAP TALKIN' NOISE",
+  papacap_scene_4: "PAPACAP TALKIN' NOISE",
 };
 
 // Full-screen blocking cinematic. UNMUTED so the clip's native audio plays (SFX/voice

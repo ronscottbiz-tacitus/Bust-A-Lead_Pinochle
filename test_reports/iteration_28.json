@@ -1,0 +1,23 @@
+{
+  "summary": "PapaCap scene full-screen cutscene bug fix VERIFIED on preview URL with cfg-speed-fast + cfg-difficulty-hard. (1) FULL-SCREEN OVERLAY: All 4 keys (papacap_scene_1..4) observed rendering with data-testid=cutscene-papacap_scene_N as the top-level fixed z-[130] overlay via CutsceneOverlay — NOT inside avatar-taunt-E (0 of 16 observations were nested inside avatar-taunt-E). Screenshot confirmed full-screen cinematic with dark radial-vignette backdrop, centered object-contain <video>, and no avatar cropping. (2) SKIP + BANNER: 16/16 observations had cutscene-skip-btn (bottom-right) and cutscene-banner reading 'PAPACAP TALKIN\\' NOISE'. (3) AUDIO: With config Cutscene Audio = On, video.muted evaluated to false (2/2 unmuted checks). With config Cutscene Audio = Off (cfg-taunt-audio-off), video.muted evaluated to true (4/4 muted checks). muted prop correctly tracks s.settings.muteTaunts. (4) JEST: All 14 game engine tests pass (gameover/engine/payouts/counters). (5) REGRESSION: deal-btn starts match, auction+play advance, meld-phase-continue-btn / settlement-modal / replay-cutscene-btn all present in flow, Yard Reels modal contains reel-thumb-papacap_scene_1..4 + g2_portal_2 + g2_renege_2 + g2_sweep (7/7), reel-thumb-get2_chopper NOT present, ZERO console errors across two long sessions (1200+ and 600+ poll iterations).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/frontend/src/components/CutsceneOverlay.jsx", "/app/frontend/src/hooks/useGame.js", "/app/frontend/src/BustALead.jsx"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "useGame.js still has two PapaCap scene-trigger sites (bid >=70 at ~line 266 and E book-win at ~line 315) sharing papacapTsRef cooldown. Consider extracting a small fireSceneWithCooldown(seat) helper to DRY the 7s+50% roll logic (carried over from iteration_26 comment; still applicable).",
+    "Modals.jsx remains >900 lines (carry-over from prior iterations). Splitting into per-modal files still recommended.",
+    "Table.jsx renders taunt-audio-toggle in two places (line 205 desktop + line 325 mobile/compact) — both share the same data-testid. Not a bug (both call onToggleTaunts), but non-unique testids can complicate targeted click tests; consider suffixing e.g. taunt-audio-toggle-desktop / taunt-audio-toggle-mobile.",
+    "BANNER entries for papacap_scene_1..4 all use the same string 'PAPACAP TALKIN\\' NOISE' — intentional but a small differentiation per scene (I..IV) could add variety without cost."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Fast repro: cfg-speed-fast + cfg-difficulty-hard + cfg-taunt-audio-on (or off) -> deal-btn. PapaCap scenes now fire as FULL-SCREEN blocking CutsceneOverlay on (a) E book-win (~50% roll, 7s cooldown) and (b) E bid >=70 (guarded by !cutscene + 7s cooldown). Poll [data-testid^=cutscene-papacap_scene] with 100-150ms interval — scenes appear frequently on hard/fast. To verify muted behavior, set cfg-taunt-audio-off in the config screen (more reliable than the in-header taunt-audio-toggle which has duplicate testids in desktop+mobile placements). The in-game click on data-testid=taunt-audio-toggle from the FIRST query_selector match did not always propagate reliably in this run — recommend using cfg-taunt-audio-off/on at match setup or clicking the visible toggle via role/text for future audio tests. All 14 jest game tests still pass. No console errors observed across two long test sessions."
+}

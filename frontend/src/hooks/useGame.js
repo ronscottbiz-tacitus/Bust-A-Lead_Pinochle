@@ -263,10 +263,12 @@ export function useGame() {
       if (last && last.kind === 'bid' && (last.seat === 'W' || last.seat === 'E')) {
         const val = parseInt((/\$(\d+)/.exec(last.text) || [])[1] || '0', 10);
         if (last.seat === 'W') fireTaunt('doolow_bid', 'W');
-        else if (val >= 70 && Date.now() - papacapTsRef.current > 7000) {
-          // PapaCap slaps down a big bid -> pull a silent scene taunt (shares the cooldown).
+        else if (val >= 70 && !cutscene && Date.now() - papacapTsRef.current > 7000) {
+          // PapaCap slaps down a big bid -> full-screen cinematic taunt (with audio).
           papacapTsRef.current = Date.now();
-          fireTaunt(pickPapacapScene(), 'E');
+          const key = pickPapacapScene();
+          setCutscene({ key, blocking: true });
+          setLastCutscene({ key });
         } else fireTaunt(val >= 80 ? 'papacap_bigbid' : 'papacap_bid', 'E');
       }
     } else {
@@ -307,14 +309,15 @@ export function useGame() {
         }
       }
 
-      // PapaCap (E) wins a book -> randomized SILENT taunt from the scene pool. Light
-      // ~7s cooldown (not a multi-hand lockout) + 50% roll so it shows up several times
-      // per session without spamming back-to-back.
+      // PapaCap (E) wins a book -> full-screen cinematic taunt (with audio), like the
+      // g2 cinematics. Light ~7s cooldown + 50% roll so it shows up without spamming.
       if (w === 'E' && !busy) {
         const now = Date.now();
         if (now - papacapTsRef.current > 7000 && Math.random() < 0.5) {
           papacapTsRef.current = now;
-          fireTaunt(pickPapacapScene(), 'E');
+          const key = pickPapacapScene();
+          setCutscene({ key, blocking: true });
+          setLastCutscene({ key });
         }
       }
     }
