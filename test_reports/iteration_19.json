@@ -17,5 +17,5 @@
   "seed_data_creation": "None",
   "retest_needed": false,
   "should_main_agent_self_test": true,
-  "context_for_next_testing_agent": "REACT_APP_BACKEND_URL=https://pinochle-ai-duel.preview.emergentagent.com. Config screen -> cfg-speed-fast -> deal-btn. Auction modal contains Bid/Pass buttons that stay visible while AI escalates bids; clicking pass-btn alone does not always end the auction quickly. To reach play phase deterministically, may need to click pass-btn every turn while the auction modal is on-screen (poll for visibility) OR raise speed to instant. player-hand cards have testids of the form card-{suit}-{rank}-{idx}. Mobile matrix uses suit-col-S/H/D/C. suit-tab-ALL is fully removed (verified)."
+  "context_for_next_testing_agent": "REACT_APP_BACKEND_URL=https://cutthroat-card.preview.emergentagent.com. Config screen -> cfg-speed-fast -> deal-btn. Auction modal contains Bid/Pass buttons that stay visible while AI escalates bids; clicking pass-btn alone does not always end the auction quickly. To reach play phase deterministically, may need to click pass-btn every turn while the auction modal is on-screen (poll for visibility) OR raise speed to instant. player-hand cards have testids of the form card-{suit}-{rank}-{idx}. Mobile matrix uses suit-col-S/H/D/C. suit-tab-ALL is fully removed (verified)."
 }

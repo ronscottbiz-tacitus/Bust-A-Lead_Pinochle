@@ -363,6 +363,7 @@ function Seat({ state, seat, corner, reaction, taunt, onTauntDone }) {
   const isTurn =
     (s.phase === 'auction' && s.currentBidder === seat) ||
     (s.phase === 'play' && s.turn === seat && !s.trickPending);
+  const isActiveBidder = s.phase === 'auction' && s.currentBidder === seat;
   const isBidder = s.bidWinner === seat;
   const status = statusText(s, seat);
   const count = s.hands[seat].length;
@@ -400,7 +401,7 @@ function Seat({ state, seat, corner, reaction, taunt, onTauntDone }) {
       <div
         className={`relative flex flex-col items-center gap-1.5 glass rounded-2xl px-3 py-2.5 transition-all duration-200 ${
           isTurn ? 'ring-4 ring-cyan-400 neon-cyan scale-105' : isBidder ? 'ring-2 ring-yellow-400/70' : ''
-        }`}
+        } ${isActiveBidder ? 'bid-glow' : ''}`}
       >
         <ReactionBadge reaction={reaction} testid={`reaction-${seat}`} className="-top-3 left-1/2 -translate-x-1/2" />
         <div
@@ -844,6 +845,7 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
   const spotlight = useBidderSpotlight(state);
   const pTurn = s.phase === 'play' && s.turn === 'P' && !s.trickPending;
   const pBidder = s.bidWinner === 'P';
+  const pActiveBidder = s.phase === 'auction' && s.currentBidder === 'P';
   const { mobile: isMobile } = useViewport();
   return (
     <div className="absolute inset-0 top-16 bottom-28 flex flex-col items-center justify-center">
@@ -958,7 +960,7 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
         <div
           data-testid="mobile-g2-bar"
           className={`fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-2 px-3 py-2 border-t backdrop-blur-md bg-slate-950/85 pb-[env(safe-area-inset-bottom)] transition-all duration-200 ${
-            pTurn ? 'border-cyan-400/80 shadow-[0_-2px_16px_rgba(34,211,238,0.35)]' : pBidder ? 'border-yellow-400/70' : 'border-slate-700/70'
+            pActiveBidder ? 'border-cyan-400 bid-glow' : pTurn ? 'border-cyan-400/80 shadow-[0_-2px_16px_rgba(34,211,238,0.35)]' : pBidder ? 'border-yellow-400/70' : 'border-slate-700/70'
           }`}
         >
           <div className="relative flex items-center gap-2 min-w-0">

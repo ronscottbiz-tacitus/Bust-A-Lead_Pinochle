@@ -760,15 +760,24 @@ export function MeldPhaseModal({ reveal, onClose }) {
           {items.length === 0 ? (
             <div className="text-center text-zinc-400 text-sm py-6">No meld declared — playing off the strength of the hand.</div>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {items.map((it, i) => (
                 <li
                   key={`${it.name}-${i}`}
                   data-testid={`meld-phase-item-${i}`}
-                  className="flex items-center justify-between text-sm border-b border-white/5 pb-2"
+                  className="border-b border-white/5 pb-3"
                 >
-                  <span className="text-zinc-200 font-sub">{it.name}</span>
-                  <span className="font-mono-stat text-emerald-300 font-bold">{it.pts}</span>
+                  <div className="flex items-center justify-between text-sm mb-1.5">
+                    <span className="text-zinc-200 font-sub">{it.name}</span>
+                    <span className="font-mono-stat text-emerald-300 font-bold">+{it.pts}</span>
+                  </div>
+                  {it.cards?.length > 0 && (
+                    <div data-testid={`meld-phase-cards-${i}`} className="flex flex-wrap gap-1">
+                      {it.cards.map((c) => (
+                        <Card key={c.id} card={c} size="xs" />
+                      ))}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -872,8 +881,8 @@ export function CinematicsModal({ onClose }) {
               onClick={() => setSelected(c)}
               className="group relative rounded-xl overflow-hidden border border-amber-500/20 bg-black/50 hover:border-amber-400/70 transition-all active:scale-95 text-left"
             >
-              <div className="relative aspect-video bg-slate-900">
-                <video muted playsInline preload="metadata" className="w-full h-full object-cover opacity-90 group-hover:opacity-100">
+              <div className="relative w-full bg-slate-900 overflow-hidden" style={{ aspectRatio: '16 / 9' }}>
+                <video muted playsInline preload="metadata" className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100">
                   <source src={`/assets/cutscenes/${c.base}.webm#t=0.5`} type="video/webm" />
                   <source src={`/assets/cutscenes/${c.base}.mp4#t=0.5`} type="video/mp4" />
                 </video>

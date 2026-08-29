@@ -183,3 +183,16 @@ body {
   to { transform: rotate(360deg); }
 }
 .gold-rays { animation: goldRays 9s linear infinite; }
+
+/* Active-bidder pulsing glow — kept highly visible on mobile HUDs. */
+@keyframes bidGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.7), 0 0 14px 2px rgba(0, 240, 255, 0.5);
+    border-color: rgba(0, 240, 255, 0.9);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(0, 240, 255, 1), 0 0 28px 7px rgba(0, 240, 255, 0.85);
+    border-color: rgba(125, 240, 255, 1);
+  }
+}
+.bid-glow { animation: bidGlow 1s ease-in-out infinite; }

@@ -9,8 +9,7 @@ const FILE = {
   // Blocking (full-screen) — rare, major moments.
   doolow_set: ['doolow_taunt_1'],
   papacap_set: ['doolow_taunt_2'],
-  g2_hardset: ['papacap_taunt_2'],
-  renege: ['g2_renege', 'cutscene_renege_busted'],
+  g2_hardset: ['papacap_taunt_2'],  renege: ['g2_renege', 'cutscene_renege_busted'],
   falseaccuse: ['papacap_taunt_2', 'cutscene_trashtalk_smirk'],
   sweep: ['g2_sweep', 'canteen_sweep'],
   portal: ['g2_portal'],
@@ -81,6 +80,7 @@ const BANNER = {
   kittyprayer: 'THE WIDOW PRAYER — FLIPPIN\u2019 THE KITTY',
   chopper: 'THE GET2 EXTRACTION',
   hardset: 'HARD SET — CANTEEN WIPED OUT',
+  g2_3bang: 'G2 — 3 BANG! COUNTERS SNATCHED',
 };
 
 // Full-screen blocking cinematic. UNMUTED so the clip's native audio plays (SFX/voice

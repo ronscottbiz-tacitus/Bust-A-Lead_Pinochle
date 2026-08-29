@@ -322,3 +322,27 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   settlement. Uses existing `.react-pop` CSS animation.
 - Verified: all 7 Jest engine tests pass; frontend testing agent 100% (iteration_8.json) — no
   card/HUD overlap, cards remain clickable.
+
+
+## Updates (2026-06 — Request 8: Cards, Meld Visuals, Cinematic Triggers, Mobile Glow)
+- Card borders (`Card.jsx`): face-up cards now use `border-2 border-slate-800` for crisp,
+  high-contrast separation between overlapping hand-tray cards.
+- DECLARED MELD modal (`Modals.jsx` `MeldPhaseModal`): each meld item row now renders a
+  visual row of the actual card icons (`meld-phase-cards-<i>`) beneath its name+points.
+- g2_teeth trigger (`useGame.js`): now fires ONLY when G2 plays an Ace AND captures an
+  opponent's Ace in the same book (was: any AI capturing an Ace).
+- g2_3bang trigger (`useGame.js` + `CutsceneOverlay.jsx`): now fires when G2 wins a book
+  holding 3+ counters (A/10/K) and renders as a FULL-SCREEN blocking cutscene with skip
+  controls (added `g2_3bang` banner). Removed the old "3 books in a row" streak logic.
+- Counter/kitty tallying audit: verified correct via new jest suite
+  `src/game/__tests__/counters.test.js` — 120+ simulated played-out hands always account for
+  exactly 50 books; buried/kitty counters correctly feed the bidder's total (buriedBooks).
+- Mobile active-bidder glow (`Table.jsx` + `index.css`): new `.bid-glow` pulsing cyan
+  animation applied to the active bidder's HUD (seat boxes for W/E, `mobile-g2-bar` for G2)
+  during the auction phase.
+- Yard Reels thumbnails (`Modals.jsx` `CinematicsModal`): thumbnail container uses inline
+  `aspectRatio: '16 / 9'` with an absolutely-positioned video, fixing skinny/stretched
+  thumbnails on mobile.
+- Verified: engine.test.js + counters.test.js (12 tests) pass; testing agent iteration_24.json
+  100% on all 4 deterministically reachable items (card borders, meld visual breakdown,
+  mobile bid glow, Yard Reels 16:9 thumbnails). No console errors/regressions.

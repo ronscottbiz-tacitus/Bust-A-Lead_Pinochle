@@ -36,9 +36,9 @@ export const Card = ({
       data-testid={testid}
       onClick={onClick}
       disabled={!onClick}
-      className={`${SIZES[size]} shrink-0 relative bg-gradient-to-b from-white to-slate-100 border shadow-lg flex flex-col justify-between p-1 card-lift select-none
+      className={`${SIZES[size]} shrink-0 relative bg-gradient-to-b from-white to-slate-100 border-2 shadow-lg flex flex-col justify-between p-1 card-lift select-none
         ${suit.text}
-        ${selected ? 'ring-2 ring-fuchsia-400 -translate-y-3 border-fuchsia-400 shadow-[0_0_18px_rgba(255,0,122,0.6)]' : 'border-slate-300'}
+        ${selected ? 'ring-2 ring-fuchsia-400 -translate-y-3 border-fuchsia-400 shadow-[0_0_18px_rgba(255,0,122,0.6)]' : 'border-slate-800'}
         ${legal ? 'ring-2 ring-cyan-400 shadow-[0_0_16px_rgba(0,240,255,0.65)] cursor-pointer hover:-translate-y-4 hover:scale-105' : ''}
         ${dim ? 'opacity-40 grayscale cursor-not-allowed' : ''}
         ${className}`}

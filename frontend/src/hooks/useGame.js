@@ -1,7 +1,7 @@
 import { useReducer, useEffect, useRef, useState } from 'react';
 import { reducer, initState } from '../game/reducer';
 import { saveGame } from '../game/storage';
-import { SEATS, SPEED } from '../game/constants';
+import { SEATS, SPEED, COUNTER_RANKS } from '../game/constants';
 import { evaluateBid, chooseTrump, chooseDiscards, shouldGoDouble, laydownChallenge, aiPlay, aiConcede } from '../game/ai';
 import { saveTarget } from '../game/scoring';
 import { SoundEngine } from '../audio/sfx';
@@ -162,7 +162,6 @@ export function useGame() {
   const kittyRef = useRef(false);
   const meldRef = useRef(false);
   const meldPendingRef = useRef(null);
-  const pStreakRef = useRef(0);
   const bidLogRef = useRef(state.bidLog?.length || 0);
   const fireTaunt = (key, seat) => setTaunt({ key, seat });
 
@@ -256,30 +255,30 @@ export function useGame() {
   useEffect(() => {
     if (state.phase !== 'play') {
       trashRef.current = state.completedBooks.length;
-      pStreakRef.current = 0;
       return;
     }
     if (state.completedBooks.length > trashRef.current) {
       trashRef.current = state.completedBooks.length;
       const last = state.completedBooks[state.completedBooks.length - 1];
       const w = last?.winner;
-      const isAI = w === 'W' || w === 'E';
+      const plays = last?.plays || [];
       const busy = cutscene?.blocking || meldReveal;
+      const counters = plays.filter((p) => COUNTER_RANKS.has(p.card.rank)).length;
 
-      // G2 takes 3 books in a row -> "3 Bang" celebratory taunt (transparent overlay).
-      if (w === 'P') {
-        pStreakRef.current += 1;
-        if (pStreakRef.current === 3 && !busy) fireTaunt('g2_3bang', 'P');
-      } else {
-        pStreakRef.current = 0;
-      }
-
-      // Opponent Ace captured by an AI -> "Snatchin' teeth!" clip in the captor's avatar (throttled).
-      if (isAI && last?.plays?.some((p) => p.card.rank === 'A' && p.seat !== w)) {
+      // G2 wins a book holding 3+ counters (Aces / 10s / Kings) -> full-screen "3 Bang" cinematic.
+      if (w === 'P' && counters >= 3 && !busy) {
+        setCutscene({ key: 'g2_3bang', blocking: true });
+      } else if (
+        // G2 plays an Ace AND captures an opponent's Ace in the same book -> "Snatchin' teeth" taunt.
+        w === 'P' &&
+        plays.some((p) => p.seat === 'P' && p.card.rank === 'A') &&
+        plays.some((p) => p.seat !== 'P' && p.card.rank === 'A') &&
+        !busy
+      ) {
         const now = Date.now();
-        if (now - snatchRef.current > 3500 && !busy) {
+        if (now - snatchRef.current > 3500) {
           snatchRef.current = now;
-          fireTaunt('g2_teeth', w);
+          fireTaunt('g2_teeth', 'P');
         }
       }
     }
