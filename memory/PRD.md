@@ -469,3 +469,18 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   tooltips sequential + dismissible, defaults correct, renege notice on illegal taps, Convict mode
   shows NO tooltips, zero console errors. (Kitty tooltip validated by code; not hit in auto-run
   because P didn't win a bid.)
+
+## Updates (2026-06 — Request 17: New Booty tutorial cutscenes + Replay Tutorial button)
+- New assets g2_newbooty_intro + g2_renege_lesson (VP9/Opus WebM + MP4). Mapped in
+  CutsceneOverlay FILE (newbooty_intro / renege_lesson), BANNER captions, and CUTSCENE_LIBRARY
+  (tag 'Tutorial') so they appear in Yard Reels.
+- useGame exposes playCutscene(key) -> full-screen blocking cutscene + records lastCutscene.
+- BustALead: introShownRef fires newbooty_intro once/session on config->dealing when
+  difficulty==='easy' && tutorialHints; illegal-card tap in New Booty fires renege_lesson once
+  (renegeLessonRef), subsequent illegal taps (any tutorial mode) show the RenegeNotice banner.
+  Renege lesson now gated to difficulty==='easy' (New Booty) per spec.
+- Replay Tutorial button (ConfigScreen, replay-tutorial-btn): resets introShownRef +
+  renegeLessonRef, bumps TutorialOverlay key (reset tooltip tour), and re-enables tutorialHints.
+- Verified: 14/14 jest pass; testing agent iteration_30.json 100% — intro fires/gates correctly
+  (easy+hints only, once/session, replay re-arms it), renege lesson full-screen first time then
+  notice, both in Yard Reels, assets HTTP 206, zero console errors.

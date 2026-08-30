@@ -368,6 +368,11 @@ export function useGame() {
   const replayLastCutscene = () => {
     if (lastCutscene) setCutscene({ key: lastCutscene.key, blocking: true, data: lastCutscene.data });
   };
+  // Fire a specific full-screen blocking cutscene by key (tutorial intro / renege lesson).
+  const playCutscene = (key) => {
+    setCutscene({ key, blocking: true });
+    setLastCutscene({ key });
+  };
 
   const act = (action) => {
     const snd = soundRef.current;
@@ -380,5 +385,5 @@ export function useGame() {
     dispatch(action);
   };
 
-  return { state, act, sound: soundRef.current, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt, lastCutscene, replayLastCutscene };
+  return { state, act, sound: soundRef.current, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt, lastCutscene, replayLastCutscene, playCutscene };
 }

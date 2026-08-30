@@ -1,0 +1,28 @@
+{
+  "summary": "Verified two new tutorial cutscenes for New Booty mode on preview URL. (1) NEW BOOTY INTRO: In New Booty (cfg-difficulty-easy) + Tutorial Hints ON, clicking deal-btn opens full-screen data-testid=cutscene-newbooty_intro overlay with banner 'WELCOME TO THE YARD — NEW BOOTY 101' and cutscene-skip-btn; Skip dismisses correctly. Asset g2_newbooty_intro.webm returns HTTP 206. (2) SESSION GATING: Returning to config (new-game-header-btn -> main-menu-btn) and dealing a 2nd Easy match did NOT replay the intro. (3) REPLAY TUTORIAL BUTTON: replay-tutorial-btn present on ConfigScreen, clicking it flipped cfg-tutorial-on to active AND re-enabled the intro on next Easy deal (cutscene fired again). (4) DIFFICULTY GATING: With tutorial force-enabled, dealing in Convict (cfg-difficulty-hard) and Inmate (cfg-difficulty-normal) did NOT trigger cutscene-newbooty_intro. (5) TUTORIAL OFF GATING: Easy + cfg-tutorial-off did NOT trigger the intro. (6) RENEGE LESSON: In trick play (after passing so AI takes the bid), first tap on a dimmed off-suit card triggered full-screen data-testid=cutscene-renege_lesson with banner 'RENEGE 101 — KNOW THE PENALTY' and cutscene-skip-btn (dismissed cleanly). Second illegal tap on the very next card showed the lighter data-testid=renege-notice banner (NOT the full cutscene) — confirms once-per-session gating via renegeLessonRef. (7) YARD REELS GALLERY: Opened in-game, contains both data-testid=reel-thumb-g2_newbooty_intro and reel-thumb-g2_renege_lesson tagged 'TUTORIAL'; 25 total clips, no chopper thumbnails. (8) No console errors, no 4xx responses for g2_newbooty_intro or g2_renege_lesson (.mp4/.webm both HTTP 206). All requested behaviors match spec.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/frontend/src/BustALead.jsx",
+    "/app/frontend/src/components/CutsceneOverlay.jsx",
+    "/app/frontend/src/components/Modals.jsx"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "BustALead.jsx: The intro useEffect depends only on [s.phase] (line 57) but reads s.settings.difficulty and s.settings.tutorialHints. Missing deps are silenced via eslint-disable. If a user changes tutorialHints DURING a match (e.g. via header controls) it won't trigger — acceptable but worth documenting. Current session gating via introShownRef makes this safe in practice.",
+    "BustALead.jsx onCardClick (line 78-86): The renege_lesson only fires when s.settings.tutorialHints is true AND difficulty !== 'hard'. Good. However, in Convict (hard) all cards are playable (no illegal path), so the lesson is correctly Easy-only. Consider also gating explicitly to difficulty==='easy' to match the intro semantics (currently Normal would also show renege_lesson if a player toggled tutorial on in Normal — spec says Renege Lesson is 'in New Booty mode' only). Low priority — the Normal difficulty currently has legalPlays enforced too, so it's actually reachable.",
+    "CutsceneOverlay.jsx: The 2500ms loadTimer auto-dismiss is fine, but if the video is very short (< 2500ms) and onPlaying fires quickly it won't auto-close prematurely (guarded by startedRef) — good defensive coding.",
+    "Modals.jsx ConfigScreen still 900+ lines (carry-over from prior iterations). Splitting into per-modal files remains recommended.",
+    "The onReplayTutorial handler in BustALead.jsx directly sets tutorialHints:true regardless of prior state — desired behavior, but it also means a user who explicitly turned tutorial OFF will have it silently flipped back ON. UX-wise this is correct (user clicked 'Replay Tutorial' so opt-in is implied), just note-worthy."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "New Booty intro: deal New Booty match with tutorial ON. Returning to config: click data-testid=new-game-header-btn then data-testid=main-menu-btn (use JS .click() via evaluate — force=True click was flaky in Playwright when the button was inside the Overlay dialog). Renege Lesson repro: cfg-difficulty-easy + cfg-speed-fast + deal, dismiss intro + bidding tooltip, click pass-btn once, wait for trick play, then iterate through player-hand cards clicking each until cutscene-renege_lesson (banner RENEGE 101) fires. Second illegal tap yields renege-notice instead. Yard Reels button lives in the in-game header (text 'Yard Reels')."
+}

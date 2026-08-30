@@ -167,7 +167,7 @@ const CFG_STAKES = [
   { value: 5, label: 'High $5/$10' },
 ];
 
-export function ConfigScreen({ state, act }) {
+export function ConfigScreen({ state, act, onReplayTutorial }) {
   const s = state.settings;
   const set = (patch) => act({ type: 'UPDATE_SETTINGS', settings: patch });
   return (
@@ -268,6 +268,13 @@ export function ConfigScreen({ state, act }) {
               options={CFG_STAKES}
             />
           </div>
+          <button
+            data-testid="replay-tutorial-btn"
+            onClick={onReplayTutorial}
+            className="mt-4 w-full py-2.5 rounded-xl bg-cyan-500/15 border border-cyan-400/60 text-cyan-100 font-display font-bold tracking-wide flex items-center justify-center gap-2 hover:bg-cyan-500/25 transition-all active:scale-95"
+          >
+            <RotateCcw size={16} /> Replay Tutorial
+          </button>
           <button
             data-testid="deal-btn"
             onClick={() => act({ type: 'START_ROUND' })}

@@ -29,6 +29,8 @@ const FILE = {
   papacap_scene_4: ['papacap_scene_4'],
   g2_3bang: ['g2_3bang'],
   g2_teeth: ['g2_teeth'],
+  newbooty_intro: ['g2_newbooty_intro'],
+  renege_lesson: ['g2_renege_lesson'],
 };
 
 export function sourcesFor(key) {
@@ -52,6 +54,8 @@ export const CUTSCENE_LIBRARY = [
   { base: 'g2_sweep', title: 'The Canteen Sweep', tag: 'Cinematic' },
   { base: 'g2_renege_2', title: 'Renege Busted', tag: 'Cinematic' },
   { base: 'cutscene_hardset_canteen', title: 'Hard Set — Canteen', tag: 'Cinematic' },
+  { base: 'g2_newbooty_intro', title: 'New Booty Intro', tag: 'Tutorial' },
+  { base: 'g2_renege_lesson', title: 'Renege Lesson', tag: 'Tutorial' },
   { base: 'break_yo_self', title: 'Break Yo Self', tag: 'Cinematic' },
   { base: 'canteen_sweep', title: 'Canteen Sweep (Classic)', tag: 'Cinematic' },
   { base: 'cutscene_hand_concede', title: 'Hand Conceded', tag: 'Cinematic' },
@@ -91,6 +95,8 @@ const BANNER = {
   papacap_scene_2: "PAPACAP TALKIN' NOISE",
   papacap_scene_3: "PAPACAP TALKIN' NOISE",
   papacap_scene_4: "PAPACAP TALKIN' NOISE",
+  newbooty_intro: 'WELCOME TO THE YARD — NEW BOOTY 101',
+  renege_lesson: 'RENEGE 101 — KNOW THE PENALTY',
 };
 
 // Full-screen blocking cinematic. UNMUTED so the clip's native audio plays (SFX/voice

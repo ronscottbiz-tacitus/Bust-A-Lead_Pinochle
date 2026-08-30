@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGame } from './hooks/useGame';
 import { Header, Table, HandTray, DealAnimation } from './components/Table';
 import { ActionBar } from './components/ActionBar';
@@ -28,7 +28,7 @@ import { TutorialOverlay, RenegeNotice } from './components/Tutorial';
 const PLAYER_SEAT = ['P'];
 
 export default function BustALead() {
-  const { state, act, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt, lastCutscene, replayLastCutscene } = useGame();
+  const { state, act, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt, lastCutscene, replayLastCutscene, playCutscene } = useGame();
   const [showRules, setShowRules] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -37,7 +37,24 @@ export default function BustALead() {
   const [showAudit, setShowAudit] = useState(false);
   const [showCinematics, setShowCinematics] = useState(false);
   const [renegeNotice, setRenegeNotice] = useState(false);
+  const [tutorialKey, setTutorialKey] = useState(0);
+  const introShownRef = useRef(false);
+  const renegeLessonRef = useRef(false);
   const s = state;
+
+  // New Booty match intro cinematic — once per session when a New Booty match launches.
+  useEffect(() => {
+    if (
+      s.phase === 'dealing' &&
+      s.settings.difficulty === 'easy' &&
+      s.settings.tutorialHints &&
+      !introShownRef.current
+    ) {
+      introShownRef.current = true;
+      playCutscene('newbooty_intro');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.phase]);
 
   // Pause the game engine while the Yard Court audit is open.
   useEffect(() => {
@@ -58,7 +75,15 @@ export default function BustALead() {
       }
       const legal = legalPlays(s.hands.P, s.trick, s.trump);
       if (legal.some((c) => c.id === card.id)) act({ type: 'PLAY_CARD', seat: 'P', card });
-      else if (s.settings.tutorialHints) setRenegeNotice(true);
+      else if (s.settings.tutorialHints) {
+        // Full renege lesson only in New Booty (once per session); otherwise a quick notice.
+        if (s.settings.difficulty === 'easy' && !renegeLessonRef.current) {
+          renegeLessonRef.current = true;
+          playCutscene('renege_lesson');
+        } else {
+          setRenegeNotice(true);
+        }
+      }
     }
   };
 
@@ -95,7 +120,18 @@ export default function BustALead() {
         </>
       )}
 
-      {s.phase === 'config' && <ConfigScreen state={s} act={act} />}
+      {s.phase === 'config' && (
+        <ConfigScreen
+          state={s}
+          act={act}
+          onReplayTutorial={() => {
+            introShownRef.current = false;
+            renegeLessonRef.current = false;
+            setTutorialKey((k) => k + 1);
+            act({ type: 'UPDATE_SETTINGS', settings: { tutorialHints: true } });
+          }}
+        />
+      )}
       {s.phase === 'settlement' && <SettlementModal state={s} act={act} onReplay={replayLastCutscene} canReplay={!!lastCutscene} />}
       {showRules && <RulebookModal onClose={() => setShowRules(false)} />}
       {showStats && (
@@ -143,7 +179,7 @@ export default function BustALead() {
       <CutsceneOverlay cutscene={cutscene} onDone={clearCutscene} muted={s.settings.muteTaunts} />
       <TauntOverlay taunt={taunt} seats={PLAYER_SEAT} onDone={clearTaunt} />
       {meldReveal && <MeldPhaseModal reveal={meldReveal} onClose={clearMeldReveal} />}
-      <TutorialOverlay state={s} />
+      <TutorialOverlay key={tutorialKey} state={s} />
       {renegeNotice && <RenegeNotice onDismiss={() => setRenegeNotice(false)} />}
     </div>
   );
