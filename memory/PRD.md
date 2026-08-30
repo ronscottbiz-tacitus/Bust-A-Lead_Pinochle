@@ -484,3 +484,22 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Verified: 14/14 jest pass; testing agent iteration_30.json 100% — intro fires/gates correctly
   (easy+hints only, once/session, replay re-arms it), renege lesson full-screen first time then
   notice, both in Yard Reels, assets HTTP 206, zero console errors.
+
+## Updates (2026-06 — Request 18: DooLow cutscenes + priority/throttle resolver)
+- 3 new DooLow cinematics (VP9/Opus WebM + MP4), mapped in CutsceneOverlay FILE/BANNER/LIBRARY:
+  * doolow_scene_takeover (Tier4) — W wins contract at bid>=90; min 2 hands between (takeoverLastHandRef); fired in a phase==='trump' effect.
+  * doolow_scene_cut (Tier4) — W trumps a non-trump led suit AND captures 2+ opponent counters; fired in completed-books effect.
+  * doolow_scene_renege (Tier2) — AI-on-AI renege catch (Convict); requested just before CALL_RENEGE dispatch.
+- Single-slot priority resolver requestCutscene(key,{data}) in useGame.js: CUTSCENE_TIER/tierOf
+  (1 portal > 2 renege/settlement penalties/doolow_renege > 3 tutorial/meld/kitty > 4 flair
+  g2_3bang/doolow_takeover/doolow_cut > 5 papacap pool). Rules: higher tier (lower num) discards
+  pending lower-tier (cutsceneRef check); max ONE Tier4/5 flair per hand (flairUsedRef, reset each
+  deal) — this also makes a bidding-phase flair suppress trick taunts for the rest of the hand.
+  ALL cutscene sites (settlement/kitty/meld/g2_3bang/papacap/intro/lesson) now route through it;
+  clearCutscene/replay keep cutsceneRef synced. CutsceneOverlay already full-screen + audio +
+  tap-to-dismiss (root onClick=finish) + Skip.
+- Verified: 14/14 jest; testing agent iteration_31.json 100% — 5 hands no soft-locks, every cutscene
+  dismissible + resumes, one-flair-per-hand (0 violations), Tier-2 override after Tier-5 flair
+  confirmed, 3 DooLow reels in gallery, all assets HTTP 200, 0 console errors.
+- Known harmless: a leftover { flair:true } arg is passed at some requestCutscene calls but flair is
+  derived from tier (opts.flair unused) — no behavior impact.

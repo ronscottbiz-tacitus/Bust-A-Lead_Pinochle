@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend regression + DooLow cutscene wiring verification on preview URL (Convict/Fast). Played 5 full hands end-to-end via Playwright — no soft-locks, no blank screens, game always resumed after every cutscene. During those hands the central resolver fired: cutscene-papacap_scene_2, cutscene-papacap_scene_4, cutscene-concession (x2), cutscene-renege (x3). Every full-screen CutsceneOverlay was dismissible via data-testid=cutscene-skip-btn AND via tapping the overlay root (onClick=finish), and control returned to gameplay in every case (verified by absence of subsequent overlay and normal progression to next-hand-btn / next auction). ONE-FLAIR-PER-HAND: no hand contained two Tier-4/5 flair clips (violations=[]). PRIORITY OVERRIDE: renege (Tier 2) cutscenes appeared even after a papacap flair (Tier 5) had already played in the same hand (Hand 2 & Hand 4) — confirming higher tiers still fire. DOOLOW SCENES: the three semi-random DooLow triggers (takeover / cut / renege) did not organically fire in the 5 sampled hands (statistically acceptable per spec). Wiring verified: (a) FILE map, BANNER map, CUTSCENE_LIBRARY, CUTSCENE_TIER all contain doolow_scene_takeover / _cut / _renege with correct tier=4/4/2; (b) trigger useEffects in useGame.js (trump phase for takeover, completedBooks for cut, trickReneges for renege) all route through requestCutscene with correct guards (flairUsedRef, takeoverLastHandRef 2-hand cooldown, hard-difficulty gate for renege catch); (c) all 6 asset files return HTTP 200 (doolow_scene_takeover/cut/renege × .mp4/.webm); (d) opening the Yard Reels gallery from the in-game cinematics-btn shows 28 clips including reel-thumb-doolow_scene_takeover / _cut / _renege, and clicking each opens its reel-player-<base> without console errors, exercising the same asset pipeline requestCutscene uses. REGRESSION for existing cutscenes: concession/renege full-screen settlement cinematics still fire; skip-btn + tap-to-dismiss both work; PapaCap full-screen scene taunts still fire as before. 0 console errors, 0 non-200 responses for any doolow_scene / g2_ / cutscene_ / papacap_ asset across the run.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/frontend/src/hooks/useGame.js",
+    "/app/frontend/src/components/CutsceneOverlay.jsx",
+    "/app/frontend/src/components/Modals.jsx"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "useGame.js requestCutscene() correctly implements single-slot resolver with tier priority; cutsceneRef mirrors setCutscene state and is cleared in clearCutscene. Good.",
+    "useGame.js line 293: PapaCap bid taunt path calls requestCutscene(pickPapacapScene(), { flair: true }) — the { flair: true } option is passed but requestCutscene never reads opts.flair (it derives flair status from tierOf(key) >= 4). Harmless dead prop but confusing; consider removing the `flair` option arg or actually honoring it. Same at lines 319, 338, 349, 384.",
+    "useGame.js line 384: doolow_scene_takeover trigger effect depends only on [state.phase]. If a hand goes trump -> settlement -> new trump with W bidder again, this fires correctly. However takeoverLastHandRef.current is compared to state.stats?.handsPlayed; if handsPlayed is incremented AFTER the trump phase of the current hand, the '2 hands between' cooldown could allow retriggering sooner than intended. Verify handsPlayed semantics — low risk, worth confirming in a unit test.",
+    "useGame.js line 358-378: AI-on-AI renege catch dispatches CALL_RENEGE 550ms after requestCutscene fires; if the user opens Yard Reels or another cutscene overrides during that window, the settlement path could race. The 550ms delay is unguarded by cutscene state. Consider gating on `!cutscene` before dispatch (low priority — Tier 2 renege beats most flair tiers anyway).",
+    "CutsceneOverlay.jsx root has onClick={finish} for tap-to-dismiss and the child Skip button uses e.stopPropagation() correctly, so single-tap-dismiss is unambiguous. Good.",
+    "Modals.jsx ConfigScreen file still >900 lines (unchanged carry-over from prior iterations). Splitting recommended, not blocking."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "DooLow cinematics are semi-random. To force-verify their full-screen rendering without waiting for RNG, open Yard Reels (data-testid=cinematics-btn in-game) and click reel-thumb-doolow_scene_takeover / _cut / _renege — each opens reel-player-<base> which exercises the same asset pipeline. In-game player-hand cards use testid pattern `card-<suit>-<rank>-<i>`. Loop needs to handle declare-bidder-aces-btn / declare-aces-btn / concede-laydown-btn buttons in addition to pass-btn / meld-phase-continue-btn / next-hand-btn to avoid soft-lock timeouts on the player's forced actions. Asset HEAD requests without a browser UA return 403 from the CDN — use GET or set User-Agent. Prior passing: iteration_29, iteration_30, iteration_31."
+}

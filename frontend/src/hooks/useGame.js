@@ -12,6 +12,17 @@ const RENEGE_RATE = { off: 0, low: 0.02, high: 0.06 };
 const PAPACAP_SCENES = ['papacap_scene_1', 'papacap_scene_2', 'papacap_scene_3', 'papacap_scene_4'];
 const pickPapacapScene = () => PAPACAP_SCENES[Math.floor(Math.random() * PAPACAP_SCENES.length)];
 
+// Cutscene priority tiers (lower = higher priority). Tiers 4/5 are "flair" (max 1 per hand).
+const CUTSCENE_TIER = {
+  portal: 1,
+  renege: 2, falseaccuse: 2, doolow_scene_renege: 2,
+  hardset: 2, doolow_set: 2, papacap_set: 2, g2_hardset: 2,
+  renege_lesson: 3, newbooty_intro: 3,
+  doolow_scene_takeover: 4, doolow_scene_cut: 4, g2_3bang: 4,
+  papacap_scene_1: 5, papacap_scene_2: 5, papacap_scene_3: 5, papacap_scene_4: 5,
+};
+const tierOf = (key) => CUTSCENE_TIER[key] ?? 3;
+
 function aiBidAction(s, seat) {
   const { maxBid } = evaluateBid(s.hands[seat], s.settings.bidBase, s.settings.difficulty, s.settings.convictBoldness);
   const nextVal = s.bid == null ? s.settings.bidBase : s.bid + 5;
@@ -173,6 +184,24 @@ export function useGame() {
   const meldPendingRef = useRef(null);
   const bidLogRef = useRef(state.bidLog?.length || 0);
   const fireTaunt = (key, seat) => setTaunt({ key, seat });
+  const cutsceneRef = useRef(null);
+  const flairUsedRef = useRef(false);
+  const takeoverLastHandRef = useRef(-99);
+
+  // Single-slot cutscene priority resolver. Higher tier (lower number) wins and discards a
+  // pending lower-tier clip; at most one Tier 4/5 flair per hand. Returns true if accepted.
+  const requestCutscene = (key, opts = {}) => {
+    const tier = tierOf(key);
+    if (tier >= 4 && flairUsedRef.current) return false;
+    const cur = cutsceneRef.current;
+    if (cur && tierOf(cur.key) <= tier) return false;
+    const cs = { key, blocking: true, data: opts.data };
+    cutsceneRef.current = cs;
+    setCutscene(cs);
+    setLastCutscene({ key, data: opts.data });
+    if (tier >= 4) flairUsedRef.current = true;
+    return true;
+  };
 
   useEffect(() => {
     saveGame({ bankrolls: state.bankrolls, settings: state.settings, dealer: state.dealer, stats: state.stats });
@@ -188,6 +217,7 @@ export function useGame() {
       kittyRef.current = false;
       meldRef.current = false;
       meldPendingRef.current = null;
+      flairUsedRef.current = false;
       setMeldReveal(null);
       setLastCutscene(null);
     }
@@ -199,8 +229,7 @@ export function useGame() {
       const cs = settlementCutscene(state);
       const snd = soundRef.current;
       if (cs) {
-        setCutscene({ key: cs.key, blocking: true, data: cs.data });
-        setLastCutscene({ key: cs.key, data: cs.data });
+        requestCutscene(cs.key, { data: cs.data });
         if (cs.key === 'renege' || cs.key === 'falseaccuse') {
           snd.renege();
           if (cs.key === 'renege') snd.tableSlamThunder();
@@ -221,9 +250,8 @@ export function useGame() {
   useEffect(() => {
     if (state.phase === 'discard' && state.kittyCollected && !kittyRef.current) {
       kittyRef.current = true;
-      if ((state.bid || 0) > 95 && !cutscene) {
-        setCutscene({ key: 'kittyprayer', blocking: true });
-        setLastCutscene({ key: 'kittyprayer' });
+      if ((state.bid || 0) > 95 && !(state.bidWinner === 'W' && (state.bid || 0) >= 90)) {
+        requestCutscene('kittyprayer');
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -245,8 +273,7 @@ export function useGame() {
       if (has1000 || has90) {
         meldPendingRef.current = reveal;
         const mkey = has1000 ? 'aces1000' : 'nuts90';
-        setCutscene({ key: mkey, blocking: true });
-        setLastCutscene({ key: mkey });
+        requestCutscene(mkey);
       } else {
         setMeldReveal(reveal);
       }
@@ -263,12 +290,8 @@ export function useGame() {
       if (last && last.kind === 'bid' && (last.seat === 'W' || last.seat === 'E')) {
         const val = parseInt((/\$(\d+)/.exec(last.text) || [])[1] || '0', 10);
         if (last.seat === 'W') fireTaunt('doolow_bid', 'W');
-        else if (val >= 70 && !cutscene && Date.now() - papacapTsRef.current > 7000) {
-          // PapaCap slaps down a big bid -> full-screen cinematic taunt (with audio).
+        else if (val >= 70 && Date.now() - papacapTsRef.current > 7000 && requestCutscene(pickPapacapScene(), { flair: true })) {
           papacapTsRef.current = Date.now();
-          const key = pickPapacapScene();
-          setCutscene({ key, blocking: true });
-          setLastCutscene({ key });
         } else fireTaunt(val >= 80 ? 'papacap_bigbid' : 'papacap_bid', 'E');
       }
     } else {
@@ -293,8 +316,7 @@ export function useGame() {
 
       // G2 wins a book holding 3+ counters (Aces / 10s / Kings) -> full-screen "3 Bang" cinematic.
       if (w === 'P' && counters >= 3 && !busy) {
-        setCutscene({ key: 'g2_3bang', blocking: true });
-        setLastCutscene({ key: 'g2_3bang' });
+        requestCutscene('g2_3bang', { flair: true });
       } else if (
         // G2 plays an Ace AND captures an opponent's Ace in the same book -> "Snatchin' teeth" taunt.
         w === 'P' &&
@@ -313,11 +335,18 @@ export function useGame() {
       // g2 cinematics. Light ~7s cooldown + 50% roll so it shows up without spamming.
       if (w === 'E' && !busy) {
         const now = Date.now();
-        if (now - papacapTsRef.current > 7000 && Math.random() < 0.5) {
+        if (now - papacapTsRef.current > 7000 && Math.random() < 0.5 && requestCutscene(pickPapacapScene(), { flair: true })) {
           papacapTsRef.current = now;
-          const key = pickPapacapScene();
-          setCutscene({ key, blocking: true });
-          setLastCutscene({ key });
+        }
+      }
+
+      // DooLow (W) cuts a non-trump lead with trump and grabs 2+ opponent counters.
+      if (w === 'W' && !busy) {
+        const lead = plays[0];
+        const wPlay = plays.find((p) => p.seat === 'W');
+        const oppCounters = plays.filter((p) => p.seat !== 'W' && COUNTER_RANKS.has(p.card.rank)).length;
+        if (lead && lead.card.suit !== state.trump && wPlay && wPlay.card.suit === state.trump && oppCounters >= 2) {
+          requestCutscene('doolow_scene_cut', { flair: true });
         }
       }
     }
@@ -339,6 +368,7 @@ export function useGame() {
     if (aiRen.length > aiRenegeSeenRef.current) {
       aiRenegeSeenRef.current = aiRen.length;
       if (Math.random() < 0.4) {
+        requestCutscene('doolow_scene_renege');
         const t = setTimeout(() => dispatch({ type: 'CALL_RENEGE' }), 550);
         return () => clearTimeout(t);
       }
@@ -346,6 +376,17 @@ export function useGame() {
     return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.trickReneges, state.phase, state.settings.difficulty]);
+
+  // DooLow (W) seizes a 90+ contract -> "Takeover" cinematic (min 2 hands between triggers).
+  useEffect(() => {
+    if (state.phase === 'trump' && state.bidWinner === 'W' && (state.bid || 0) >= 90) {
+      const hand = state.stats?.handsPlayed ?? 0;
+      if (hand - takeoverLastHandRef.current >= 2 && requestCutscene('doolow_scene_takeover', { flair: true })) {
+        takeoverLastHandRef.current = hand;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase]);
 
   // Drive the game loop, but PAUSE it while a cutscene / meld modal / audit is open.
   useEffect(() => {
@@ -355,6 +396,7 @@ export function useGame() {
   }, [state, cutscene, paused, meldReveal]);
 
   const clearCutscene = () => {
+    cutsceneRef.current = null;
     setCutscene(null);
     if (meldPendingRef.current) {
       const reveal = meldPendingRef.current;
@@ -366,13 +408,14 @@ export function useGame() {
   const clearTaunt = () => setTaunt(null);
   // Re-watch the last blocking cutscene that fired this hand (Settlement "Replay" button).
   const replayLastCutscene = () => {
-    if (lastCutscene) setCutscene({ key: lastCutscene.key, blocking: true, data: lastCutscene.data });
+    if (lastCutscene) {
+      const cs = { key: lastCutscene.key, blocking: true, data: lastCutscene.data };
+      cutsceneRef.current = cs;
+      setCutscene(cs);
+    }
   };
   // Fire a specific full-screen blocking cutscene by key (tutorial intro / renege lesson).
-  const playCutscene = (key) => {
-    setCutscene({ key, blocking: true });
-    setLastCutscene({ key });
-  };
+  const playCutscene = (key) => requestCutscene(key);
 
   const act = (action) => {
     const snd = soundRef.current;
