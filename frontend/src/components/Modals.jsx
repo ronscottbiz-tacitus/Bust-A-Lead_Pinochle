@@ -157,6 +157,10 @@ const CFG_RENEGE = [
   { value: 'low', label: 'Low' },
   { value: 'high', label: 'High' },
 ];
+const CFG_TUTORIAL = [
+  { value: 'on', label: 'On' },
+  { value: 'off', label: 'Off' },
+];
 const CFG_STAKES = [
   { value: 1, label: 'Low $1/$2' },
   { value: 2, label: 'Mid $2/$4' },
@@ -190,7 +194,7 @@ export function ConfigScreen({ state, act }) {
               label="Difficulty"
               testidPrefix="cfg-difficulty"
               value={s.difficulty || 'normal'}
-              onChange={(v) => set({ difficulty: v })}
+              onChange={(v) => set({ difficulty: v, tutorialHints: v === 'easy' })}
               options={CFG_DIFFICULTY}
             />
             {s.difficulty === 'hard' && (
@@ -248,6 +252,13 @@ export function ConfigScreen({ state, act }) {
               value={s.muteTaunts ? 'off' : 'on'}
               onChange={(v) => set({ muteTaunts: v === 'off' })}
               options={CFG_TAUNTS}
+            />
+            <Choice
+              label="Tutorial Hints"
+              testidPrefix="cfg-tutorial"
+              value={s.tutorialHints ? 'on' : 'off'}
+              onChange={(v) => set({ tutorialHints: v === 'on' })}
+              options={CFG_TUTORIAL}
             />
             <Choice
               label="Table Stakes"

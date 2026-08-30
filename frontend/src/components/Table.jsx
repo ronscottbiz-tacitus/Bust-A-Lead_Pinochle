@@ -638,7 +638,7 @@ export function HandTray({ state, onCardClick }) {
     const legal = legalIds ? legalIds.has(c.id) : false;
     const dim = canPlay && !hard && !legal;
     const selected = selecting && s.discards.includes(c.id);
-    const interactive = selecting || (canPlay && (hard || legal));
+    const interactive = selecting || (canPlay && (hard || legal || s.settings.tutorialHints));
     return (
       <Card
         card={c}

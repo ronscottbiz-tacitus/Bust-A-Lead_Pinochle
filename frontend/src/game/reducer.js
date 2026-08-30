@@ -96,6 +96,7 @@ export function initState() {
       muteTaunts: false,
       convictBoldness: 'balanced',
       convictRenege: 'low',
+      tutorialHints: false,
       ...(saved?.settings || {}),
     },
     bankrolls: saved?.bankrolls || { W: 100, E: 100, P: 100 },

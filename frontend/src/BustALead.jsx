@@ -22,6 +22,7 @@ import {
   TitleVideo,
 } from './components/CutsceneOverlay';
 import { Zap } from 'lucide-react';
+import { TutorialOverlay, RenegeNotice } from './components/Tutorial';
 
 // Hoisted so the same array reference is passed on every render (no needless re-renders).
 const PLAYER_SEAT = ['P'];
@@ -35,6 +36,7 @@ export default function BustALead() {
   const [showMeld, setShowMeld] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
   const [showCinematics, setShowCinematics] = useState(false);
+  const [renegeNotice, setRenegeNotice] = useState(false);
   const s = state;
 
   // Pause the game engine while the Yard Court audit is open.
@@ -56,6 +58,7 @@ export default function BustALead() {
       }
       const legal = legalPlays(s.hands.P, s.trick, s.trump);
       if (legal.some((c) => c.id === card.id)) act({ type: 'PLAY_CARD', seat: 'P', card });
+      else if (s.settings.tutorialHints) setRenegeNotice(true);
     }
   };
 
@@ -140,6 +143,8 @@ export default function BustALead() {
       <CutsceneOverlay cutscene={cutscene} onDone={clearCutscene} muted={s.settings.muteTaunts} />
       <TauntOverlay taunt={taunt} seats={PLAYER_SEAT} onDone={clearTaunt} />
       {meldReveal && <MeldPhaseModal reveal={meldReveal} onClose={clearMeldReveal} />}
+      <TutorialOverlay state={s} />
+      {renegeNotice && <RenegeNotice onDismiss={() => setRenegeNotice(false)} />}
     </div>
   );
 }

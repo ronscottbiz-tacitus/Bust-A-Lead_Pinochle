@@ -1,0 +1,27 @@
+{
+  "summary": "Verified Tutorial Hints tooltip system + Renege Notice for 'New Booty' mode on preview URL. (1) SETTING DEFAULTS: New Booty auto-sets cfg-tutorial-on (bg-amber-500 active); Convict auto-sets cfg-tutorial-off active. Manual toggle to ON while Convict correctly flips cfg-tutorial-on to active. (2) BIDDING TOOLTIP: In New Booty + fast speed, tutorial-tooltip-bidding appeared during auction with tutorial-got-it-btn; dismisses cleanly and does NOT reappear same hand/session. (3) MELD + TRICKPLAY SEQUENTIAL: After passing once (AI takes bid), tutorial-tooltip-meld fired at play start (iter 8) followed by tutorial-tooltip-trickplay (iter 11) on player's first turn — correct ordering. Both dismissed via tutorial-got-it-btn. (4) RENEGE NOTICE: Player's turn with clubs led → tapping non-club illegal card (card-H-A-7) popped data-testid=renege-notice with soft/hard set explanation; renege-notice-dismiss cleared it. Legal (glowing club) cards remained playable. Screenshot confirms illegal cards dimmed and legal cards ring-highlighted. (5) CONVICT MODE OFF: cfg-tutorial-off default active; ran full hand (auction→settlement, ~80 poll iters) with ZERO tutorial-tooltip-* observations; call-renege-btn is present as expected. (6) NO console errors across 3 full test sessions. Note: KITTY tooltip (tutorial-tooltip-kitty) not exercised because P did not win the bid in fast-Pass strategy — code inspection confirms match condition (phase==='discard' && bidWinner==='P') is correct; other 3 tooltips fired reliably.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/frontend/src/components/Tutorial.jsx",
+    "/app/frontend/src/components/Modals.jsx",
+    "/app/frontend/src/BustALead.jsx"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Modals.jsx Tutorial Hints Choice reuses CFG_SOUND options array (line ~257) which happens to be [{value:'on',label:'On'},{value:'off',label:'Off'}]. Works today, but coupling two unrelated settings to the same options constant is fragile — a future change to CFG_SOUND (e.g., adding 'auto') would silently break the tutorial toggle. Recommend a dedicated CFG_TUTORIAL const identical in shape.",
+    "TutorialOverlay useState({}) 'seen' state is per-mount. If the parent unmounts/remounts TutorialOverlay for any reason (theme change, StrictMode double-mount in dev, phase transitions that toggle rendering), the tour would reset unexpectedly. Consider lifting 'seen' state to reducer or useRef guarded by a session key.",
+    "Modals.jsx still exceeds 900 lines (carry-over). Splitting into per-modal files remains recommended.",
+    "RenegeNotice 8s auto-dismiss timeout is fine, but if user dismisses via button, timeout still fires against a stale onDismiss closure — currently harmless (parent setter is idempotent) but could hide bugs if the callback becomes non-idempotent."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Fast repro: cfg-difficulty-easy + cfg-speed-fast + deal-btn → dismiss tutorial-tooltip-bidding via tutorial-got-it-btn → click Pass ONCE (leaves auction to AI) → tutorial-tooltip-meld then tutorial-tooltip-trickplay fire sequentially. For renege: iterate hand cards (y>700 in 1920x1080) and click each until data-testid=renege-notice appears. To exercise KITTY tooltip, force P to win the bid by clicking 'Bid $N' button repeatedly until AI passes (may take several hands). Convict path: cfg-difficulty-hard → deal → verify NO tutorial-tooltip-* selectors and presence of call-renege-btn. Tooltip 'seen' state is per React mount (not localStorage) — reset happens in Tutorial.jsx via useEffect on phase==='config'."
+}

@@ -452,3 +452,20 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Minor backlog noted by QA: taunt-audio-toggle shares one data-testid in desktop+mobile
   headers (harmless, both call onToggleTaunts); extract a fireSceneWithCooldown helper to DRY
   the two PapaCap trigger sites.
+
+## Updates (2026-06 — Request 16: New Booty tutorial tooltip system)
+- New setting settings.tutorialHints (default false; ConfigScreen difficulty onChange auto-sets
+  it ON for New Booty/easy, OFF for others). Dedicated Tutorial Hints toggle (cfg-tutorial-on/off,
+  CFG_TUTORIAL options). Persisted with other settings.
+- New src/components/Tutorial.jsx: TutorialOverlay renders sequential, dismissible high-contrast
+  spotlight callouts ("Got It") at milestones — bidding (auction), kitty (discard & P bidder),
+  meld (play start), trickplay (P's first turn). Picks first unseen matching step; seen-state
+  resets on phase==='config' (New Game). Renders only when tutorialHints is on. RenegeNotice
+  warns (soft vs hard set + doubled penalty) when a New Booty player taps an illegal card.
+- Table.jsx HandTray: illegal cards are tappable when tutorialHints is on (to trigger the notice);
+  legal play unchanged. BustALead wires TutorialOverlay + RenegeNotice + illegal-tap handler.
+- index.css: .tutorial-pop opacity-only entrance (avoids clobbering Tailwind centering transforms).
+- Verified: 14/14 jest pass; testing agent iteration_29.json 100% — bidding/meld/trickplay
+  tooltips sequential + dismissible, defaults correct, renege notice on illegal taps, Convict mode
+  shows NO tooltips, zero console errors. (Kitty tooltip validated by code; not hit in auto-run
+  because P didn't win a bid.)
