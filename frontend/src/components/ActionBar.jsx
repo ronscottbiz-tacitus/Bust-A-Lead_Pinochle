@@ -1,4 +1,4 @@
-import { SUITS, SUIT_BY_KEY, SEAT_LABEL } from '../game/constants';
+import { SUIT_BY_KEY, SEAT_LABEL } from '../game/constants';
 import { acesAround } from '../game/meld';
 import { Gavel, X, Check, Eye, EyeOff, Flag, Zap, LayoutGrid, Sparkles } from 'lucide-react';
 
