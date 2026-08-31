@@ -167,6 +167,8 @@ const CFG_STAKES = [
   { value: 5, label: 'High $5/$10' },
 ];
 
+const FEEDBACK_URL = 'https://forms.gle/j9aMWdxqwYjYWjzz5';
+
 export function ConfigScreen({ state, act, onReplayTutorial }) {
   const s = state.settings;
   const set = (patch) => act({ type: 'UPDATE_SETTINGS', settings: patch });
@@ -181,6 +183,15 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
             className="w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/10 to-transparent pointer-events-none" />
+          <a
+            data-testid="feedback-link-menu"
+            href={FEEDBACK_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute bottom-2 right-3 z-10 text-xs font-sub font-bold text-amber-300/90 hover:text-amber-200 underline underline-offset-2 decoration-amber-400/50 hover:decoration-amber-300 transition-colors"
+          >
+            Feedback
+          </a>
         </div>
         <div className="px-6 sm:px-8 pb-7 pt-2">
           <div
@@ -412,13 +423,24 @@ export function SettlementModal({ state, act, onReplay, canReplay }) {
           </button>
         )}
         {r.gameOver ? (
-          <button
-            data-testid="new-game-btn"
-            onClick={() => act({ type: 'NEW_GAME' })}
-            className="w-full py-3 rounded-xl bg-yellow-500/20 border border-yellow-400 text-yellow-100 font-display font-bold flex items-center justify-center gap-2 hover:bg-yellow-500/30 active:scale-95"
-          >
-            <RotateCcw size={18} /> GAME OVER · NEW GAME
-          </button>
+          <>
+            <button
+              data-testid="new-game-btn"
+              onClick={() => act({ type: 'NEW_GAME' })}
+              className="w-full py-3 rounded-xl bg-yellow-500/20 border border-yellow-400 text-yellow-100 font-display font-bold flex items-center justify-center gap-2 hover:bg-yellow-500/30 active:scale-95"
+            >
+              <RotateCcw size={18} /> GAME OVER · NEW GAME
+            </button>
+            <a
+              data-testid="feedback-btn-gameover"
+              href={FEEDBACK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 w-full py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-400/70 text-emerald-100 font-display font-bold flex items-center justify-center gap-2 hover:bg-emerald-500/25 active:scale-95 transition-all"
+            >
+              Give Feedback (2 Min) 📝
+            </a>
+          </>
         ) : (
           <button
             data-testid="next-hand-btn"

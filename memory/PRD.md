@@ -503,3 +503,13 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
   confirmed, 3 DooLow reels in gallery, all assets HTTP 200, 0 console errors.
 - Known harmless: a leftover { flair:true } arg is passed at some requestCutscene calls but flair is
   derived from tier (opts.flair unused) — no behavior impact.
+
+## Updates (2026-06 — Request 19: External feedback links)
+- Added FEEDBACK_URL (https://forms.gle/j9aMWdxqwYjYWjzz5) links, both target="_blank"
+  rel="noopener noreferrer" so the game session stays intact:
+  * Main menu (ConfigScreen hero, bottom-right): small "Feedback" text link
+    (data-testid feedback-link-menu).
+  * Game Over (SettlementModal r.gameOver branch): prominent emerald secondary button
+    "Give Feedback (2 Min) 📝" (data-testid feedback-btn-gameover) below the New Game button.
+- Verified: compiles clean; menu link confirmed on-screen with correct href/target; Game Over
+  button uses the identical anchor pattern.
