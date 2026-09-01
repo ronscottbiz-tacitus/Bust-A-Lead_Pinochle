@@ -504,6 +504,30 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Known harmless: a leftover { flair:true } arg is passed at some requestCutscene calls but flair is
   derived from tier (opts.flair unused) — no behavior impact.
 
+## Updates (2026-06 — Request 20: Centralized CutsceneManager — PapaCap flood fix + character balancing)
+- NEW src/game/cutsceneManager.js — single global gateway for all flair/personality cutscenes.
+  * CHAR_POOLS: PapaCap [papacap_scene_1..4, papacap_set], Doolow [doolow_scene_takeover/cut/renege,
+    doolow_set], G2 [g2_3bang, g2_hardset, g2_teeth]. charOfClip() maps a clip -> character.
+  * requestFlair({trick,hand}): (1) GLOBAL cooldown = no cutscene within 3 tricks (GLOBAL_TRICK_COOLDOWN);
+    (2) picks a random ELIGIBLE character FIRST (equal 1/3), then an unplayed clip from that pool;
+    (3) per-character lockout of 2 full rounds/hands (CHAR_ROUND_LOCKOUT); (4) match-wide anti-repeat
+    (played Set; resets a fresh cycle once every clip has played). Logs
+    console.log('[CutsceneManager] Triggered: <clip> for <char>') on every trigger.
+  * notePriority(key): critical/contextual cutscenes (game over/portal, renege, falseaccuse, tutorial,
+    meld milestones, kitty prayer, sweep, contextual set-taunts) bypass cooldowns but are registered for
+    anti-repeat + logged the same way. reset() called on RESET_TABLE (new match).
+- useGame.js rewired: removed all scattered hardcoded papacap_scene/fireTaunt trigger sites. AI-bid,
+  completed-book, and high-contract (trump phase) effects now each call requestFlair(state) (the sole
+  gateway). Trick index = hand*25 + completedBooks.length. Removed the old per-hand flairUsedRef/
+  lastFlairKeyRef/takeoverLastHandRef/snatchRef/papacapTsRef and the avatar fireTaunt bid/book taunts.
+  requestCutscene() is now just the single-slot tier-arbitration display setter. Flair clips play
+  full-screen with a generic character banner (CHAR_BANNER) via cutscene.data.banner (so a pooled
+  settlement clip never shows its "got set" caption out of context). CutsceneOverlay banner honors
+  cutscene.data.banner || BANNER[key].
+- Verified: 14/14 jest pass; testing agent iteration_33.json 100% over 6 hands / ~150 tricks — character
+  balance exactly 3/3/3 (PapaCap does NOT dominate), global 3-trick cooldown holds (no back-to-back
+  flair), anti-repeat holds for flair, all cutscenes dismissible, no soft-lock, 0 uncaught console errors.
+
 ## Updates (2026-06 — Request 19: External feedback links)
 - Added FEEDBACK_URL (https://forms.gle/j9aMWdxqwYjYWjzz5) links, both target="_blank"
   rel="noopener noreferrer" so the game session stays intact:

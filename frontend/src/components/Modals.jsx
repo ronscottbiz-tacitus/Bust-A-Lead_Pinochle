@@ -964,7 +964,16 @@ export function CinematicsModal({ onClose }) {
             <X size={16} />
           </button>
         </div>
-        <div className="overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pr-1">
+        <div
+          className="overflow-y-auto pr-1"
+          style={{
+            maxHeight: '85vh',
+            WebkitOverflowScrolling: 'touch',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+            gap: '0.75rem',
+          }}
+        >
           {CUTSCENE_LIBRARY.map((c) => (
             <button
               key={c.base}

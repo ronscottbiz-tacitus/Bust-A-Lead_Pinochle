@@ -1,0 +1,33 @@
+{
+  "summary": "Frontend regression + end-game outro / Yard Reels enhancements verification on preview URL at 390x844 mobile viewport (Convict/Fast + High $5/$10 stakes). ASSET AVAILABILITY: game_over_1.mp4 / game_over_1.webm / game_over_2.mp4 / game_over_2.webm all return HTTP 200 from the preview CDN. YARD REELS INVENTORY = 30 (verified via [data-testid^=reel-thumb-] count): includes reel-thumb-game_over_1 and reel-thumb-game_over_2 both tagged 'Cinematic Outro' (badge chip visible in mobile screenshot, label 'Match Outro I' / 'Match Outro II'). NO chopper clip present. Modal header displays '30 clips'. MOBILE UX FIX VERIFIED: computed gridTemplateColumns = '165px 165px' (exactly 2 columns at 390px viewport, ~16:9 aspect), overflowY = auto, maxHeight = 717.4px (85vh), WebkitOverflowScrolling='touch' enabled. After scrolling to bottom, the last thumbnail (reel-thumb-cutscene_title_loop) is fully in viewport (top=739, bottom=771, vh=844) — no cut-off at sides or bottom. Clicking reel-thumb-game_over_1 opens reel-player-game_over_1 successfully; zero non-200 asset responses; zero console errors during the entire flow. REGRESSION: Config→Deal Cards path works; New Booty / initial cutscene sequence dismissible via cutscene-skip-btn; cinematics-btn is present in the in-game header (post-Deal Cards) exactly once. UNIT TESTS: full `yarn test` suite = 4 suites / 14 tests all PASS, including gameover.test.js which asserts settlementCutscene() returns key ∈ {game_over_1, game_over_2} when s.gameOver=true (Math.random 50/50 branch). CODE REVIEW of the anti-repeat & one-flair-per-hand rules (useGame.js:195-212): tier>=4 branch checks flairUsedRef AND lastFlairKeyRef (anti-repeat), sets both on accept, and flairUsedRef is reset in the phase==='dealing'||'config' effect at line 228 — semantics correct. settlementCutscene() places gameOver check FIRST (priority 0), and requestCutscene assigns it tier 1 (via CUTSCENE_TIER map at useGame.js:17), so the outro always overrides any pending lower-tier flair and always fires on match completion. BANNER map contains 'THE GET-2 — MATCH WON' for both game_over_1/2. FILE map wires both keys to their basenames; sourcesFor() emits .webm then .mp4 order. Full end-to-end play-to-gameover was NOT executed in Playwright (would require ~20+ hands of scripted play); the outro path is verified end-to-end via (a) passing unit test on settlementCutscene, (b) identical asset pipeline exercised by opening game_over_1 from Yard Reels (reel-player-game_over_1 rendered, HTTP 200, no errors), (c) CutsceneOverlay tap-to-dismiss + Skip button unchanged from iteration_31 verification.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Yard Reels mobile thumbnail", "issues": ["The 'Cinematic Outro' badge chip visually wraps to 'CINEMATICOUTRO' (no space) inside the small 8px badge because the CSS class does not use white-space:nowrap. Same visual squish would apply to any 2-word tag. Cosmetic only; not blocking."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/frontend/src/game/__tests__/gameover.test.js",
+    "/app/frontend/src/components/CutsceneOverlay.jsx",
+    "/app/frontend/src/components/Modals.jsx",
+    "/app/frontend/src/hooks/useGame.js"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "useGame.js:195-212 requestCutscene: anti-repeat via lastFlairKeyRef is only checked for tier>=4 keys — this correctly matches the spec that settlement/renege/game-over are exempt. Note that lastFlairKeyRef is never reset per-hand (only overwritten on next flair), so a flair that plays as the last event of hand N and then again as the first flair of hand N+1 would be blocked. If that is unintended (spec says 'twice in a row' which is ambiguous), consider resetting lastFlairKeyRef alongside flairUsedRef in the phase==='dealing' effect. Low priority — spec-arguable, current behavior is the more conservative anti-repeat.",
+    "useGame.js:237-240 settlement effect: when s.gameOver, settlementCutscene returns { key: game_over_1|2 } but the { data } is undefined, and the elseif block below at line 241 checks cs.key against renege/falseaccuse/etc. The SFX cue chain has NO branch for game_over_1/2, so the outro plays silent-relative-to-SFX (video's own audio still plays via CutsceneOverlay muted=false). Confirm that's intentional — you may want snd.win() + snd.portalHum() or similar victory SFX under the outro.",
+    "CutsceneOverlay.jsx: FILE map, BANNER map, and CUTSCENE_LIBRARY all correctly contain game_over_1/2. Sources emit .webm first, then .mp4 — matches iteration_31 pattern.",
+    "Modals.jsx CinematicsModal: inline style { maxHeight:'85vh', overflowY:'auto', WebkitOverflowScrolling:'touch', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))' } exactly matches spec. Verified computed to 2 columns at 390px.",
+    "Modals.jsx line 995-1004: the tag badge className hard-codes styles for Taunt/Ambient/default(amber). The new 'Cinematic Outro' tag falls into the default amber branch which is fine visually, but the label wraps to 'CINEMATICOUTRO' (no space) inside the tiny 8px chip because uppercase+tracking causes the word 'Outro' to abut 'Cinematic' without wrap. Consider white-space:nowrap on the badge and/or shortening the tag to 'Outro'. Cosmetic only.",
+    "Modals.jsx CinematicsModal file still >900 lines (carry-over from prior iterations). Not blocking."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Yard Reels mobile UX + gallery inventory (30 clips incl game_over_1/2 Cinematic Outro) verified visually and programmatically at 390x844. All 4 game_over_* asset files return HTTP 200. gameover.test.js confirms settlementCutscene branches to game_over_1|2 on s.gameOver. Full play-to-match-completion was skipped due to script length required to reach gameOver even at High $5/$10; recommend a debug hook (e.g. GAME_OVER=1 URL param or a test-only 'Force Game Over' dev button) if future iterations must live-verify the outro banner. Anti-repeat check in useGame.js is per-flair-key (tier>=4) only — settlement/renege/game-over exempt as per spec.",
+  "rca of the issue": "N/A — all requested behaviors verified as implemented; no bugs found."
+}

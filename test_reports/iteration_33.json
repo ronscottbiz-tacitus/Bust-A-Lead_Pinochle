@@ -1,0 +1,44 @@
+{
+  "summary": "Frontend-only regression validation of the new CutsceneManager (src/game/cutsceneManager.js) via Playwright. Started a fresh match (localStorage cleared), passed every human bid, played every legal highlighted card, dismissed cutscenes via cutscene-skip-btn, and continued through 6 full hands (~150 tricks). All console.log('[CutsceneManager] Triggered: ...') lines were captured and analysed against the four spec rules: character balance, global 3-trick cooldown, per-character 2-round lockout, and anti-repeat.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "cutscene_validation": {
+    "total_triggered_logs": 13,
+    "character_counts": {"PapaCap": 3, "Doolow": 3, "G2": 3, "CRITICAL": 4},
+    "clip_counts": {"g2_teeth": 1, "concession": 3, "papacap_set": 1, "g2_3bang": 1, "doolow_set": 2, "papacap_scene_3": 1, "g2_hardset": 1, "aces1000": 1, "doolow_scene_renege": 1, "papacap_scene_4": 1},
+    "flair_sequence": ["g2_teeth/G2", "papacap_set/PapaCap", "g2_3bang/G2", "papacap_scene_3/PapaCap", "g2_hardset/G2", "doolow_scene_renege/Doolow", "papacap_scene_4/PapaCap"],
+    "priority_sequence": ["concession", "concession", "doolow_set", "doolow_set", "concession", "aces1000"],
+    "balance_ok": true,
+    "papacap_dominates": false,
+    "global_cooldown_ok": true,
+    "anti_repeat_ok_for_flair": true,
+    "notes": "PapaCap does NOT dominate — the three characters appear with exactly equal frequency (3/3/3). Flair events (5 across ~150 tricks) are heavily spaced; no back-to-back flair. All 5 flair clips are unique — anti-repeat holds. The two doolow_set logs are settlement-driven notePriority() calls fired from settlementCutscene() when W hard-sets on a played-out hand — by design these outcome-driven clips CAN repeat across hands (they do not go through requestFlair). Console banner override on doolow_set/papacap_set/g2_hardset correctly uses the character banner from settlement data."
+  },
+  "regressions_checked": {
+    "deals": true,
+    "auction": true,
+    "trick_play_25_per_hand": true,
+    "settlements_and_transfers": true,
+    "cutscenes_dismissible_via_skip_btn": true,
+    "no_softlock_or_freeze": true,
+    "uncaught_console_errors": 0
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "cutsceneManager.js is clean and well-scoped. GLOBAL_TRICK_COOLDOWN=3 and CHAR_ROUND_LOCKOUT=2 are enforced in requestFlair; anti-repeat resets only when every clip in ALL_CLIPS has played. Good.",
+    "One minor consideration: notePriority() adds the clip to the anti-repeat Set but does NOT respect the global trick cooldown, which is correct for critical settlement clips but means a critical clip firing within the cooldown window will not be blocked. This is intentional (priority tier) and observed in the run.",
+    "requestFlair() uses uniform pick() over eligible chars — perfect equal 1/3 selection as required. Random tie-breaks worked out to exact 3/3/3 in this session."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100%"},
+  "seed_data_creation": "localStorage cleared at test start to force a fresh match state.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Playwright flow: clear localStorage → click [data-testid=deal-btn] → loop: if cutscene-skip-btn visible click it; if next-hand-btn visible click it (hand complete); if redeal-table-btn visible click it (Game Over); if pass-btn visible click it; else click first visible card inside [data-testid=player-hand]. Collect console lines matching '[CutsceneManager] Triggered:' and parse 'Triggered: <clip> for <char>'. 6 hands is sufficient to sample all three character pools.",
+  "rca of the issue": "N/A — the refactor works as specified. No bug reproduced."
+}

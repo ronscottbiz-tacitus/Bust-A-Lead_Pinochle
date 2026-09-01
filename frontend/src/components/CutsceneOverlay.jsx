@@ -34,6 +34,8 @@ const FILE = {
   doolow_scene_takeover: ['doolow_scene_takeover'],
   doolow_scene_cut: ['doolow_scene_cut'],
   doolow_scene_renege: ['doolow_scene_renege'],
+  game_over_1: ['game_over_1'],
+  game_over_2: ['game_over_2'],
 };
 
 export function sourcesFor(key) {
@@ -54,6 +56,8 @@ export function videoSources(basename) {
 // The full cinematic library shown in the Yard Reels gallery modal.
 export const CUTSCENE_LIBRARY = [
   { base: 'g2_portal_2', title: 'The Get-2 (Match Won)', tag: 'Cinematic' },
+  { base: 'game_over_1', title: 'Match Outro I', tag: 'Cinematic Outro' },
+  { base: 'game_over_2', title: 'Match Outro II', tag: 'Cinematic Outro' },
   { base: 'g2_sweep', title: 'The Canteen Sweep', tag: 'Cinematic' },
   { base: 'g2_renege_2', title: 'Renege Busted', tag: 'Cinematic' },
   { base: 'cutscene_hardset_canteen', title: 'Hard Set — Canteen', tag: 'Cinematic' },
@@ -97,6 +101,7 @@ const BANNER = {
   kittyprayer: 'THE WIDOW PRAYER — FLIPPIN\u2019 THE KITTY',
   hardset: 'HARD SET — CANTEEN WIPED OUT',
   g2_3bang: 'G2 — 3 BANG! COUNTERS SNATCHED',
+  g2_teeth: "G2 — SNATCHIN' TEETH",
   papacap_scene_1: "PAPACAP TALKIN' NOISE",
   papacap_scene_2: "PAPACAP TALKIN' NOISE",
   papacap_scene_3: "PAPACAP TALKIN' NOISE",
@@ -106,6 +111,8 @@ const BANNER = {
   doolow_scene_takeover: 'DOOLOW SEIZES THE CONTRACT',
   doolow_scene_cut: 'DOOLOW CUTS — COUNTERS SNATCHED',
   doolow_scene_renege: 'DOOLOW CATCHES THE RENEGE',
+  game_over_1: 'THE GET-2 — MATCH WON',
+  game_over_2: 'THE GET-2 — MATCH WON',
 };
 
 // Full-screen blocking cinematic. UNMUTED so the clip's native audio plays (SFX/voice
@@ -179,7 +186,7 @@ export function CutsceneOverlay({ cutscene, onDone, muted = false }) {
         data-testid="cutscene-banner"
         className="absolute top-8 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full bg-black/70 border border-amber-500/50 text-amber-300 text-sm sm:text-base font-display font-black tracking-wide backdrop-blur text-center max-w-[92vw]"
       >
-        {BANNER[key] || ''}
+        {cutscene?.data?.banner || BANNER[key] || ''}
       </div>
       {replay && (
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" data-testid="renege-replay">

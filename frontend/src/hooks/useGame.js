@@ -1,20 +1,26 @@
 import { useReducer, useEffect, useRef, useState } from 'react';
 import { reducer, initState } from '../game/reducer';
 import { saveGame } from '../game/storage';
-import { SEATS, SPEED, COUNTER_RANKS } from '../game/constants';
+import { SEATS, SPEED } from '../game/constants';
 import { evaluateBid, chooseTrump, chooseDiscards, shouldGoDouble, laydownChallenge, aiPlay, aiConcede } from '../game/ai';
 import { saveTarget } from '../game/scoring';
 import { SoundEngine } from '../audio/sfx';
+import { createCutsceneManager, charOfClip } from '../game/cutsceneManager';
 
 // Convict-tuning renege probabilities per play (settings.convictRenege).
 const RENEGE_RATE = { off: 0, low: 0.02, high: 0.06 };
-// PapaCap's silent avatar taunt pool.
-const PAPACAP_SCENES = ['papacap_scene_1', 'papacap_scene_2', 'papacap_scene_3', 'papacap_scene_4'];
-const pickPapacapScene = () => PAPACAP_SCENES[Math.floor(Math.random() * PAPACAP_SCENES.length)];
 
-// Cutscene priority tiers (lower = higher priority). Tiers 4/5 are "flair" (max 1 per hand).
+// Generic character caption shown when a flair clip fires mid-hand (so a pooled
+// settlement clip like papacap_set never shows its "got set" banner out of context).
+const CHAR_BANNER = {
+  PapaCap: "PAPACAP TALKIN' NOISE",
+  Doolow: "DOOLOW RUNNIN' HIS MOUTH",
+  G2: 'G2 ON ONE',
+};
+
+// Cutscene priority tiers (lower = higher priority).
 const CUTSCENE_TIER = {
-  portal: 1,
+  portal: 1, game_over_1: 1, game_over_2: 1,
   renege: 2, falseaccuse: 2, doolow_scene_renege: 2,
   hardset: 2, doolow_set: 2, papacap_set: 2, g2_hardset: 2,
   renege_lesson: 3, newbooty_intro: 3,
@@ -33,9 +39,9 @@ function aiBidAction(s, seat) {
 // Maps a settlement state to the cutscene { key, data } that should play (or null).
 // Priority: elimination > concession > renege/violation > win/hard-set milestones.
 export function settlementCutscene(s) {
-  // 0) Match over — the definitive full-screen finale is always The Get-2 portal.
+  // 0) Match over — random full-screen victory outro before the final score screen.
   if (s.gameOver) {
-    return { key: 'portal' };
+    return { key: Math.random() < 0.5 ? 'game_over_1' : 'game_over_2' };
   }
 
   // 1) Fold / concede / soft set / board set (thrown in before completing the hand).
@@ -176,31 +182,40 @@ export function useGame() {
   const [meldReveal, setMeldReveal] = useState(null);
   const [lastCutscene, setLastCutscene] = useState(null);
   const trashRef = useRef(state.completedBooks.length);
-  const snatchRef = useRef(0);
-  const papacapTsRef = useRef(0);
   const aiRenegeSeenRef = useRef(0);
   const kittyRef = useRef(false);
   const meldRef = useRef(false);
   const meldPendingRef = useRef(null);
   const bidLogRef = useRef(state.bidLog?.length || 0);
-  const fireTaunt = (key, seat) => setTaunt({ key, seat });
   const cutsceneRef = useRef(null);
-  const flairUsedRef = useRef(false);
-  const takeoverLastHandRef = useRef(-99);
+  const mgrRef = useRef(null);
+  if (!mgrRef.current) mgrRef.current = createCutsceneManager();
 
-  // Single-slot cutscene priority resolver. Higher tier (lower number) wins and discards a
-  // pending lower-tier clip; at most one Tier 4/5 flair per hand. Returns true if accepted.
+  // Single-slot cutscene setter with tier arbitration. A higher-priority (lower tier)
+  // clip discards a pending lower-priority one. Flair frequency/rotation is governed
+  // upstream by the CutsceneManager; this only handles the display slot. Returns true.
   const requestCutscene = (key, opts = {}) => {
     const tier = tierOf(key);
-    if (tier >= 4 && flairUsedRef.current) return false;
     const cur = cutsceneRef.current;
     if (cur && tierOf(cur.key) <= tier) return false;
     const cs = { key, blocking: true, data: opts.data };
     cutsceneRef.current = cs;
     setCutscene(cs);
     setLastCutscene({ key, data: opts.data });
-    if (tier >= 4) flairUsedRef.current = true;
     return true;
+  };
+
+  // Sole gateway for personality/flair cutscenes. Every character-taunt opportunity
+  // (AI bid, book win, cut, takeover, big meld) routes through here; the manager
+  // enforces the global cooldown, per-character lockout, equal 1/3 rotation and
+  // anti-repeat, then we play the chosen clip full-screen with a character banner.
+  const requestFlair = (s) => {
+    const hand = s.stats?.handsPlayed ?? 0;
+    const trick = hand * 25 + s.completedBooks.length;
+    const clip = mgrRef.current.requestFlair({ trick, hand });
+    if (!clip) return false;
+    const character = charOfClip(clip);
+    return requestCutscene(clip, { data: { banner: CHAR_BANNER[character] } });
   };
 
   useEffect(() => {
@@ -217,7 +232,6 @@ export function useGame() {
       kittyRef.current = false;
       meldRef.current = false;
       meldPendingRef.current = null;
-      flairUsedRef.current = false;
       setMeldReveal(null);
       setLastCutscene(null);
     }
@@ -230,6 +244,7 @@ export function useGame() {
       const snd = soundRef.current;
       if (cs) {
         requestCutscene(cs.key, { data: cs.data });
+        mgrRef.current.notePriority(cs.key);
         if (cs.key === 'renege' || cs.key === 'falseaccuse') {
           snd.renege();
           if (cs.key === 'renege') snd.tableSlamThunder();
@@ -252,6 +267,7 @@ export function useGame() {
       kittyRef.current = true;
       if ((state.bid || 0) > 95 && !(state.bidWinner === 'W' && (state.bid || 0) >= 90)) {
         requestCutscene('kittyprayer');
+        mgrRef.current.notePriority('kittyprayer');
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -274,6 +290,7 @@ export function useGame() {
         meldPendingRef.current = reveal;
         const mkey = has1000 ? 'aces1000' : 'nuts90';
         requestCutscene(mkey);
+        mgrRef.current.notePriority(mkey);
       } else {
         setMeldReveal(reveal);
       }
@@ -281,18 +298,15 @@ export function useGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
 
-  // Non-blocking taunt clips when an AI opponent places a bid (DooLow / PapaCap / big bid).
+  // Any AI opponent bid is a personality (flair) opportunity — routed through the
+  // CutsceneManager, which picks an eligible character at random (equal 1/3) and throttles.
   useEffect(() => {
     const log = state.bidLog || [];
     if (log.length > bidLogRef.current) {
       const last = log[log.length - 1];
       bidLogRef.current = log.length;
       if (last && last.kind === 'bid' && (last.seat === 'W' || last.seat === 'E')) {
-        const val = parseInt((/\$(\d+)/.exec(last.text) || [])[1] || '0', 10);
-        if (last.seat === 'W') fireTaunt('doolow_bid', 'W');
-        else if (val >= 70 && Date.now() - papacapTsRef.current > 7000 && requestCutscene(pickPapacapScene(), { flair: true })) {
-          papacapTsRef.current = Date.now();
-        } else fireTaunt(val >= 80 ? 'papacap_bigbid' : 'papacap_bid', 'E');
+        requestFlair(state);
       }
     } else {
       bidLogRef.current = log.length;
@@ -300,7 +314,8 @@ export function useGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.bidLog]);
 
-  // Non-blocking taunt clips (rendered in avatar frames / transparent overlay) as books complete.
+  // Every completed book is a flair opportunity; the manager enforces the global
+  // 3-trick cooldown, per-character 2-round lockout, equal rotation and anti-repeat.
   useEffect(() => {
     if (state.phase !== 'play') {
       trashRef.current = state.completedBooks.length;
@@ -308,47 +323,7 @@ export function useGame() {
     }
     if (state.completedBooks.length > trashRef.current) {
       trashRef.current = state.completedBooks.length;
-      const last = state.completedBooks[state.completedBooks.length - 1];
-      const w = last?.winner;
-      const plays = last?.plays || [];
-      const busy = cutscene?.blocking || meldReveal;
-      const counters = plays.filter((p) => COUNTER_RANKS.has(p.card.rank)).length;
-
-      // G2 wins a book holding 3+ counters (Aces / 10s / Kings) -> full-screen "3 Bang" cinematic.
-      if (w === 'P' && counters >= 3 && !busy) {
-        requestCutscene('g2_3bang', { flair: true });
-      } else if (
-        // G2 plays an Ace AND captures an opponent's Ace in the same book -> "Snatchin' teeth" taunt.
-        w === 'P' &&
-        plays.some((p) => p.seat === 'P' && p.card.rank === 'A') &&
-        plays.some((p) => p.seat !== 'P' && p.card.rank === 'A') &&
-        !busy
-      ) {
-        const now = Date.now();
-        if (now - snatchRef.current > 3500) {
-          snatchRef.current = now;
-          fireTaunt('g2_teeth', 'P');
-        }
-      }
-
-      // PapaCap (E) wins a book -> full-screen cinematic taunt (with audio), like the
-      // g2 cinematics. Light ~7s cooldown + 50% roll so it shows up without spamming.
-      if (w === 'E' && !busy) {
-        const now = Date.now();
-        if (now - papacapTsRef.current > 7000 && Math.random() < 0.5 && requestCutscene(pickPapacapScene(), { flair: true })) {
-          papacapTsRef.current = now;
-        }
-      }
-
-      // DooLow (W) cuts a non-trump lead with trump and grabs 2+ opponent counters.
-      if (w === 'W' && !busy) {
-        const lead = plays[0];
-        const wPlay = plays.find((p) => p.seat === 'W');
-        const oppCounters = plays.filter((p) => p.seat !== 'W' && COUNTER_RANKS.has(p.card.rank)).length;
-        if (lead && lead.card.suit !== state.trump && wPlay && wPlay.card.suit === state.trump && oppCounters >= 2) {
-          requestCutscene('doolow_scene_cut', { flair: true });
-        }
-      }
+      if (!(cutscene?.blocking || meldReveal)) requestFlair(state);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.completedBooks.length, state.phase]);
@@ -368,7 +343,6 @@ export function useGame() {
     if (aiRen.length > aiRenegeSeenRef.current) {
       aiRenegeSeenRef.current = aiRen.length;
       if (Math.random() < 0.4) {
-        requestCutscene('doolow_scene_renege');
         const t = setTimeout(() => dispatch({ type: 'CALL_RENEGE' }), 550);
         return () => clearTimeout(t);
       }
@@ -377,13 +351,10 @@ export function useGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.trickReneges, state.phase, state.settings.difficulty]);
 
-  // DooLow (W) seizes a 90+ contract -> "Takeover" cinematic (min 2 hands between triggers).
+  // A high AI contract is a personality (flair) opportunity — routed through the manager.
   useEffect(() => {
-    if (state.phase === 'trump' && state.bidWinner === 'W' && (state.bid || 0) >= 90) {
-      const hand = state.stats?.handsPlayed ?? 0;
-      if (hand - takeoverLastHandRef.current >= 2 && requestCutscene('doolow_scene_takeover', { flair: true })) {
-        takeoverLastHandRef.current = hand;
-      }
+    if (state.phase === 'trump' && state.bidWinner !== 'P' && (state.bid || 0) >= 90) {
+      requestFlair(state);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
@@ -422,6 +393,7 @@ export function useGame() {
     if (action.type === 'START_ROUND' || action.type === 'NEXT_HAND' || action.type === 'RESET_TABLE') {
       snd.ensure();
     }
+    if (action.type === 'RESET_TABLE') mgrRef.current.reset();
     if (action.type === 'PLACE_BID') snd.chip();
     else if (action.type === 'PLAY_CARD') snd.play();
     else if (action.type === 'DECLARE_TRUMP') snd.trump();
