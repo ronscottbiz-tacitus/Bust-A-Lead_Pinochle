@@ -3,7 +3,7 @@ import { SEAT_LABEL, SEATS } from '../game/constants';
 import { computeMeld } from '../game/meld';
 import { Card } from './Card';
 import { videoSources, CUTSCENE_LIBRARY } from './CutsceneOverlay';
-import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers, Gavel, ShieldAlert, Film, SkipForward } from 'lucide-react';
+import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers, Gavel, ShieldAlert, Film, SkipForward, ChevronLeft, ChevronRight, LayoutGrid, PlayCircle } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 
@@ -893,11 +893,14 @@ export function MeldPhaseModal({ reveal, onClose }) {
 
 
 // Full-screen player for a single reel — plays with audio + native controls; Skip
-// returns to the gallery grid, Close (X) shuts the whole modal.
-function ReelPlayer({ clip, onBack, onClose }) {
+// returns to the gallery grid, Close (X) shuts the whole modal. When `slideshow` is
+// provided it auto-advances to the next clip on end and shows prev/next + a counter.
+function ReelPlayer({ clip, onBack, onClose, slideshow }) {
+  const inShow = !!slideshow;
+  const handleEnded = () => (inShow ? slideshow.onNext() : onBack());
   return (
     <div
-      data-testid={`reel-player-${clip.base}`}
+      data-testid={inShow ? 'reel-slideshow' : `reel-player-${clip.base}`}
       className="fixed inset-0 z-[135] flex items-center justify-center bg-black animate-[fadeIn_0.2s_ease]"
       onClick={onBack}
     >
@@ -907,7 +910,7 @@ function ReelPlayer({ clip, onBack, onClose }) {
         playsInline
         controls
         preload="auto"
-        onEnded={onBack}
+        onEnded={handleEnded}
         onClick={(e) => e.stopPropagation()}
         className="w-full h-full max-w-[100vw] max-h-[100vh] object-contain"
       >
@@ -915,18 +918,61 @@ function ReelPlayer({ clip, onBack, onClose }) {
           <source key={s.src} src={s.src} type={s.type} />
         ))}
       </video>
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full bg-black/70 border border-amber-500/50 text-amber-300 text-sm font-display font-black tracking-wide backdrop-blur pointer-events-none">
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full bg-black/70 border border-amber-500/50 text-amber-300 text-sm font-display font-black tracking-wide backdrop-blur pointer-events-none flex items-center gap-2">
+        {inShow && (
+          <span data-testid="reel-slideshow-counter" className="text-amber-500/80 text-xs">
+            {slideshow.index + 1} / {slideshow.total}
+          </span>
+        )}
         {clip.title}
       </div>
+
+      {inShow && (
+        <>
+          <button
+            data-testid="reel-prev-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              slideshow.onPrev();
+            }}
+            disabled={slideshow.index === 0}
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur transition-colors active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
+          >
+            <ChevronLeft size={22} />
+          </button>
+          <button
+            data-testid="reel-next-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              slideshow.onNext();
+            }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur transition-colors active:scale-95"
+          >
+            <ChevronRight size={22} />
+          </button>
+          <button
+            data-testid="reel-grid-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onBack();
+            }}
+            className="absolute bottom-6 left-6 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/30 text-white text-sm font-display font-bold flex items-center gap-2 backdrop-blur transition-colors active:scale-95"
+          >
+            <LayoutGrid size={16} /> Grid
+          </button>
+        </>
+      )}
+
       <button
         data-testid="reel-skip-btn"
         onClick={(e) => {
           e.stopPropagation();
-          onBack();
+          if (inShow) slideshow.onNext();
+          else onBack();
         }}
         className="absolute bottom-6 right-6 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/30 text-white text-sm font-display font-bold flex items-center gap-2 backdrop-blur transition-colors active:scale-95"
       >
-        Skip <SkipForward size={16} />
+        {inShow ? 'Next' : 'Skip'} <SkipForward size={16} />
       </button>
       <button
         data-testid="reel-close-btn"
@@ -943,9 +989,21 @@ function ReelPlayer({ clip, onBack, onClose }) {
 }
 
 // "Yard Reels" — interactive cinematics gallery. Thumbnails seek to a frame (#t=0.5);
-// tapping one opens the full-screen ReelPlayer.
+// tapping one opens the full-screen ReelPlayer. "Play All" starts an auto-advancing
+// slideshow through every clip in the library.
 export function CinematicsModal({ onClose }) {
   const [selected, setSelected] = useState(null);
+  const [showIdx, setShowIdx] = useState(null); // slideshow index, or null when inactive
+
+  const startSlideshow = () => {
+    setSelected(null);
+    setShowIdx(0);
+  };
+  // Auto-advance; exit back to the grid after the final clip.
+  const nextSlide = () =>
+    setShowIdx((i) => (i + 1 >= CUTSCENE_LIBRARY.length ? null : i + 1));
+  const prevSlide = () => setShowIdx((i) => Math.max(0, i - 1));
+
   return (
     <div data-testid="cinematics-modal" className="fixed inset-0 z-[90] flex">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
@@ -956,13 +1014,22 @@ export function CinematicsModal({ onClose }) {
             <div className="font-display font-black text-xl uppercase tracking-wide">Yard Reels</div>
             <span className="text-slate-500 text-xs font-sub">{CUTSCENE_LIBRARY.length} clips</span>
           </div>
-          <button
-            data-testid="close-cinematics-btn"
-            onClick={onClose}
-            className="p-1.5 rounded-lg bg-zinc-800 border border-amber-500/30 text-amber-200 hover:text-white"
-          >
-            <X size={16} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              data-testid="play-all-btn"
+              onClick={startSlideshow}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-sm font-display font-black uppercase tracking-wide transition-colors active:scale-95"
+            >
+              <PlayCircle size={16} /> Play All
+            </button>
+            <button
+              data-testid="close-cinematics-btn"
+              onClick={onClose}
+              className="p-1.5 rounded-lg bg-zinc-800 border border-amber-500/30 text-amber-200 hover:text-white"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
         <div
           className="overflow-y-auto pr-1"
@@ -1009,6 +1076,14 @@ export function CinematicsModal({ onClose }) {
         </div>
       </div>
       {selected && <ReelPlayer clip={selected} onBack={() => setSelected(null)} onClose={onClose} />}
+      {showIdx != null && (
+        <ReelPlayer
+          clip={CUTSCENE_LIBRARY[showIdx]}
+          onBack={() => setShowIdx(null)}
+          onClose={onClose}
+          slideshow={{ index: showIdx, total: CUTSCENE_LIBRARY.length, onNext: nextSlide, onPrev: prevSlide }}
+        />
+      )}
     </div>
   );
 }

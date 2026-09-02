@@ -504,6 +504,17 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Known harmless: a leftover { flair:true } arg is passed at some requestCutscene calls but flair is
   derived from tier (opts.flair unused) — no behavior impact.
 
+## Updates (2026-06 — Request 24: Yard Reels "Play All" slideshow)
+- Added a "Play All" button (data-testid play-all-btn) to the CinematicsModal header (Modals.jsx). It
+  starts an auto-advancing full-screen slideshow through the entire CUTSCENE_LIBRARY (30 clips).
+- ReelPlayer extended with an optional `slideshow` prop: onEnded auto-advances to the next clip; adds
+  prev/next chevrons (reel-prev-btn / reel-next-btn, prev disabled on clip 1), a live counter
+  (reel-slideshow-counter "N / total"), a "Grid" button (reel-grid-btn) back to the gallery, and the Skip
+  button relabels to "Next". Slideshow container testid reel-slideshow. Single-clip view is unchanged
+  (still reel-player-<base>). Auto-exits to the grid after the final clip; Close (X) shuts the modal.
+- Verified live: Play All opens at 1/30, Next 1→3, Prev 3→2 with title/counter updating, Grid returns to
+  gallery, clips play full-screen with audio and auto-advance on end; zero console errors.
+
 ## Updates (2026-06 — Request 23: Copy/terminology — "Behind the Wall" Rules + New Fish)
 - Ruleset rebrand: all "CDCR Prison Rules" copy → "Behind the Wall" Rules. ConfigScreen subtitle now
   'Cutthroat Pinochle • "Behind the Wall" Rules' (Modals.jsx); splash alt text updated; index.html
