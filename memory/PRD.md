@@ -504,6 +504,19 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Known harmless: a leftover { flair:true } arg is passed at some requestCutscene calls but flair is
   derived from tier (opts.flair unused) — no behavior impact.
 
+## Updates (2026-06 — Request 21: G2 signature achievement cutscenes bypass cooldown)
+- Two G2 gameplay achievements now fire IMMEDIATELY (bypassing the CutsceneManager ambient cooldown/
+  rotation) as full-screen CutsceneOverlay clips, detected in the completed-book effect in useGame.js:
+  * g2_teeth ("Ace Catch") — G2 wins the book WITH an Ace AND at least one other player also played an
+    Ace in that same book. (Previously a small inline avatar taunt; now full-screen 100vw/100vh.)
+  * g2_3bang ("Three-Counter Take") — G2 wins a book containing 3+ counters (rank A / 10 / K).
+- Both call requestCutscene(key) directly (immediate) then mgrRef.notePriority(key) so match-wide
+  anti-repeat stays in sync; g2_teeth/g2_3bang added to CUTSCENE_TIER at tier 3 (priority). If neither
+  achievement fires, the book falls back to the normal manager-governed requestFlair() opportunity.
+  Guarded only against clobbering an already-open blocking cutscene/meld modal.
+- Verified: 14/14 jest pass; compiles clean; smoke run reached settlement with 0 console errors and the
+  CutsceneManager logging intact. (Achievement triggers are rare gameplay events; predicates are pure.)
+
 ## Updates (2026-06 — Request 20: Centralized CutsceneManager — PapaCap flood fix + character balancing)
 - NEW src/game/cutsceneManager.js — single global gateway for all flair/personality cutscenes.
   * CHAR_POOLS: PapaCap [papacap_scene_1..4, papacap_set], Doolow [doolow_scene_takeover/cut/renege,

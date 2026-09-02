@@ -1,7 +1,7 @@
 import { useReducer, useEffect, useRef, useState } from 'react';
 import { reducer, initState } from '../game/reducer';
 import { saveGame } from '../game/storage';
-import { SEATS, SPEED } from '../game/constants';
+import { SEATS, SPEED, COUNTER_RANKS } from '../game/constants';
 import { evaluateBid, chooseTrump, chooseDiscards, shouldGoDouble, laydownChallenge, aiPlay, aiConcede } from '../game/ai';
 import { saveTarget } from '../game/scoring';
 import { SoundEngine } from '../audio/sfx';
@@ -23,8 +23,8 @@ const CUTSCENE_TIER = {
   portal: 1, game_over_1: 1, game_over_2: 1,
   renege: 2, falseaccuse: 2, doolow_scene_renege: 2,
   hardset: 2, doolow_set: 2, papacap_set: 2, g2_hardset: 2,
-  renege_lesson: 3, newbooty_intro: 3,
-  doolow_scene_takeover: 4, doolow_scene_cut: 4, g2_3bang: 4,
+  renege_lesson: 3, newbooty_intro: 3, g2_teeth: 3, g2_3bang: 3,
+  doolow_scene_takeover: 4, doolow_scene_cut: 4,
   papacap_scene_1: 5, papacap_scene_2: 5, papacap_scene_3: 5, papacap_scene_4: 5,
 };
 const tierOf = (key) => CUTSCENE_TIER[key] ?? 3;
@@ -314,8 +314,9 @@ export function useGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.bidLog]);
 
-  // Every completed book is a flair opportunity; the manager enforces the global
-  // 3-trick cooldown, per-character 2-round lockout, equal rotation and anti-repeat.
+  // On each completed book: G2's two signature achievements fire IMMEDIATELY as
+  // full-screen cutscenes (bypassing the ambient cooldown); otherwise the book is a
+  // normal flair opportunity governed by the CutsceneManager.
   useEffect(() => {
     if (state.phase !== 'play') {
       trashRef.current = state.completedBooks.length;
@@ -323,7 +324,30 @@ export function useGame() {
     }
     if (state.completedBooks.length > trashRef.current) {
       trashRef.current = state.completedBooks.length;
-      if (!(cutscene?.blocking || meldReveal)) requestFlair(state);
+      if (cutscene?.blocking || meldReveal) return;
+
+      const last = state.completedBooks[state.completedBooks.length - 1];
+      const plays = last?.plays || [];
+      const w = last?.winner;
+
+      // 1) G2 Ace Catch — G2 wins the book with an Ace AND another player also played an Ace.
+      const g2AceCatch =
+        w === 'P' &&
+        plays.some((p) => p.seat === 'P' && p.card.rank === 'A') &&
+        plays.some((p) => p.seat !== 'P' && p.card.rank === 'A');
+      // 2) G2 Three-Counter Take — G2 wins a book holding 3+ counters (A / 10 / K).
+      const counters = plays.filter((p) => COUNTER_RANKS.has(p.card.rank)).length;
+      const g2ThreeCounter = w === 'P' && counters >= 3;
+
+      if (g2AceCatch) {
+        requestCutscene('g2_teeth');
+        mgrRef.current.notePriority('g2_teeth');
+      } else if (g2ThreeCounter) {
+        requestCutscene('g2_3bang');
+        mgrRef.current.notePriority('g2_3bang');
+      } else {
+        requestFlair(state);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.completedBooks.length, state.phase]);
