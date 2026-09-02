@@ -159,7 +159,7 @@ export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit, difficul
     }
   }
 
-  // Easy AI ("New Booty"): naive play, no defender cooperation or signalling.
+  // Easy AI ("New Fish"): naive play, no defender cooperation or signalling.
   if (difficulty === 'easy') {
     if (trick.length === 0) {
       const nonCounter = legal.filter((c) => !COUNTER_RANKS.has(c.rank));

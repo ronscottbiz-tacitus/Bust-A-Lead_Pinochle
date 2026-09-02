@@ -42,7 +42,7 @@ export default function BustALead() {
   const renegeLessonRef = useRef(false);
   const s = state;
 
-  // New Booty match intro cinematic — once per session when a New Booty match launches.
+  // New Fish match intro cinematic — once per session when a New Fish match launches.
   useEffect(() => {
     if (
       s.phase === 'dealing' &&
@@ -76,7 +76,7 @@ export default function BustALead() {
       const legal = legalPlays(s.hands.P, s.trick, s.trump);
       if (legal.some((c) => c.id === card.id)) act({ type: 'PLAY_CARD', seat: 'P', card });
       else if (s.settings.tutorialHints) {
-        // Full renege lesson only in New Booty (once per session); otherwise a quick notice.
+        // Full renege lesson only in New Fish (once per session); otherwise a quick notice.
         if (s.settings.difficulty === 'easy' && !renegeLessonRef.current) {
           renegeLessonRef.current = true;
           playCutscene('renege_lesson');

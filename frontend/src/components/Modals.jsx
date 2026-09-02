@@ -122,7 +122,7 @@ function Choice({ label, options, value, onChange, testidPrefix }) {
 }
 
 const CFG_DIFFICULTY = [
-  { value: 'easy', label: 'New Booty' },
+  { value: 'easy', label: 'New Fish' },
   { value: 'normal', label: 'Inmate' },
   { value: 'hard', label: 'Convict' },
 ];
@@ -178,7 +178,7 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
         <div className="relative">
           <img
             src="/assets/splash2_bal.png"
-            alt="Bus' a Lead — CDCR yard card table"
+            alt="Bus' a Lead — &quot;Behind the Wall&quot; yard card table"
             data-testid="splash-hero"
             className="w-full object-cover"
           />
@@ -198,7 +198,7 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
             className="text-center text-[11px] sm:text-xs font-sub font-bold uppercase tracking-[0.26em] text-amber-500/90 mb-5"
             data-testid="gta-subtitle"
           >
-            Cutthroat Pinochle • CDCR Prison Rules
+            Cutthroat Pinochle • "Behind the Wall" Rules
           </div>
           <div className="space-y-4">
             <Choice

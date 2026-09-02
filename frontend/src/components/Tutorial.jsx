@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Lightbulb, AlertTriangle } from 'lucide-react';
 
-// Sequential "New Booty" coaching tooltips, keyed to game milestones. Each shows once per
+// Sequential "New Fish" coaching tooltips, keyed to game milestones. Each shows once per
 // session (until a New Game resets them). The wrapper is click-through; only the callout card
 // captures clicks so the game underneath stays fully playable.
 const STEPS = [
@@ -80,7 +80,7 @@ export function TutorialOverlay({ state }) {
   );
 }
 
-// Brief high-contrast warning shown when a New Booty player taps a card they can't legally play.
+// Brief high-contrast warning shown when a New Fish player taps a card they can't legally play.
 export function RenegeNotice({ onDismiss }) {
   useEffect(() => {
     const t = setTimeout(onDismiss, 8000);

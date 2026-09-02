@@ -504,6 +504,19 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Known harmless: a leftover { flair:true } arg is passed at some requestCutscene calls but flair is
   derived from tier (opts.flair unused) — no behavior impact.
 
+## Updates (2026-06 — Request 23: Copy/terminology — "Behind the Wall" Rules + New Fish)
+- Ruleset rebrand: all "CDCR Prison Rules" copy → "Behind the Wall" Rules. ConfigScreen subtitle now
+  'Cutthroat Pinochle • "Behind the Wall" Rules' (Modals.jsx); splash alt text updated; index.html
+  <title> = 'Bus' A Lead: Cutthroat Pinochle - "Behind the Wall" Rules' and meta description updated.
+- Tier rename: difficulty 'easy' label "New Booty" → "New Fish" (Modals CFG_DIFFICULTY). Yard Reels
+  gallery title "New Booty Intro" → "New Fish Intro"; cutscene banner 'WELCOME TO THE YARD — NEW FISH
+  101'. Internal comments (ai.js/BustALead.jsx/Tutorial.jsx/sfx.js) updated for consistency.
+- Cutscene KEY 'newbooty_intro' + asset basename 'g2_newbooty_intro' intentionally KEPT (file loading);
+  only user-facing labels changed. Verified live: DOM has no 'New Booty'/'CDCR', subtitle + New Fish tier
+  + page title all render correctly.
+- KNOWN (not changed per instruction): the splash art splash2_bal.png has old "CDCR PRISON RULES" text
+  baked into the image; left untouched (no static image edits). Regenerate the asset to update it.
+
 ## Updates (2026-06 — Request 22: BUG FIX — g2_teeth/g2_3bang firing on load/auction)
 - ROOT CAUSE: g2_teeth & g2_3bang were members of the CutsceneManager's G2 ambient pool, so the
   generic requestFlair() rotation (fired on AI bids during the auction) could randomly select them

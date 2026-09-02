@@ -1,4 +1,4 @@
-// Procedural CDCR prison-yard sound effects via the Web Audio API (no external assets).
+// Procedural "Behind the Wall" prison-yard sound effects via the Web Audio API (no external assets).
 export class SoundEngine {
   constructor() {
     this.enabled = true;
