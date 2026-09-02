@@ -504,6 +504,22 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Known harmless: a leftover { flair:true } arg is passed at some requestCutscene calls but flair is
   derived from tier (opts.flair unused) — no behavior impact.
 
+## Updates (2026-06 — Request 22: BUG FIX — g2_teeth/g2_3bang firing on load/auction)
+- ROOT CAUSE: g2_teeth & g2_3bang were members of the CutsceneManager's G2 ambient pool, so the
+  generic requestFlair() rotation (fired on AI bids during the auction) could randomly select them
+  BEFORE any card was played — the "cutscene on game start" bug.
+- FIX (cutsceneManager.js): the ambient rotation now contains ONLY the AI opponents (PapaCap, Doolow;
+  equal selection). G2's clips (g2_3bang, g2_hardset, g2_teeth) moved to a non-ambient G2_CLIPS list —
+  tracked by charOfClip()/notePriority() for logging + anti-repeat but NEVER selectable by requestFlair.
+  So G2 achievement cutscenes can no longer fire on load/auction.
+- HARDENED (useGame.js completed-book effect) with strict lifecycle guards: (1) isInitialMount ref skips
+  the mount run; (2) only phase==='play'; (3) only when a NEW trick actually resolved (book count
+  advanced); (4) trick must contain played cards (plays.length>0). g2_teeth requires G2 to win WITH an
+  Ace AND another player also played an Ace; g2_3bang requires G2 to win a trick with 3+ counters
+  (A/10/K); Ace Catch prioritized over Three-Counter. These are the ONLY two requestCutscene('g2_*') sites.
+- Verified: 14/14 jest pass; clean compile; live browser watch of a fresh match auction — only a Doolow
+  ambient clip fired (banner override correct), ZERO g2_teeth/g2_3bang leak, zero console errors.
+
 ## Updates (2026-06 — Request 21: G2 signature achievement cutscenes bypass cooldown)
 - Two G2 gameplay achievements now fire IMMEDIATELY (bypassing the CutsceneManager ambient cooldown/
   rotation) as full-screen CutsceneOverlay clips, detected in the completed-book effect in useGame.js:

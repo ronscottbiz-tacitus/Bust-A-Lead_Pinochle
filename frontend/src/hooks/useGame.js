@@ -182,6 +182,7 @@ export function useGame() {
   const [meldReveal, setMeldReveal] = useState(null);
   const [lastCutscene, setLastCutscene] = useState(null);
   const trashRef = useRef(state.completedBooks.length);
+  const isInitialMount = useRef(true);
   const aiRenegeSeenRef = useRef(0);
   const kittyRef = useRef(false);
   const meldRef = useRef(false);
@@ -314,40 +315,52 @@ export function useGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.bidLog]);
 
-  // On each completed book: G2's two signature achievements fire IMMEDIATELY as
-  // full-screen cutscenes (bypassing the ambient cooldown); otherwise the book is a
-  // normal flair opportunity governed by the CutsceneManager.
+  // On each RESOLVED trick: G2's two signature achievements fire IMMEDIATELY as full-screen
+  // cutscenes (bypassing the ambient cooldown); otherwise the book is a normal AI-opponent
+  // flair opportunity. Strict lifecycle guards ensure this NEVER evaluates on mount / deal /
+  // auction — only after a real trick has been collected in the PLAYING phase.
   useEffect(() => {
+    // Guard 1: never run on component mount / initial load.
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      trashRef.current = state.completedBooks.length;
+      return;
+    }
+    // Guard 2: only during active play (never config / dealing / auction / settlement).
     if (state.phase !== 'play') {
       trashRef.current = state.completedBooks.length;
       return;
     }
-    if (state.completedBooks.length > trashRef.current) {
-      trashRef.current = state.completedBooks.length;
-      if (cutscene?.blocking || meldReveal) return;
+    // Guard 3: only when a NEW trick has just resolved (book count advanced).
+    const advanced = state.completedBooks.length > trashRef.current;
+    trashRef.current = state.completedBooks.length;
+    if (!advanced) return;
+    if (cutscene?.blocking || meldReveal) return;
 
-      const last = state.completedBooks[state.completedBooks.length - 1];
-      const plays = last?.plays || [];
-      const w = last?.winner;
+    const last = state.completedBooks[state.completedBooks.length - 1];
+    const plays = last?.plays || [];
+    // Guard 4: the trick must actually contain played cards.
+    if (plays.length === 0) return;
+    const w = last?.winner;
 
-      // 1) G2 Ace Catch — G2 wins the book with an Ace AND another player also played an Ace.
-      const g2AceCatch =
-        w === 'P' &&
-        plays.some((p) => p.seat === 'P' && p.card.rank === 'A') &&
-        plays.some((p) => p.seat !== 'P' && p.card.rank === 'A');
-      // 2) G2 Three-Counter Take — G2 wins a book holding 3+ counters (A / 10 / K).
-      const counters = plays.filter((p) => COUNTER_RANKS.has(p.card.rank)).length;
-      const g2ThreeCounter = w === 'P' && counters >= 3;
+    // 1) G2 Ace Catch — G2 wins the trick WITH an Ace AND another player also played an Ace.
+    const g2AceCatch =
+      w === 'P' &&
+      plays.some((p) => p.seat === 'P' && p.card.rank === 'A') &&
+      plays.some((p) => p.seat !== 'P' && p.card.rank === 'A');
+    // 2) G2 Three-Counter Take — G2 wins a trick containing 3+ counters (A / 10 / K).
+    const counters = plays.filter((p) => COUNTER_RANKS.has(p.card.rank)).length;
+    const g2ThreeCounter = w === 'P' && counters >= 3;
 
-      if (g2AceCatch) {
-        requestCutscene('g2_teeth');
-        mgrRef.current.notePriority('g2_teeth');
-      } else if (g2ThreeCounter) {
-        requestCutscene('g2_3bang');
-        mgrRef.current.notePriority('g2_3bang');
-      } else {
-        requestFlair(state);
-      }
+    if (g2AceCatch) {
+      // Ace Catch takes priority over Three-Counter when both are true on the same trick.
+      requestCutscene('g2_teeth');
+      mgrRef.current.notePriority('g2_teeth');
+    } else if (g2ThreeCounter) {
+      requestCutscene('g2_3bang');
+      mgrRef.current.notePriority('g2_3bang');
+    } else {
+      requestFlair(state);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.completedBooks.length, state.phase]);
