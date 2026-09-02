@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SEAT_LABEL, SEATS } from '../game/constants';
 import { computeMeld } from '../game/meld';
 import { Card } from './Card';
@@ -1000,9 +1000,19 @@ export function CinematicsModal({ onClose }) {
     setShowIdx(0);
   };
   // Auto-advance; exit back to the grid after the final clip.
-  const nextSlide = () =>
-    setShowIdx((i) => (i + 1 >= CUTSCENE_LIBRARY.length ? null : i + 1));
-  const prevSlide = () => setShowIdx((i) => Math.max(0, i - 1));
+  const nextSlide = useCallback(
+    () => setShowIdx((i) => (i + 1 >= CUTSCENE_LIBRARY.length ? null : i + 1)),
+    []
+  );
+  const prevSlide = useCallback(() => setShowIdx((i) => Math.max(0, i - 1)), []);
+  // Stable prop so ReelPlayer doesn't get a fresh object every render.
+  const slideshow = useMemo(
+    () =>
+      showIdx == null
+        ? null
+        : { index: showIdx, total: CUTSCENE_LIBRARY.length, onNext: nextSlide, onPrev: prevSlide },
+    [showIdx, nextSlide, prevSlide]
+  );
 
   return (
     <div data-testid="cinematics-modal" className="fixed inset-0 z-[90] flex">
@@ -1081,7 +1091,7 @@ export function CinematicsModal({ onClose }) {
           clip={CUTSCENE_LIBRARY[showIdx]}
           onBack={() => setShowIdx(null)}
           onClose={onClose}
-          slideshow={{ index: showIdx, total: CUTSCENE_LIBRARY.length, onNext: nextSlide, onPrev: prevSlide }}
+          slideshow={slideshow}
         />
       )}
     </div>
