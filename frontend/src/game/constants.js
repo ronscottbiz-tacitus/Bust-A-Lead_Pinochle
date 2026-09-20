@@ -1,13 +1,26 @@
 // Core constants for Bus' a Lead (3-player Cutthroat Pinochle variant)
 
+import { CHARACTERS, DEFAULT_SEAT_CHARS } from '../config/characters';
+
 export const SEATS = ['W', 'E', 'P'];
-export const SEAT_LABEL = { W: 'DooLow', E: 'PapaCap', P: 'G2' };
-// Avatar image assets per seat (E has no portrait -> null, falls back to initial)
-export const SEAT_AVATAR = {
-  W: '/assets/avatar_them.png',
-  E: '/assets/avatar_yall.png',
-  P: '/assets/avatar_g2.png',
-};
+// Per-seat character identity — mutable, updated at runtime via applySeatRoster().
+// Kept as live objects (not rebuilt) so every existing SEAT_LABEL[seat] read stays valid.
+export const SEAT_LABEL = {};
+export const SEAT_AVATAR = {};
+export const SEAT_MONIKER = {};
+export const SEAT_CHAR = {};
+
+export function applySeatRoster(seatChars = DEFAULT_SEAT_CHARS) {
+  for (const seat of SEATS) {
+    const id = (seatChars && seatChars[seat]) || DEFAULT_SEAT_CHARS[seat];
+    const ch = CHARACTERS[id] || CHARACTERS[DEFAULT_SEAT_CHARS[seat]];
+    SEAT_CHAR[seat] = ch.id;
+    SEAT_LABEL[seat] = ch.name;
+    SEAT_AVATAR[seat] = ch.avatar;
+    SEAT_MONIKER[seat] = ch.moniker;
+  }
+}
+applySeatRoster(); // initialize with defaults at module load
 export const CARD_BACK_IMG = '/assets/get2_cardback.png';
 export const TABLE_BG_IMG = '/assets/new_canteen_table.webp';
 // Clockwise seating order used for dealing and turn rotation

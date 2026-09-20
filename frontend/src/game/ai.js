@@ -11,7 +11,7 @@ function countRank(cards, rank) {
 }
 
 // Evaluate hand and return the max bid this seat is willing to make.
-export function evaluateBid(hand, base, difficulty = 'normal', boldness = 'balanced') {
+export function evaluateBid(hand, base, difficulty = 'normal', boldness = 'balanced', aggression = 0.65) {
   const m = bySuit(hand);
   let hasMarriage = false;
   let bestSuitScore = 0;
@@ -52,7 +52,10 @@ export function evaluateBid(hand, base, difficulty = 'normal', boldness = 'balan
   }
   const extra = Math.max(0, Math.floor((score - 15) / div));
   const jitter = Math.random() < 0.4 ? -1 : 0;
-  const steps = Math.min(Math.max(extra + jitter + diffAdj, 0), 8);
+  // Character aggression nudges boldness on top of the difficulty baseline
+  // (~ -1 for tight/Scrap, 0 for balanced, +1 for loose-aggressive/Baby Boy).
+  const aggAdj = Math.max(-2, Math.min(2, Math.round((aggression - 0.55) * 4)));
+  const steps = Math.min(Math.max(extra + jitter + diffAdj + aggAdj, 0), 8);
   return { maxBid: base + 5 * steps };
 }
 
@@ -94,14 +97,14 @@ export function shouldGoDouble(hand, trump) {
 // folds a weak hand (4+ books below the save floor) at a seat-specific rate:
 //   W = DooLow "The Tactician"  -> folds 75% to minimise canteen bleed
 //   E = PapaCap "The Stubborn OG" -> folds only 35%, pushes through 65%
-export function aiConcede(seat, hand, trump, benchmark) {
+export function aiConcede(seat, hand, trump, benchmark, concessionRate = null) {
   const trumps = hand.filter((c) => c.suit === trump);
   const topTrump = trumps.filter((c) => c.rank === 'A' || c.rank === '10').length;
   const offAces = hand.filter((c) => c.rank === 'A' && c.suit !== trump).length;
   const projected = trumps.length * 1.8 + topTrump * 1.2 + offAces * 2.0 + 6;
   const deficit = benchmark - projected;
   if (deficit < 4) return false; // hand is viable — push
-  const foldChance = seat === 'W' ? 0.75 : 0.35;
+  const foldChance = concessionRate != null ? concessionRate : seat === 'W' ? 0.75 : 0.35;
   return Math.random() < foldChance;
 }
 

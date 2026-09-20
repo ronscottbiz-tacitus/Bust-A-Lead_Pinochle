@@ -911,10 +911,10 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
                 pTurn ? 'border-cyan-300' : pBidder ? 'border-yellow-400/80' : 'border-cyan-400/50'
               }`}
             >
-              <span className="absolute inset-0 flex items-center justify-center text-slate-500 select-none pointer-events-none">G2</span>
+              <span className="absolute inset-0 flex items-center justify-center text-slate-500 select-none pointer-events-none">{SEAT_LABEL.P}</span>
               <img
                 src={SEAT_AVATAR.P}
-                alt="G2"
+                alt={SEAT_LABEL.P}
                 data-testid="player-avatar"
                 className="relative w-full h-full object-cover"
                 onError={(e) => {
@@ -931,7 +931,7 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
               )}
             </div>
             <div data-testid="seat-books-P" className="text-[11px] font-mono-stat text-cyan-300 leading-tight">
-              <div className="text-slate-100 font-display font-black text-sm">G2</div>
+              <div className="text-slate-100 font-display font-black text-sm">{SEAT_LABEL.P}</div>
               <div className="flex items-center gap-1 text-emerald-300">
                 <Coins size={10} className="text-yellow-400" />
                 {money(s.bankrolls.P)}
@@ -985,10 +985,10 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
                 pTurn ? 'border-cyan-300' : pBidder ? 'border-yellow-400/80' : 'border-cyan-400/50'
               }`}
             >
-              <span className="absolute inset-0 flex items-center justify-center text-slate-500 select-none pointer-events-none">G2</span>
+              <span className="absolute inset-0 flex items-center justify-center text-slate-500 select-none pointer-events-none">{SEAT_LABEL.P}</span>
               <img
                 src={SEAT_AVATAR.P}
-                alt="G2"
+                alt={SEAT_LABEL.P}
                 data-testid="player-avatar"
                 className="relative w-full h-full object-cover"
                 onError={(e) => {
@@ -996,7 +996,7 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
                 }}
               />
             </div>
-            <span className="text-[13px] font-display font-black text-slate-100 shrink-0">G2</span>
+            <span className="text-[13px] font-display font-black text-slate-100 shrink-0">{SEAT_LABEL.P}</span>
             {pBidder && (
               <span className="bg-yellow-400 text-black text-[8px] font-black px-1 rounded-full shrink-0">BID</span>
             )}

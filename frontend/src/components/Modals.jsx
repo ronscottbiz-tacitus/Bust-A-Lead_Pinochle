@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SEAT_LABEL, SEATS } from '../game/constants';
+import { CHARACTERS, PLAYER_PICKS } from '../config/characters';
 import { computeMeld } from '../game/meld';
 import { Card } from './Card';
 import { videoSources, CUTSCENE_LIBRARY } from './CutsceneOverlay';
@@ -10,10 +11,11 @@ const money = (n) => `$${n.toFixed(2)}`;
 function renegeTaunt(busted) {
   if (!busted) return null;
   const reason = String(busted.reason);
-  const opp = busted.seat === 'W' ? 'PapaCap' : 'DooLow';
-  if (reason.includes('FALSE ACCUSATION')) return `${opp}: Ain't nobody renege, G2 — sit yo' paranoid self down.`;
-  if (reason.includes('RENEGE CONFIRMED')) return `${SEAT_LABEL[busted.seat]}: Man… G2 got eyes in the back of his head.`;
-  if (reason.includes('RENEGE') || reason.includes('VIOLATION')) return `${opp}: Caught you slippin', G2! That's a bus' a lead.`;
+  const opp = busted.seat === 'W' ? SEAT_LABEL.E : SEAT_LABEL.W;
+  const me = SEAT_LABEL.P;
+  if (reason.includes('FALSE ACCUSATION')) return `${opp}: Ain't nobody renege, ${me} — sit yo' paranoid self down.`;
+  if (reason.includes('RENEGE CONFIRMED')) return `${SEAT_LABEL[busted.seat]}: Man… ${me} got eyes in the back of his head.`;
+  if (reason.includes('RENEGE') || reason.includes('VIOLATION')) return `${opp}: Caught you slippin', ${me}! That's a bus' a lead.`;
   return null;
 }
 const GTA_PANEL = 'bg-zinc-950/95 border-2 border-amber-500/50 rounded-2xl shadow-2xl backdrop-blur-md';
@@ -169,6 +171,52 @@ const CFG_STAKES = [
 
 const FEEDBACK_URL = 'https://forms.gle/j9aMWdxqwYjYWjzz5';
 
+// "Pick Your Hustler" — 3-card selector for the human's seat (G2 / Baby Boy / Scrap).
+function HustlerSelect({ value, onChange }) {
+  return (
+    <div data-testid="hustler-select">
+      <div className="text-[11px] font-sub font-black uppercase tracking-[0.22em] text-amber-500/90 mb-2">
+        Pick Your Hustler
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {PLAYER_PICKS.map((id) => {
+          const c = CHARACTERS[id];
+          const active = value === id;
+          return (
+            <button
+              key={id}
+              data-testid={`hustler-${id}`}
+              onClick={() => onChange(id)}
+              className={`relative rounded-xl overflow-hidden border-2 text-left transition-all active:scale-95 ${
+                active
+                  ? 'border-amber-400 ring-2 ring-amber-400/60 shadow-[0_0_18px_rgba(251,191,36,0.35)]'
+                  : 'border-zinc-700 hover:border-amber-500/50 opacity-80 hover:opacity-100'
+              }`}
+            >
+              <div className="relative w-full aspect-square bg-zinc-900 overflow-hidden">
+                <img src={c.avatar} alt={c.name} className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-1.5 pt-4 pb-1">
+                  <div className="text-white font-display font-black text-xs sm:text-sm leading-none truncate">{c.name}</div>
+                  <div className="text-amber-400 text-[8px] sm:text-[9px] font-sub font-bold uppercase tracking-wide truncate">{c.moniker}</div>
+                </div>
+                {active && (
+                  <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-amber-400 text-black flex items-center justify-center">
+                    <Play size={9} className="ml-0.5" />
+                  </div>
+                )}
+              </div>
+              <div className="px-1.5 py-1 text-[8px] sm:text-[9px] font-sub text-slate-400 leading-tight h-8 overflow-hidden bg-zinc-950">
+                {c.blurb}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
 export function ConfigScreen({ state, act, onReplayTutorial }) {
   const s = state.settings;
   const set = (patch) => act({ type: 'UPDATE_SETTINGS', settings: patch });
@@ -201,6 +249,7 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
             Cutthroat Pinochle • "Behind the Wall" Rules
           </div>
           <div className="space-y-4">
+            <HustlerSelect value={s.playerChar || 'g2'} onChange={(id) => set({ playerChar: id })} />
             <Choice
               label="Difficulty"
               testidPrefix="cfg-difficulty"

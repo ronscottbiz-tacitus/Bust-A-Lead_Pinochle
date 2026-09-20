@@ -36,6 +36,11 @@ const FILE = {
   doolow_scene_renege: ['doolow_scene_renege'],
   game_over_1: ['game_over_1'],
   game_over_2: ['game_over_2'],
+  // Character-specific cutscenes (Baby Boy / Scrap).
+  babyboy_taunt: ['cutscene_babyboy_taunt'],
+  babyboy_hardset: ['cutscene_babyboy_hardset'],
+  scrap_slam: ['cutscene_scrap_slam'],
+  scrap_hardset: ['cutscene_scrap_hardset'],
 };
 
 export function sourcesFor(key) {
@@ -84,6 +89,10 @@ export const CUTSCENE_LIBRARY = [
   { base: 'papacap_scene_4', title: 'PapaCap — Scene IV', tag: 'Taunt' },
   { base: 'g2_teeth', title: 'Snatchin\u2019 Teeth', tag: 'Taunt' },
   { base: 'g2_3bang', title: 'G2 — 3 Bang', tag: 'Taunt' },
+  { base: 'cutscene_babyboy_taunt', title: 'Baby Boy — Too Smooth', tag: 'Taunt' },
+  { base: 'cutscene_babyboy_hardset', title: 'Baby Boy — Got Set', tag: 'Cinematic' },
+  { base: 'cutscene_scrap_slam', title: 'Scrap — Concrete Slam', tag: 'Taunt' },
+  { base: 'cutscene_scrap_hardset', title: 'Scrap — Got Set', tag: 'Cinematic' },
   { base: 'cutscene_title_loop', title: 'Title Loop', tag: 'Ambient' },
 ];
 
@@ -113,6 +122,10 @@ const BANNER = {
   doolow_scene_renege: 'DOOLOW CATCHES THE RENEGE',
   game_over_1: 'THE GET-2 — MATCH WON',
   game_over_2: 'THE GET-2 — MATCH WON',
+  babyboy_taunt: "BABY BOY: \u201CTOO SMOOTH, HOMEY\u201D",
+  babyboy_hardset: 'BABY BOY GOT SET — SMOOTH RUNS OUT',
+  scrap_slam: 'SCRAP SLAMS THE TRUMP — CONCRETE',
+  scrap_hardset: 'SCRAP GOT SET — THE WALL CRACKS',
 };
 
 // Full-screen blocking cinematic. UNMUTED so the clip's native audio plays (SFX/voice

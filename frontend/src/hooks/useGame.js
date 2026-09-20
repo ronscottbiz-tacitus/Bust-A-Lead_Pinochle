@@ -1,11 +1,12 @@
 import { useReducer, useEffect, useRef, useState } from 'react';
 import { reducer, initState } from '../game/reducer';
 import { saveGame } from '../game/storage';
-import { SEATS, SPEED, COUNTER_RANKS } from '../game/constants';
+import { SEATS, SPEED, COUNTER_RANKS, applySeatRoster, SEAT_CHAR } from '../game/constants';
 import { evaluateBid, chooseTrump, chooseDiscards, shouldGoDouble, laydownChallenge, aiPlay, aiConcede } from '../game/ai';
 import { saveTarget } from '../game/scoring';
 import { SoundEngine } from '../audio/sfx';
 import { createCutsceneManager, charOfClip } from '../game/cutsceneManager';
+import { getChar, seatCharsFromPlayer } from '../config/characters';
 
 // Convict-tuning renege probabilities per play (settings.convictRenege).
 const RENEGE_RATE = { off: 0, low: 0.02, high: 0.06 };
@@ -23,14 +24,17 @@ const CUTSCENE_TIER = {
   portal: 1, game_over_1: 1, game_over_2: 1,
   renege: 2, falseaccuse: 2, doolow_scene_renege: 2,
   hardset: 2, doolow_set: 2, papacap_set: 2, g2_hardset: 2,
+  babyboy_hardset: 2, scrap_hardset: 2,
   renege_lesson: 3, newbooty_intro: 3, g2_teeth: 3, g2_3bang: 3,
+  babyboy_taunt: 3, scrap_slam: 3,
   doolow_scene_takeover: 4, doolow_scene_cut: 4,
   papacap_scene_1: 5, papacap_scene_2: 5, papacap_scene_3: 5, papacap_scene_4: 5,
 };
 const tierOf = (key) => CUTSCENE_TIER[key] ?? 3;
 
 function aiBidAction(s, seat) {
-  const { maxBid } = evaluateBid(s.hands[seat], s.settings.bidBase, s.settings.difficulty, s.settings.convictBoldness);
+  const prof = getChar(SEAT_CHAR[seat]).aiProfile;
+  const { maxBid } = evaluateBid(s.hands[seat], s.settings.bidBase, s.settings.difficulty, s.settings.convictBoldness, prof.aggression);
   const nextVal = s.bid == null ? s.settings.bidBase : s.bid + 5;
   if (maxBid >= nextVal) return { type: 'PLACE_BID', seat };
   return { type: 'PASS', seat };
@@ -69,9 +73,7 @@ export function settlementCutscene(s) {
 
   // 4) Hard Set on a fully played-out hand — character-specific taunt for the busted bidder.
   if (s.result === 'hard' && s.playedOut) {
-    if (s.bidWinner === 'W') return { key: 'doolow_set' };
-    if (s.bidWinner === 'E') return { key: 'papacap_set' };
-    return { key: 'g2_hardset' };
+    return { key: getChar(SEAT_CHAR[s.bidWinner]).cutscenes.hardSet || 'hardset' };
   }
   // Any remaining early hard result is treated as a concession (safety net).
   if (s.result === 'hard') return { key: 'concession' };
@@ -147,7 +149,7 @@ function drive(s, dispatch, sound) {
         return setTimeout(() => {
           const meldTotal = s.meld[s.bidWinner]?.total || 0;
           const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
-          if (aiConcede(s.bidWinner, s.hands[s.bidWinner], s.trump, bench)) {
+          if (aiConcede(s.bidWinner, s.hands[s.bidWinner], s.trump, bench, getChar(SEAT_CHAR[s.bidWinner]).aiProfile.concessionRate)) {
             dispatch({ type: 'CONCEDE_PREPLAY', seat: s.bidWinner });
           } else {
             dispatch({ type: 'AI_CONCEDE_CHECKED' });
@@ -173,6 +175,8 @@ function drive(s, dispatch, sound) {
 
 export function useGame() {
   const [state, dispatch] = useReducer(reducer, undefined, initState);
+  // Keep the live seat->character roster in sync with the human's pick (opponents fixed).
+  applySeatRoster(seatCharsFromPlayer(state.settings.playerChar));
   const soundRef = useRef(null);
   if (!soundRef.current) soundRef.current = new SoundEngine();
   const prevPhase = useRef(state.phase);
@@ -249,7 +253,7 @@ export function useGame() {
         if (cs.key === 'renege' || cs.key === 'falseaccuse') {
           snd.renege();
           if (cs.key === 'renege') snd.tableSlamThunder();
-        } else if (cs.key === 'hardset' || cs.key === 'doolow_set' || cs.key === 'papacap_set' || cs.key === 'g2_hardset') snd.busted();
+        } else if (cs.key === 'hardset' || cs.key === 'doolow_set' || cs.key === 'papacap_set' || cs.key === 'g2_hardset' || cs.key === 'babyboy_hardset' || cs.key === 'scrap_hardset') snd.busted();
         else if (cs.key === 'sweep' || cs.key === 'portal') {
           snd.win();
           if (cs.key === 'portal') snd.portalHum();
@@ -341,24 +345,31 @@ export function useGame() {
     const plays = last?.plays || [];
     // Guard 4: the trick must actually contain played cards.
     if (plays.length === 0) return;
-    const w = last?.winner;
+    const won = last?.winner === 'P';
+    const pc = SEAT_CHAR.P; // the human's chosen character
 
-    // 1) G2 Ace Catch — G2 wins the trick WITH an Ace AND another player also played an Ace.
-    const g2AceCatch =
-      w === 'P' &&
+    // Signature-book detectors (only meaningful when the human wins the trick).
+    const aceCatch =
+      won &&
       plays.some((p) => p.seat === 'P' && p.card.rank === 'A') &&
       plays.some((p) => p.seat !== 'P' && p.card.rank === 'A');
-    // 2) G2 Three-Counter Take — G2 wins a trick containing 3+ counters (A / 10 / K).
     const counters = plays.filter((p) => COUNTER_RANKS.has(p.card.rank)).length;
-    const g2ThreeCounter = w === 'P' && counters >= 3;
+    const threeCounter = won && counters >= 3;
+    const lead = plays[0];
+    const pPlay = plays.find((p) => p.seat === 'P');
+    const trumpSlam = won && lead && lead.card.suit !== state.trump && pPlay && pPlay.card.suit === state.trump;
 
-    if (g2AceCatch) {
-      // Ace Catch takes priority over Three-Counter when both are true on the same trick.
-      requestCutscene('g2_teeth');
-      mgrRef.current.notePriority('g2_teeth');
-    } else if (g2ThreeCounter) {
-      requestCutscene('g2_3bang');
-      mgrRef.current.notePriority('g2_3bang');
+    // Each hustler earns a different immediate full-screen cutscene (bypasses cooldown).
+    let earned = null;
+    if (won) {
+      if (pc === 'g2') earned = aceCatch ? 'g2_teeth' : threeCounter ? 'g2_3bang' : null;
+      else if (pc === 'babyboy') earned = threeCounter ? 'babyboy_taunt' : null;
+      else if (pc === 'scrap') earned = trumpSlam || threeCounter ? 'scrap_slam' : null;
+    }
+
+    if (earned) {
+      requestCutscene(earned);
+      mgrRef.current.notePriority(earned);
     } else {
       requestFlair(state);
     }
@@ -379,7 +390,12 @@ export function useGame() {
     }
     if (aiRen.length > aiRenegeSeenRef.current) {
       aiRenegeSeenRef.current = aiRen.length;
-      if (Math.random() < 0.4) {
+      // Catch chance = the strongest renege detection among the non-offending seats
+      // (Scrap = 100%, so any renege at his table is always busted).
+      const offender = aiRen[aiRen.length - 1]?.seat;
+      const catchers = SEATS.filter((x) => x !== offender);
+      const chance = Math.max(0, ...catchers.map((x) => getChar(SEAT_CHAR[x]).aiProfile.renegeDetection));
+      if (Math.random() < chance) {
         const t = setTimeout(() => dispatch({ type: 'CALL_RENEGE' }), 550);
         return () => clearTimeout(t);
       }
@@ -388,10 +404,18 @@ export function useGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.trickReneges, state.phase, state.settings.difficulty]);
 
-  // A high AI contract is a personality (flair) opportunity — routed through the manager.
+  // A high contract fires a personality cutscene: an AI opponent routes through the
+  // ambient manager; the human as Baby Boy earns his taunt on a 90+ contract.
   useEffect(() => {
-    if (state.phase === 'trump' && state.bidWinner !== 'P' && (state.bid || 0) >= 90) {
-      requestFlair(state);
+    if (state.phase === 'trump' && (state.bid || 0) >= 90) {
+      if (state.bidWinner === 'P') {
+        if (SEAT_CHAR.P === 'babyboy') {
+          requestCutscene('babyboy_taunt');
+          mgrRef.current.notePriority('babyboy_taunt');
+        }
+      } else {
+        requestFlair(state);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
