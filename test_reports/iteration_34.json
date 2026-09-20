@@ -1,0 +1,82 @@
+{
+  "summary": "Frontend-only validation of the new 'Pick Your Hustler' feature + Unified Character Registry on Bus' a Lead. Verified 3-card HustlerSelect (G2/Baby Boy/Scrap), dynamic player-dock name+avatar, DooLow/PapaCap always seated as opponents, selection persistence across config reopen AND full page reload (localStorage), two full hands played to settlement as two different hustlers (Baby Boy then Scrap), cutscene event binding, Yard Reels regression (Play All + 4 new thumbnails). Zero uncaught console errors throughout.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "hustler_feature_validation": {
+    "config_screen": {
+      "hustler_select_visible": true,
+      "hustler_g2_card": true,
+      "hustler_babyboy_card": true,
+      "hustler_scrap_card": true,
+      "picker_shows_only_player_picks": true,
+      "picker_excludes_doolow_papacap": true,
+      "highlight_on_select": true
+    },
+    "dynamic_dock": {
+      "babyboy_dock_name": "Baby Boy",
+      "babyboy_avatar_src": "/assets/avatars/avatar_babyboy.png",
+      "scrap_dock_name": "Scrap",
+      "scrap_avatar_src": "contains 'scrap'",
+      "opponent_seat_W_label": "DooLow",
+      "opponent_seat_E_label": "PapaCap"
+    },
+    "persistence": {
+      "persists_across_config_reopen": true,
+      "persists_across_full_page_reload_localStorage": true
+    },
+    "full_hand_playthrough": {
+      "babyboy_hand_settled": true,
+      "scrap_hand_settled": true,
+      "settlement_modal_visible": true,
+      "no_softlock_or_crash": true
+    },
+    "cutscene_binding": {
+      "earned_clips_before_first_card": [],
+      "hard_fail_condition_met": false,
+      "cutscene_logs_captured": [
+        "doolow_set for Doolow (settlement)",
+        "concession for CRITICAL",
+        "papacap_scene_2 for PapaCap (ambient)",
+        "doolow_scene_takeover for Doolow (ambient)",
+        "concession for CRITICAL"
+      ],
+      "ambient_balanced_doolow_papacap_only": true,
+      "human_char_clips_in_ambient": false,
+      "note": "Across 2 full hands neither g2_teeth/g2_3bang/babyboy_taunt/scrap_slam fired — probabilistic/rare per spec (not a failure). Ambient balance shows DooLow (2) / PapaCap (1) — no PapaCap flood. Settlement 'doolow_set' fired for a DooLow hard-set, character-correct."
+    },
+    "yard_reels_regression": {
+      "cinematics_modal_opens": true,
+      "play_all_btn": true,
+      "reel_slideshow_starts": true,
+      "new_thumbnails": {
+        "cutscene_babyboy_taunt": true,
+        "cutscene_babyboy_hardset": true,
+        "cutscene_scrap_slam": true,
+        "cutscene_scrap_hardset": true
+      }
+    },
+    "console": {
+      "uncaught_errors": 0,
+      "pageerrors": 0
+    }
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "characters.js: seatCharsFromPlayer guard for west===pick / east===pick is technically dead code (west/east are hard-coded 'doolow'/'papacap' and PLAYER_PICKS excludes them). Harmless but can be simplified.",
+    "Modals.jsx HustlerSelect defaults to 'g2' if settings.playerChar is undefined which is correct; the setting flows through UPDATE_SETTINGS and is persisted via existing localStorage save (verified: Scrap survived a hard page reload).",
+    "Table.jsx correctly consumes SEAT_LABEL.P and SEAT_AVATAR.P for both desktop dock (seat-books-P) and mobile-g2-bar, so dynamic swap works across breakpoints.",
+    "Earned/hard-set cutscenes are probabilistic — recommend adding a deterministic dev-only trigger (e.g., ?force=babyboy_taunt) to speed up future QA of the new clip paths."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100% (all validation checks passed, 0 console errors)"},
+  "seed_data_creation": "localStorage cleared at test start; then reload used to verify Scrap pick survives via bust-a-lead-save-v1.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Feature is stable. Playwright flow: clear localStorage → wait for [data-testid=hustler-select] → click [data-testid=hustler-babyboy|scrap|g2] → click deal-btn → read [data-testid=seat-books-P] for name and [data-testid=player-avatar] src for portrait → seat-W/E texts always DooLow/PapaCap. Loop through cutscene-skip-btn / meld-phase-continue-btn / pass-btn / cards-in-player-hand to advance a full hand. Earned clips (g2_teeth/g2_3bang/babyboy_taunt/scrap_slam) did not sample in 2 hands — increase to 5+ hands per hustler for probabilistic coverage.",
+  "rca of the issue": "N/A — feature works as specified."
+}

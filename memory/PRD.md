@@ -504,6 +504,33 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Known harmless: a leftover { flair:true } arg is passed at some requestCutscene calls but flair is
   derived from tier (opts.flair unused) — no behavior impact.
 
+## Updates (2026-06 — Request 25: Unified Character Registry + "Pick Your Hustler")
+- NEW src/config/characters.js — CHARACTERS registry (g2, babyboy, scrap, doolow, papacap) with name,
+  moniker, avatar, aiProfile {aggression, concessionRate, renegeDetection}, and character-specific
+  cutscene keys. PLAYER_PICKS=[g2,babyboy,scrap]; DEFAULT_SEAT_CHARS {W:doolow,E:papacap,P:g2};
+  seatCharsFromPlayer(pick) (opponents fixed DooLow/PapaCap w/ same-character guard); getChar().
+- constants.js: SEAT_LABEL/SEAT_AVATAR/SEAT_MONIKER/SEAT_CHAR are now live mutable objects updated by
+  applySeatRoster(seatChars); useGame calls applySeatRoster(seatCharsFromPlayer(settings.playerChar))
+  every render, so all existing SEAT_LABEL[seat]/SEAT_AVATAR[seat] reads stay valid and swap dynamically.
+- Assets: generated 5 GTA-style portrait avatars -> /assets/avatars/avatar_{g2,babyboy,scrap,doolow,
+  papacap}.png. Added user cutscenes cutscene_babyboy_taunt/hardset + cutscene_scrap_slam/hardset
+  (mp4 + VP9/Opus webm) with FILE/BANNER/CUTSCENE_LIBRARY entries (also in Yard Reels).
+- ConfigScreen: new HustlerSelect (data-testid hustler-select, hustler-g2/babyboy/scrap) 3-card picker
+  (avatar+moniker+blurb) writing settings.playerChar (persisted). Player dock (Table.jsx desktop +
+  mobile-g2-bar) shows the picked character's name/avatar/bankroll dynamically.
+- AI: difficulty stays baseline, character profile layered on top — evaluateBid gets per-seat aggression
+  (aggAdj ~ -1..+1 steps), aiConcede gets per-character concessionRate, AI-on-AI renege catch chance =
+  max renegeDetection among non-offender seats (Scrap=100%). Signatures backward-compatible (defaults
+  keep all 14 jest tests green).
+- Cutscene binding (character-aware): hard set -> getChar(SEAT_CHAR[bidWinner]).cutscenes.hardSet
+  (scrap_hardset/babyboy_hardset/g2_hardset/doolow_set/papacap_set, fallback hardset); human earned
+  clips branch on SEAT_CHAR.P (g2->g2_teeth/g2_3bang, babyboy->babyboy_taunt on 3-counter book or 90+
+  bid, scrap->scrap_slam on trump-cut/3-counter book); all bypass ambient cooldown via requestCutscene+
+  notePriority and are excluded from the ambient rotation (still DooLow/PapaCap only).
+- Verified: 14/14 jest; testing agent iteration_34.json 100% — selector, dynamic dock, DooLow/PapaCap
+  fixed opponents, persistence across reload, 2 full hands settled as Baby Boy & Scrap, no earned clip
+  fired before first card, character-correct hard-set, 4 new Yard Reels thumbnails, 0 console errors.
+
 ## Updates (2026-06 — Request 24: Yard Reels "Play All" slideshow)
 - Added a "Play All" button (data-testid play-all-btn) to the CinematicsModal header (Modals.jsx). It
   starts an auto-advancing full-screen slideshow through the entire CUTSCENE_LIBRARY (30 clips).
