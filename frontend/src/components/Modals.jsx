@@ -223,14 +223,13 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
   return (
     <Overlay testid="config-screen">
       <div className="rounded-3xl overflow-hidden w-full max-w-lg pop-in max-h-[92vh] overflow-y-auto border-2 border-amber-600/50 bg-neutral-950 shadow-[0_0_0_2px_rgba(0,0,0,0.9),0_28px_70px_rgba(0,0,0,0.75)]">
-        <div className="relative">
+        <div className="relative aspect-video bg-neutral-950">
           <img
-            src="/assets/splash2_bal.png"
-            alt="Bus' a Lead — &quot;Behind the Wall&quot; yard card table"
+            src="/assets/images/title_splash.jpg"
+            alt="Bus' a Lead — Cutthroat Pinochle"
             data-testid="splash-hero"
-            className="w-full object-cover"
+            className="w-full h-full object-contain"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/10 to-transparent pointer-events-none" />
           <a
             data-testid="feedback-link-menu"
             href={FEEDBACK_URL}
@@ -241,13 +240,7 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
             Feedback
           </a>
         </div>
-        <div className="px-6 sm:px-8 pb-7 pt-2">
-          <div
-            className="text-center text-[11px] sm:text-xs font-sub font-bold uppercase tracking-[0.26em] text-amber-500/90 mb-5"
-            data-testid="gta-subtitle"
-          >
-            Cutthroat Pinochle • "Behind the Wall" Rules
-          </div>
+        <div className="px-6 sm:px-8 pb-7 pt-5">
           <div className="space-y-4">
             <HustlerSelect value={s.playerChar || 'g2'} onChange={(id) => set({ playerChar: id })} />
             <Choice

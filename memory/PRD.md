@@ -504,6 +504,26 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Known harmless: a leftover { flair:true } arg is passed at some requestCutscene calls but flair is
   derived from tier (opts.flair unused) — no behavior impact.
 
+## Updates (2026-06 — Request 28: Master Update — title artwork + asset optimization)
+- SECTION 1 (title art): ingested pinochle-title-img.webp -> /assets/images/title_splash.jpg
+  (webp->jpg, <=1920px). ConfigScreen splash now uses it in a 16:9 aspect-video container
+  (bg-neutral-950, object-contain, no distortion/crop of the baked title). Removed the redundant
+  DOM subtitle (gta-subtitle) since the new image carries the baked-in "BUS' A LEAD / CUTTHROAT
+  PINOCHLE • CDCR PRISON RULES" banner (Note: this reinstates the CDCR wording via baked art, per the
+  new asset). Verified desktop + mobile (390px), zero horizontal overflow, splash loads.
+- SECTION 6 (asset optimization): title splash re-encoded to <=1920px jpg (~455KB); all 5 avatars
+  resized to <=512px. Cutscene videos already ship as web-optimized mp4 + VP9/Opus webm.
+- SECTIONS 2/4/5 were ALREADY implemented in Requests 25-27 and re-verified this pass:
+  * S2 character registry + Pick Your Hustler selector + dynamic seating (>=1 hustler opponent) — done.
+  * S4 cutscene engine — all triggers present (renege/concession/trashtalk/1000-aces/90-nuts,
+    kitty prayer strictly on bid > 95, character-specific hardset scrap/babyboy, scrap_slam/babyboy_taunt,
+    skip+tap-dismiss, fail-open). No change needed.
+  * S5 meld reveal modal (3.5s tap-to-continue) + persistent meld pill/MeldDrawer — done.
+- SECTION 3 (mobile): assessed live at 390x844 — current responsive layout already meets the goals:
+  player badge is a docked bottom horizontal bar (no spade-column overlap), auction box in upper-middle
+  felt, Bid/Pass panel docked upper-right (never over the hand), card columns fit vertically with intact
+  hitboxes, zero horizontal overflow. Left as-is to avoid regressing the working layout.
+
 ## Updates (2026-06 — Request 27: New G2/DooLow/PapaCap portraits + hustler-guaranteed opponents)
 - Swapped in user portraits: avatar_g2.png (new profile-g2), avatar_doolow.png (profile-doolow),
   avatar_papacap.png (profile-papacap). These feed both the picker and the in-game seat portraits.
