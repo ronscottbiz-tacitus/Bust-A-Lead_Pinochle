@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SEAT_LABEL, SEATS } from '../game/constants';
-import { CHARACTERS, PLAYER_PICKS } from '../config/characters';
+import { CHARACTERS, PLAYER_PICKS, ROSTER_IDS, buildSeatChars } from '../config/characters';
 import { computeMeld } from '../game/meld';
 import { Card } from './Card';
 import { videoSources, CUTSCENE_LIBRARY } from './CutsceneOverlay';
@@ -217,9 +217,48 @@ function HustlerSelect({ value, onChange }) {
 }
 
 
+// Opponent seat picker — compact avatar chips for the 4 non-player characters. The chip the
+// OTHER seat is using is disabled to keep the three seats distinct.
+function OpponentSelect({ seat, label, value, candidates, disabledId, onChange }) {
+  return (
+    <div data-testid={`opp-select-${seat.toLowerCase()}`}>
+      <div className="text-[11px] font-sub font-black uppercase tracking-[0.22em] text-amber-500/90 mb-2">{label}</div>
+      <div className="grid grid-cols-4 gap-2">
+        {candidates.map((id) => {
+          const c = CHARACTERS[id];
+          const active = value === id;
+          const disabled = disabledId === id && !active;
+          return (
+            <button
+              key={id}
+              data-testid={`opp-${seat.toLowerCase()}-${id}`}
+              disabled={disabled}
+              onClick={() => onChange(id)}
+              className={`relative rounded-lg overflow-hidden border-2 text-center transition-all active:scale-95 ${
+                active
+                  ? 'border-amber-400 ring-1 ring-amber-400/60'
+                  : disabled
+                  ? 'border-zinc-800 opacity-30 cursor-not-allowed'
+                  : 'border-zinc-700 hover:border-amber-500/50 opacity-80 hover:opacity-100'
+              }`}
+            >
+              <div className="relative w-full aspect-square bg-zinc-900 overflow-hidden">
+                <img src={c.avatar} alt={c.name} className="absolute inset-0 w-full h-full object-cover" />
+              </div>
+              <div className="px-0.5 py-1 text-[9px] font-sub font-bold text-slate-200 truncate bg-zinc-950">{c.name}</div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function ConfigScreen({ state, act, onReplayTutorial }) {
   const s = state.settings;
   const set = (patch) => act({ type: 'UPDATE_SETTINGS', settings: patch });
+  const roster = buildSeatChars(s.playerChar || 'g2', s.oppW, s.oppE);
+  const oppCandidates = ROSTER_IDS.filter((id) => id !== (s.playerChar || 'g2'));
   return (
     <Overlay testid="config-screen">
       <div className="rounded-3xl overflow-hidden w-full max-w-lg pop-in max-h-[92vh] overflow-y-auto border-2 border-amber-600/50 bg-neutral-950 shadow-[0_0_0_2px_rgba(0,0,0,0.9),0_28px_70px_rgba(0,0,0,0.75)]">
@@ -243,6 +282,8 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
         <div className="px-6 sm:px-8 pb-7 pt-5">
           <div className="space-y-4">
             <HustlerSelect value={s.playerChar || 'g2'} onChange={(id) => set({ playerChar: id })} />
+            <OpponentSelect seat="W" label="Left Opponent" value={roster.W} candidates={oppCandidates} disabledId={roster.E} onChange={(id) => set({ oppW: id })} />
+            <OpponentSelect seat="E" label="Right Opponent" value={roster.E} candidates={oppCandidates} disabledId={roster.W} onChange={(id) => set({ oppE: id })} />
             <Choice
               label="Difficulty"
               testidPrefix="cfg-difficulty"

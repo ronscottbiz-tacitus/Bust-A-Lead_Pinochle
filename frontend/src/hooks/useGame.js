@@ -6,7 +6,7 @@ import { evaluateBid, chooseTrump, chooseDiscards, shouldGoDouble, laydownChalle
 import { saveTarget } from '../game/scoring';
 import { SoundEngine } from '../audio/sfx';
 import { createCutsceneManager, charOfClip } from '../game/cutsceneManager';
-import { getChar, seatCharsFromPlayer } from '../config/characters';
+import { getChar, buildSeatChars } from '../config/characters';
 
 // Convict-tuning renege probabilities per play (settings.convictRenege).
 const RENEGE_RATE = { off: 0, low: 0.02, high: 0.06 };
@@ -175,8 +175,8 @@ function drive(s, dispatch, sound) {
 
 export function useGame() {
   const [state, dispatch] = useReducer(reducer, undefined, initState);
-  // Keep the live seat->character roster in sync with the human's pick (opponents fixed).
-  applySeatRoster(seatCharsFromPlayer(state.settings.playerChar));
+  // Keep the live seat->character roster in sync with the human's pick + chosen opponents.
+  applySeatRoster(buildSeatChars(state.settings.playerChar, state.settings.oppW, state.settings.oppE));
   const soundRef = useRef(null);
   if (!soundRef.current) soundRef.current = new SoundEngine();
   const prevPhase = useRef(state.phase);

@@ -504,6 +504,18 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Known harmless: a leftover { flair:true } arg is passed at some requestCutscene calls but flair is
   derived from tier (opts.flair unused) — no behavior impact.
 
+## Updates (2026-06 — Request 29: Opponent Picker — hand-pick both rivals)
+- characters.js: new buildSeatChars(playerChar, oppW, oppE) resolves the full roster from explicit
+  opponent picks, falling back to the auto pairing for any unset/invalid choice and guaranteeing three
+  distinct seats (opponents never equal the human pick or each other). ROSTER_IDS exported.
+- reducer settings: added oppW / oppE (default null = auto). useGame now applies
+  buildSeatChars(playerChar, oppW, oppE) each render.
+- ConfigScreen: new OpponentSelect component (data-testid opp-select-w / opp-select-e, chips
+  opp-w-<id> / opp-e-<id>) — two rows of avatar chips for the 4 non-player characters; the chip the
+  other seat uses is disabled to prevent duplicates. Choices persist in settings.
+- Verified: 14/14 jest; live flow — picked Baby Boy (left) + PapaCap (right) as G2, seats in-game
+  matched exactly (Scrap absent), duplicate chip auto-disabled, player's own char excluded, no errors.
+
 ## Updates (2026-06 — Request 28: Master Update — title artwork + asset optimization)
 - SECTION 1 (title art): ingested pinochle-title-img.webp -> /assets/images/title_splash.jpg
   (webp->jpg, <=1920px). ConfigScreen splash now uses it in a 16:9 aspect-video container

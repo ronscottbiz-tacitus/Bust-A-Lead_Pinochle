@@ -77,3 +77,20 @@ export function seatCharsFromPlayer(playerChar = 'g2') {
   const opp = OPPONENTS[pick] || OPPONENTS.g2;
   return { P: pick, W: opp.W, E: opp.E };
 }
+
+// Full roster honoring hand-picked opponents (oppW / oppE). Any unset/invalid choice falls
+// back to the auto pairing; duplicates (with the human's pick or each other) are resolved so
+// the three seats are always distinct characters.
+export const ROSTER_IDS = Object.keys(CHARACTERS);
+
+export function buildSeatChars(playerChar = 'g2', oppW = null, oppE = null) {
+  const pick = CHARACTERS[playerChar] ? playerChar : 'g2';
+  const auto = OPPONENTS[pick] || OPPONENTS.g2;
+  const valid = (id) => id && id !== pick && CHARACTERS[id];
+  let W = valid(oppW) ? oppW : auto.W;
+  let E = valid(oppE) ? oppE : auto.E;
+  const pool = ROSTER_IDS.filter((id) => id !== pick);
+  if (W === pick || !CHARACTERS[W]) W = pool[0];
+  if (E === W || E === pick || !CHARACTERS[E]) E = pool.find((id) => id !== W) || auto.E;
+  return { P: pick, W, E };
+}

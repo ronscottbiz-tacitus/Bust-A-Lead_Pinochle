@@ -98,6 +98,8 @@ export function initState() {
       convictRenege: 'low',
       tutorialHints: false,
       playerChar: 'g2',
+      oppW: null,
+      oppE: null,
       ...(saved?.settings || {}),
     },
     bankrolls: saved?.bankrolls || { W: 100, E: 100, P: 100 },
