@@ -52,17 +52,21 @@ export function createCutsceneManager() {
   };
 
   // Request an ambient (AI-opponent) flair cutscene. Returns a clipId to play, or null.
-  // trick = monotonic trick index across the match; hand = hands-played index.
-  const requestFlair = ({ trick, hand }) => {
+  // trick = monotonic trick index across the match; hand = hands-played index;
+  // seated = manager-key character names currently seated as opponents (only these can taunt).
+  const requestFlair = ({ trick, hand, seated }) => {
     // 1) Global cooldown — at most one ambient cutscene every N tricks.
     if (trick - lastTrick < GLOBAL_TRICK_COOLDOWN) return null;
 
     // Anti-repeat — once every ambient clip has played, start a fresh cycle.
     if (AMBIENT_CLIPS.every((c) => played.has(c))) played = new Set();
 
-    // 2/3) Eligible characters: not locked out AND still holding an unplayed clip.
+    // 2/3) Eligible characters: seated as an opponent, not locked out, holding an unplayed clip.
     const eligible = CHARS.filter(
-      (c) => hand >= charUnlock[c] && CHAR_POOLS[c].some((clip) => !played.has(clip))
+      (c) =>
+        (!seated || seated.includes(c)) &&
+        hand >= charUnlock[c] &&
+        CHAR_POOLS[c].some((clip) => !played.has(clip))
     );
     if (eligible.length === 0) return null;
 

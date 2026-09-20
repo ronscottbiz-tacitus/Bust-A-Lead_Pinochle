@@ -504,6 +504,24 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Known harmless: a leftover { flair:true } arg is passed at some requestCutscene calls but flair is
   derived from tier (opts.flair unused) — no behavior impact.
 
+## Updates (2026-06 — Request 27: New G2/DooLow/PapaCap portraits + hustler-guaranteed opponents)
+- Swapped in user portraits: avatar_g2.png (new profile-g2), avatar_doolow.png (profile-doolow),
+  avatar_papacap.png (profile-papacap). These feed both the picker and the in-game seat portraits.
+- Opponent seating (characters.js seatCharsFromPlayer) now guarantees >=1 AI opponent is a hustler
+  (Scrap/G2/Baby Boy) via a deterministic OPPONENTS map: g2->{W:scrap,E:doolow},
+  babyboy->{W:scrap,E:papacap}, scrap->{W:babyboy,E:doolow}. Both OGs remain reachable; deterministic
+  per pick so seats never reshuffle mid-render. Character AI profiles auto-apply per seat (e.g. an AI
+  Scrap plays tight, never concedes, catches 100% of reneges).
+- Cutscene manager is now SEAT-AWARE: requestFlair takes `seated` (OG opponents actually at the table)
+  and only lets DooLow/PapaCap taunt when they're seated — fixes phantom PapaCap taunts when PapaCap
+  isn't in the game. Hard-set cutscenes already character-correct for any seat (AI Scrap set ->
+  scrap_hardset, AI Baby Boy set -> babyboy_hardset).
+- Verified: 14/14 jest; live table shows Scrap (L) + DooLow (R) + G2 (dock) with new art; full-hand
+  smoke ran clean — only doolow ambient taunt fired, zero phantom PapaCap, zero console errors.
+
+## Updates (2026-06 — Request 26: Pick Your Hustler portraits swapped)
+- Replaced hustler avatars with uploaded profile images: G2, Baby Boy, Scrap (backgrounds kept).
+
 ## Updates (2026-06 — Request 25: Unified Character Registry + "Pick Your Hustler")
 - NEW src/config/characters.js — CHARACTERS registry (g2, babyboy, scrap, doolow, papacap) with name,
   moniker, avatar, aiProfile {aggression, concessionRate, renegeDetection}, and character-specific

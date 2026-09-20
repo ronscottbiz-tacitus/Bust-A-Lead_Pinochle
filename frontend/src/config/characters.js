@@ -63,14 +63,17 @@ export const DEFAULT_SEAT_CHARS = { W: 'doolow', E: 'papacap', P: 'g2' };
 
 export const getChar = (id) => CHARACTERS[id] || CHARACTERS.g2;
 
-// Build the full seat roster from the human's pick. Opponents default to DooLow (W)
-// and PapaCap (E); the same-character guard keeps them distinct from the human's pick.
+// Build the full seat roster from the human's pick. At least one AI opponent is always
+// a hustler (Scrap / G2 / Baby Boy — one of the two the human didn't pick); the other is
+// an OG (DooLow or PapaCap). Deterministic per pick so seats never reshuffle mid-render.
+const OPPONENTS = {
+  g2: { W: 'scrap', E: 'doolow' },
+  babyboy: { W: 'scrap', E: 'papacap' },
+  scrap: { W: 'babyboy', E: 'doolow' },
+};
+
 export function seatCharsFromPlayer(playerChar = 'g2') {
   const pick = CHARACTERS[playerChar] ? playerChar : 'g2';
-  let west = 'doolow';
-  let east = 'papacap';
-  // Guard: never seat a clone of the human at the table.
-  if (west === pick) west = pick === 'doolow' ? 'papacap' : 'doolow';
-  if (east === pick || east === west) east = ['doolow', 'papacap'].find((c) => c !== pick && c !== west) || 'papacap';
-  return { P: pick, W: west, E: east };
+  const opp = OPPONENTS[pick] || OPPONENTS.g2;
+  return { P: pick, W: opp.W, E: opp.E };
 }

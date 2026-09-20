@@ -217,7 +217,10 @@ export function useGame() {
   const requestFlair = (s) => {
     const hand = s.stats?.handsPlayed ?? 0;
     const trick = hand * 25 + s.completedBooks.length;
-    const clip = mgrRef.current.requestFlair({ trick, hand });
+    // Only OG opponents (DooLow / PapaCap) actually seated can do ambient taunts.
+    const idToMgr = { doolow: 'Doolow', papacap: 'PapaCap' };
+    const seated = ['W', 'E'].map((seat) => idToMgr[SEAT_CHAR[seat]]).filter(Boolean);
+    const clip = mgrRef.current.requestFlair({ trick, hand, seated });
     if (!clip) return false;
     const character = charOfClip(clip);
     return requestCutscene(clip, { data: { banner: CHAR_BANNER[character] } });
