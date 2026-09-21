@@ -1,4 +1,4 @@
-# HereBus' A Lead: Cutthroat Pinochle
+# Bus' A Lead: Cutthroat Pinochle
 
 Live at pinochle.get2.one
 
