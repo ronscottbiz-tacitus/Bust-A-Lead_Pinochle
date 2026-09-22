@@ -4,7 +4,7 @@ import { CHARACTERS, PLAYER_PICKS, ROSTER_IDS, buildSeatChars } from '../config/
 import { computeMeld } from '../game/meld';
 import { Card } from './Card';
 import { videoSources, CUTSCENE_LIBRARY } from './CutsceneOverlay';
-import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers, Gavel, ShieldAlert, Film, SkipForward, ChevronLeft, ChevronRight, LayoutGrid, PlayCircle, Coins, Heart, ExternalLink, Flag } from 'lucide-react';
+import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers, Gavel, ShieldAlert, Film, SkipForward, ChevronLeft, ChevronRight, LayoutGrid, PlayCircle, Coins, Heart, Flag } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 
@@ -902,9 +902,11 @@ export function DedicationModal({ onPlayAgain, onClose }) {
               href={GET2_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="py-3 rounded-xl bg-zinc-900 border border-amber-500/50 text-amber-200 font-display font-bold uppercase tracking-wide hover:bg-zinc-800 active:scale-95 flex items-center justify-center gap-2"
+              aria-label="Visit Get2 Studios"
+              title="Visit Get2 Studios"
+              className="py-2 px-4 rounded-xl bg-zinc-900 border border-amber-500/50 hover:bg-zinc-800 hover:border-amber-400 active:scale-95 flex items-center justify-center transition-colors"
             >
-              Visit Get2 Studios <ExternalLink size={14} />
+              <img src="/assets/get2-logo.png" alt="Get2 Studios" className="h-9 w-auto object-contain" />
             </a>
           </div>
         </div>
