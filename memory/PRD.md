@@ -698,3 +698,5 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - `useViewport()` now exposes `landscape` (w > h && h < 520) and listens to `orientationchange`. Sideways phones get: compact mobile header + compact seats + slim Discard strip (`compact = mobile || landscape`), the FULL fan hand (`md` cards, flatter rot/lift, `bottom-2 pb-4`), the desktop-style player dock scaled 0.8 bottom-left, table zone `top-12 bottom-[96px] justify-end`, no bottom G2 bar / no suit matrix.
 - CSS media override `@media (orientation: landscape) and (max-height: 520px)`: `.action-rail` docks at top 140px; `.renege-fab` sits above the fan.
 - Verified at 844×390 and 667×375 (auction, discard, play) — fan fully inside viewport, zero overflow; live rotation back to 390×844 restores portrait layout.
+
+## Fix (2026-06): Double Pinochle = 30 (was 40) in `game/meld.js` PIN_PTS and the Rulebook Meld Values table; unit assertion added in engine.test.js.

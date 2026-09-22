@@ -579,7 +579,7 @@ const MELD_REF = [
   ['Trump Run (A 10 K Q J)', '15'],
   ['Double Trump Run', '150'],
   ['Pinochle (Q♠ + J♦)', '4'],
-  ['Double Pinochle', '40'],
+  ['Double Pinochle', '30'],
   ['Aces Around', '10'],
   ['Double Aces (1000)', '100'],
   ['Kings Around', '8'],

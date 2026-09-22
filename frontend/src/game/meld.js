@@ -65,7 +65,7 @@ export function computeMeld(hand, trump) {
   const pin = Math.min(cnt.S.Q, cnt.D.J);
   if (pin >= 1) {
     const n = Math.min(pin, 4);
-    const PIN_PTS = { 1: 4, 2: 40, 3: 90, 4: 300 };
+    const PIN_PTS = { 1: 4, 2: 30, 3: 90, 4: 300 };
     const PIN_NAME = { 1: 'Pinochle', 2: 'Double Pinochle', 3: 'Triple Pinochle (90 Nuts!)', 4: 'Quadruple Pinochle' };
     items.push({
       name: PIN_NAME[n],
