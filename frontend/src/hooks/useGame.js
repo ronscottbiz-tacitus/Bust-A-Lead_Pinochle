@@ -137,7 +137,8 @@ function drive(s, dispatch, sound) {
       if (pending.length) {
         const seat = pending[0];
         return setTimeout(() => {
-          const challenge = laydownChallenge(s.hands[seat], s.trump);
+          const bench = saveTarget({ bid: s.bid, meldTotal: s.meld[s.bidWinner]?.total || 0, goingDouble: s.goingDouble });
+          const challenge = laydownChallenge(s.hands[seat], s.trump, { bidderHand: s.hands[s.bidWinner], bench });
           dispatch({ type: 'LAYDOWN_RESPONSE', seat, challenge });
         }, d.think);
       }

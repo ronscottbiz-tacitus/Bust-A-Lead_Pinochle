@@ -1,8 +1,9 @@
 import { SUIT_BY_KEY, SEAT_LABEL } from '../game/constants';
-import { acesAround } from '../game/meld';
+import { acesAround, computeMeld } from '../game/meld';
+import { saveTarget, potentialLosers, laydownRoom, LAYDOWN_MARGIN } from '../game/scoring';
 import { Gavel, X, Check, Eye, EyeOff, Flag, Zap, LayoutGrid, Sparkles } from 'lucide-react';
 
-const Btn = ({ children, onClick, disabled, tone = 'cyan', testid, className = '' }) => {
+const Btn = ({ children, onClick, disabled, tone = 'cyan', testid, className = '', title }) => {
   const tones = {
     cyan: 'bg-cyan-500/15 border-cyan-400/60 text-cyan-200 hover:bg-cyan-500/25',
     gold: 'bg-yellow-500/15 border-yellow-400/60 text-yellow-200 hover:bg-yellow-500/25',
@@ -15,6 +16,7 @@ const Btn = ({ children, onClick, disabled, tone = 'cyan', testid, className = '
       data-testid={testid}
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className={`px-3 py-2 md:px-4 rounded-xl border font-sub font-semibold text-xs md:text-sm min-h-[40px] transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 ${tones[tone]} ${className}`}
     >
       {children}
@@ -98,6 +100,13 @@ export function ActionBar({ state, act }) {
   // DISCARD + PRE-PLAY DECLARATIONS (human bidder)
   if (s.phase === 'discard' && isBidder) {
     const count = s.discards.length;
+    // Lay-Down viability on the live kept hand: potential losers vs room (50 − bench − margin).
+    const discardSet = new Set(s.discards);
+    const kept = s.hands.P.filter((c) => !discardSet.has(c.id));
+    const bench = saveTarget({ bid: s.bid, meldTotal: computeMeld(kept, s.trump).total, goingDouble: s.goingDouble });
+    const losers = potentialLosers(kept, s.trump);
+    const room = laydownRoom(bench) - LAYDOWN_MARGIN;
+    const canLaydown = losers <= room;
     return (
       <Wrap pos="upper" hint={`Bury exactly 5 cards · selected ${count}/5`}>
         <Btn testid="expose-kitty-btn" tone="slate" onClick={() => act({ type: 'TOGGLE_EXPOSE' })}>
@@ -113,10 +122,12 @@ export function ActionBar({ state, act }) {
         </Btn>
         <Btn
           testid="laydown-btn"
-          tone={s.laydown ? 'fuchsia' : 'slate'}
+          tone={s.laydown && canLaydown ? 'fuchsia' : 'slate'}
+          disabled={!canLaydown}
+          title={canLaydown ? `Lay-Down is safe: ${losers} potential losers ≤ ${room} room` : `Not a Lay-Down hand: ${losers} potential losers > ${room} room`}
           onClick={() => act({ type: 'TOGGLE_LAYDOWN' })}
         >
-          <LayoutGrid size={16} /> Lay-Down {s.laydown ? '✓' : ''}
+          <LayoutGrid size={16} /> Lay-Down {s.laydown && canLaydown ? '✓' : ''}
         </Btn>
         <Btn
           testid="confirm-discard-btn"

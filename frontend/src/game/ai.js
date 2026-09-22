@@ -1,5 +1,6 @@
 import { SUIT_KEYS, TRICK_RANK, COUNTER_RANKS } from './constants';
 import { legalPlays, currentWinnerIndex } from './trick';
+import { potentialLosers, laydownRoom } from './scoring';
 
 function bySuit(hand) {
   const m = { S: [], H: [], D: [], C: [] };
@@ -109,10 +110,23 @@ export function aiConcede(seat, hand, trump, benchmark, concessionRate = null) {
 }
 
 // Defender decides whether to challenge an exposed lay-down.
-export function laydownChallenge(hand, trump) {
+// Defender response to a Lay-Down. The bidder's kept hand is face-up, so the defenders read
+// its potential losers against the room (TOTAL_POINTS − bench):
+//   pressure ≥ 0.85 → borderline claim, always challenge;
+//   pressure ≥ 0.65 → challenge only with a hand that can actually set (4+ trump / 5+ Aces);
+//   otherwise the lay-down is clearly good — concede.
+// Without bidder context (legacy callers) fall back to the raw hand-strength rule.
+export function laydownChallenge(hand, trump, ctx) {
   const trumpLen = hand.filter((c) => c.suit === trump).length;
   const aces = hand.filter((c) => c.rank === 'A').length;
-  return trumpLen >= 4 || aces >= 5;
+  const strong = trumpLen >= 4 || aces >= 5;
+  if (!ctx || !ctx.bidderHand) return strong;
+  const room = laydownRoom(ctx.bench);
+  if (room <= 0) return true;
+  const pressure = potentialLosers(ctx.bidderHand, trump) / room;
+  if (pressure >= 0.85) return true;
+  if (pressure >= 0.65) return strong;
+  return false;
 }
 
 function lowest(cards) {

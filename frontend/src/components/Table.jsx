@@ -4,11 +4,13 @@ import { SEAT_LABEL, SUIT_BY_KEY, SEATS, SUIT_KEYS, SEAT_AVATAR } from '../game/
 import { legalPlays } from '../game/trick';
 import { sortHand } from '../game/deck';
 import { computeMeld } from '../game/meld';
-import { saveTarget, booksToMake } from '../game/scoring';
+import { saveTarget, booksToMake, potentialLosers, laydownRoom, LAYDOWN_MARGIN } from '../game/scoring';
 import { AvatarTaunt } from './CutsceneOverlay';
 import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles, AlertTriangle, ChevronDown, MoreVertical, Film, Video, VideoOff, Flag } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
+// Books shown for a seat — the bidder's buried counters count toward the contract.
+const seatBooks = (s, seat) => (s.books[seat] || 0) + (seat === s.bidWinner ? s.buriedBooks || 0 : 0);
 const STAKE_LABEL = { 1: '$1/$2', 2: '$2/$4', 5: '$5/$10' };
 const CANTEEN_TIP = "Max Monthly Draw: $140. Don't lose your canteen.";
 
@@ -481,7 +483,7 @@ function Seat({ state, seat, corner, reaction, taunt, onTauntDone }) {
               )}
               {showBooks && (
                 <span data-testid={`seat-books-${seat}`} className="text-[9px] font-mono-stat text-cyan-300">
-                  Bk {s.books[seat]}{seat === s.bidWinner ? `/${bench}` : ''}
+                  Bk {seatBooks(s, seat)}{seat === s.bidWinner ? `/${bench}` : ''}
                 </span>
               )}
               <span data-testid={`facedown-fan-${seat}`} className="text-[9px] font-mono-stat text-slate-400">{count}♠</span>
@@ -604,7 +606,7 @@ function Seat({ state, seat, corner, reaction, taunt, onTauntDone }) {
           )}
           {showBooks && (
             <div data-testid={`seat-books-${seat}`} className="mt-0.5 text-[10px] font-mono-stat text-cyan-300">
-              Books: {s.books[seat]}
+              Books: {seatBooks(s, seat)}
               {seat === s.bidWinner ? ` / ${bench}` : ''}
             </div>
           )}
@@ -863,7 +865,7 @@ export function SaveHUD({ state }) {
       data-testid="save-hud"
       className="fixed top-[68px] left-1/2 -translate-x-1/2 z-30 glass rounded-xl px-3 py-2 flex flex-col items-center gap-1.5 w-[min(94vw,540px)]"
     >
-      <div className="flex items-center gap-2 sm:gap-3 text-[11px] font-mono-stat flex-wrap justify-center">
+      <div className="flex items-center gap-2 sm:gap-3 text-[11px] font-mono-stat flex-nowrap whitespace-nowrap justify-center">
         <span className="text-slate-300">
           Bid <b className="text-yellow-300">{s.bid}</b>
         </span>
@@ -910,6 +912,11 @@ export function DiscardHUD({ state }) {
   const booksToSave = Math.max(floor, diff);
   const safetyFloor = diff <= floor;
   const boardWarn = diff > 50;
+  // Lay-Down math on the live kept hand: potential losers vs room (50 − bench − margin).
+  const losers = potentialLosers(kept, s.trump);
+  const room = laydownRoom(booksToSave) - LAYDOWN_MARGIN;
+  const layOk = losers <= room;
+  const layCls = layOk ? 'border-fuchsia-400/70 bg-fuchsia-500/15 text-fuchsia-200' : 'border-slate-600 text-slate-400';
   // Mobile: a single slim strip directly under the header (seats sit below it).
   if (mobile) {
     return (
@@ -932,6 +939,9 @@ export function DiscardHUD({ state }) {
             <span data-testid="discard-books-to-save" className={`px-1.5 rounded border font-bold ${safetyFloor ? 'border-emerald-400/70 bg-emerald-500/15 text-emerald-200' : 'border-slate-600 text-slate-200'}`}>
               Save {booksToSave}{safetyFloor ? ' ✓' : ''}
             </span>
+            <span data-testid="discard-losers" title="Potential losers vs Lay-Down room" className={`px-1.5 rounded border font-bold ${layCls}`}>
+              Losers {losers}/{room}
+            </span>
             {safetyFloor && <span data-testid="safety-floor-badge" className="sr-only">Max Safety Floor</span>}
           </>
         )}
@@ -941,7 +951,7 @@ export function DiscardHUD({ state }) {
   return (
     <div
       data-testid="discard-hud"
-      className="fixed top-[68px] left-1/2 -translate-x-1/2 z-30 glass rounded-xl px-4 py-2.5 flex flex-col items-center gap-2 w-[min(94vw,560px)]"
+      className="fixed top-[68px] left-1/2 -translate-x-1/2 z-30 glass rounded-xl px-4 py-2.5 flex flex-col items-center gap-2 w-[min(94vw,680px)]"
     >
       <div className="flex items-center gap-2 sm:gap-3 text-[11px] font-mono-stat flex-wrap justify-center">
         <span className="text-slate-300">
@@ -961,6 +971,14 @@ export function DiscardHUD({ state }) {
           className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/50 text-emerald-200 font-bold"
         >
           Books to Save: {booksToSave}
+        </span>
+        <span className="text-slate-600">|</span>
+        <span
+          data-testid="discard-losers"
+          title="Potential losers (off-trump Q/J = 2, 10/K = 3) vs Lay-Down room (50 − bench − 4)"
+          className={`px-2 py-0.5 rounded border font-bold ${layCls}`}
+        >
+          Losers {losers}/{room}{layOk ? ' ✓ Lay-Down' : ''}
         </span>
       </div>
       {boardWarn ? (
@@ -1110,7 +1128,7 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
               </div>
               {showBooks && (
                 <div>
-                  Books: {s.books.P}
+                  Books: {seatBooks(s, 'P')}
                   {pBidder ? ` / ${bench}` : ''}
                 </div>
               )}
@@ -1193,7 +1211,7 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
             </span>
             {showBooks && (
               <span className="text-[12px] font-mono-stat text-cyan-300 whitespace-nowrap">
-                Bk {s.books.P}
+                Bk {seatBooks(s, 'P')}
                 {pBidder ? `/${bench}` : ''}
               </span>
             )}

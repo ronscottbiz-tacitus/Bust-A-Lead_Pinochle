@@ -2,7 +2,7 @@ import { SEATS, nextSeat, leftOf, isCounter, startingBankrolls } from './constan
 import { dealDeck } from './deck';
 import { computeMeld, acesAround, suitsWithMarriage } from './meld';
 import { legalPlays, currentWinnerIndex, trickBooks, renegeReason } from './trick';
-import { saveTarget } from './scoring';
+import { saveTarget, laydownSafe } from './scoring';
 import { loadSave } from './storage';
 
 const clone = (o) =>
@@ -160,6 +160,11 @@ function finalizeDiscard(s) {
     s.boardSet = true;
     s.result = 'hard';
     return settle(s);
+  }
+  // Lay-Down gate: a lay-down must be provably safe on the kept hand (potential losers vs room).
+  if (s.laydown) {
+    const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
+    if (!laydownSafe(s.hands[s.bidWinner], s.trump, bench)) s.laydown = false;
   }
   // Aces Around must be DECLARED before the bidder leads an Ace, or it is forfeited.
   const meld = s.meld[s.bidWinner];

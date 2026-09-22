@@ -705,3 +705,11 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - **Meld conventions (user-confirmed)**: Roundhouse 24 is flat — its K/Q are excluded from Kings/Queens Around (`roundhouseKQ` offset); extra K+Q pairs beyond the Roundhouse still score as marriages (bug fix). Arounds now tiered single/double/triple/quad: Aces 10/100/150/200, Kings 8/80/120/160, Queens 6/60/90/120, Jacks 4/40/60/80 (names `Triple Aces (150)` etc.; aces-detection regexes updated in reducer + useGame). Rulebook Meld Values lists all tiers + Triple/Quad Pinochle.
 - **Renege integrity**: `PLAY_CARD` now hard-guards `phase==='play' && !trickPending && turn===seat && seat holds card` — fixes false "renege" busts from stale double-taps (UI checked legality against the previous trick). Bust reasons now include the exact rule broken (`renegeReason`) in all difficulties. `CALL_RENEGE` ignored outside play.
 - 28/28 Jest (new: roundhouse absorption, double roundhouse, tiered arounds, out-of-turn guard).
+
+## Updates (2026-06 — Lay-Down Viability Heuristic + Buried Counters Display)
+- `scoring.js`: `TOTAL_POINTS=50`, `LAYDOWN_MARGIN=4`, `potentialLosers(hand,trump)` (off-trump Q/J=2, 10/K=3, A/trump=0), `laydownRoom(bench)=50−bench`, `laydownSafe()`.
+- **Gate (c)**: Lay-Down button disabled (tooltip explains) unless losers ≤ room−4 on the live kept hand; `finalizeDiscard` drops an unsafe `laydown` flag server-side too.
+- **AI challenge (c)**: `laydownChallenge(hand, trump, {bidderHand, bench})` reads the laid-down hand — pressure=losers/room: ≥0.85 always challenge; ≥0.65 challenge only if strong (4+ trump / 5+ Aces); else concede. useGame passes ctx.
+- **HUD (d)**: `discard-losers` chip "Losers X/Y ✓ Lay-Down" in desktop Discard HUD (nowrap, 680px) and mobile strip.
+- **Buried counters**: `seatBooks()` in Table.jsx adds `buriedBooks` to the bidder's displayed books everywhere (dock, seats, mobile bar, compact seat) — e.g. "Books: 4 / 20" right after burying 4 counters.
+- 32/32 Jest (`laydown.test.js` new: reference hand = 30 losers, safe/unsafe, AI pressure tiers, reducer gate).
