@@ -904,9 +904,9 @@ export function DedicationModal({ onPlayAgain, onClose }) {
               rel="noopener noreferrer"
               aria-label="Visit Get2 Studios"
               title="Visit Get2 Studios"
-              className="py-2 px-4 rounded-xl bg-zinc-900 border border-amber-500/50 hover:bg-zinc-800 hover:border-amber-400 active:scale-95 flex items-center justify-center transition-colors"
+              className="group py-2 px-4 rounded-xl bg-zinc-900 border border-amber-500/50 hover:bg-zinc-800 hover:border-amber-400 hover:shadow-[0_0_22px_rgba(251,191,36,0.45)] active:scale-95 flex items-center justify-center transition-[background-color,border-color,box-shadow,transform] duration-200"
             >
-              <img src="/assets/get2-logo.png" alt="Get2 Studios" className="h-9 w-auto object-contain" />
+              <img src="/assets/get2-logo.png" alt="Get2 Studios" className="h-9 w-auto object-contain transition-[filter,transform] duration-200 group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]" />
             </a>
           </div>
         </div>
