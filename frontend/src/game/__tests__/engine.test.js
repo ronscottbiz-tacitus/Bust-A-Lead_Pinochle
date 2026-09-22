@@ -68,8 +68,8 @@ test('full hand simulation reaches settlement with conserved bankroll', () => {
     expect(s.phase).toBe('settlement');
     expect(s.settlement).toBeTruthy();
     const total = SEATS.reduce((n, k) => n + s.bankrolls[k], 0);
-    // zero-sum transfers keep total at 300 unless a bankroll was clamped at 0 (game over)
-    if (!s.gameOver) expect(total).toBe(300);
+    // zero-sum transfers keep total at 420 unless a bankroll was clamped at 0 (game over)
+    if (!s.gameOver) expect(total).toBe(420);
     // A played-out (non-conceded) hand must complete 25 tricks
     if (s.result === 'made' || s.result === 'hard') {
       if (!s.boardSet) {
@@ -169,11 +169,11 @@ test('AI never sloughs off-suit while holding the led suit or trump (strict lega
   }
 });
 
-test('auction records a bid log and RESET_TABLE re-deals a fresh $100 table', () => {
+test('auction records a bid log and RESET_TABLE re-deals a fresh $140 table', () => {
   let s = playHand(initState());
   expect(s.bidLog.length).toBeGreaterThan(0);
   s = reducer(s, { type: 'RESET_TABLE' });
-  expect(s.bankrolls).toEqual({ W: 100, E: 100, P: 100 });
+  expect(s.bankrolls).toEqual({ W: 140, E: 140, P: 140 });
   expect(s.stats.handsPlayed).toBe(0);
   expect(s.dealer).toBe('P');
   expect(s.phase).toBe('dealing');

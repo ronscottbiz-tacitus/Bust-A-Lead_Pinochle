@@ -4,7 +4,7 @@ import { CHARACTERS, PLAYER_PICKS, ROSTER_IDS, buildSeatChars } from '../config/
 import { computeMeld } from '../game/meld';
 import { Card } from './Card';
 import { videoSources, CUTSCENE_LIBRARY } from './CutsceneOverlay';
-import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers, Gavel, ShieldAlert, Film, SkipForward, ChevronLeft, ChevronRight, LayoutGrid, PlayCircle } from 'lucide-react';
+import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers, Gavel, ShieldAlert, Film, SkipForward, ChevronLeft, ChevronRight, LayoutGrid, PlayCircle, Coins, Heart, ExternalLink, Flag } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 
@@ -168,6 +168,18 @@ const CFG_STAKES = [
   { value: 2, label: 'Mid $2/$4' },
   { value: 5, label: 'High $5/$10' },
 ];
+// "Skillz" — defensive tactical rating of the AI syndicate (independent of Difficulty).
+const CFG_SKILL = [
+  { value: 'dumptruck', label: 'Dump Truck' },
+  { value: 'alight', label: "Al'ight" },
+  { value: 'shooter', label: 'Shooter' },
+];
+const SKILL_BLURB = {
+  dumptruck: 'Casual · 65% Tactical Rating — plays selfish, bleeds counters, ignores partner voids.',
+  alight: "Standard · 75% Tactical Rating — runs the syndicate playbook most of the time.",
+  shooter: 'Cutthroat · 100% Tactical Rating — counter starvation, void cuts, ace-hunting. Every book.',
+};
+const GET2_URL = 'https://get2.one';
 
 const FEEDBACK_URL = 'https://forms.gle/j9aMWdxqwYjYWjzz5';
 
@@ -254,7 +266,7 @@ function OpponentSelect({ seat, label, value, candidates, disabledId, onChange }
   );
 }
 
-export function ConfigScreen({ state, act, onReplayTutorial }) {
+export function ConfigScreen({ state, act, onReplayTutorial, onOpenDedication }) {
   const s = state.settings;
   const set = (patch) => act({ type: 'UPDATE_SETTINGS', settings: patch });
   const roster = buildSeatChars(s.playerChar || 'g2', s.oppW, s.oppE);
@@ -291,6 +303,18 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
               onChange={(v) => set({ difficulty: v, tutorialHints: v === 'easy' })}
               options={CFG_DIFFICULTY}
             />
+            <div data-testid="skillz-section" className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-3 space-y-2">
+              <Choice
+                label="Skillz — Defensive AI"
+                testidPrefix="cfg-skill"
+                value={s.skill || 'alight'}
+                onChange={(v) => set({ skill: v })}
+                options={CFG_SKILL}
+              />
+              <div data-testid="skillz-blurb" className="text-[10px] font-sub text-rose-100/80 leading-snug">
+                {SKILL_BLURB[s.skill || 'alight']}
+              </div>
+            </div>
             {s.difficulty === 'hard' && (
               <div data-testid="convict-tuning-dial" className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-3">
                 <div className="text-[11px] font-sub uppercase tracking-widest text-amber-400/90 font-bold">
@@ -361,6 +385,9 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
               onChange={(v) => set({ stakesBase: v })}
               options={CFG_STAKES}
             />
+            <div data-testid="starting-bankroll-label" className="text-[11px] font-sub text-emerald-200/90 flex items-center gap-1.5 -mt-1">
+              <Coins size={12} className="text-yellow-400 shrink-0" /> Starting Bankroll: <b className="text-emerald-300">$140.00</b> (CDCR Max Monthly Canteen Draw)
+            </div>
           </div>
           <button
             data-testid="replay-tutorial-btn"
@@ -368,6 +395,13 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
             className="mt-4 w-full py-2.5 rounded-xl bg-cyan-500/15 border border-cyan-400/60 text-cyan-100 font-display font-bold tracking-wide flex items-center justify-center gap-2 hover:bg-cyan-500/25 transition-all active:scale-95"
           >
             <RotateCcw size={16} /> Replay Tutorial
+          </button>
+          <button
+            data-testid="dedication-btn-title"
+            onClick={onOpenDedication}
+            className="mt-2 w-full py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/50 text-amber-200 font-display font-bold tracking-wide flex items-center justify-center gap-2 hover:bg-amber-500/20 transition-all active:scale-95"
+          >
+            <Heart size={16} /> Yard Dedication
           </button>
           <button
             data-testid="deal-btn"
@@ -559,7 +593,7 @@ const MELD_REF = [
 const RULES = [
   'Deck: 80 cards (two pinochle decks, 9s removed). 4 copies of 10-J-Q-K-A in every suit.',
   'Book (card) rank high→low: A > 10 > K > Q > J.',
-  'Each player is dealt 25 cards; 5 go to the Kitty. Everyone starts with $100.',
+  'Each player is dealt 25 cards; 5 go to the Kitty. Everyone starts with $140 — the CDCR Maximum Monthly Canteen Draw.',
   'Bidding opens left of the dealer in $5 steps. If both opponents pass, the bid drops on the dealer at base.',
   'The winning bidder must expose a Marriage (K+Q) to name trump before touching the kitty. No marriage = Soft Set.',
   'Bidder takes the 5-card kitty (30 cards) then buries exactly 5 before card 1.',
@@ -569,7 +603,8 @@ const RULES = [
   'Books to Save = Max(20, Bid − Meld) — 31 floor if Going Double. Fewer books = Hard Set.',
   'Busting a lead (out of turn / renege / undeclared aces) = immediate Hard Set on the offender.',
   'Settlement (scaled by table stakes): Made +1/defender · Soft Set −1/defender · Hard Set −2/defender.',
-  'Multipliers compound: Going Double ×2 · Lay-Down Challenged ×2 · Spades Trump ×2.',
+  'Multipliers compound: Going Double ×2 · Lay-Down Challenged ×2 · Spades Trump ×2 (Double + Lay-Down in Spades = ×8).',
+  'Throw It In: the bidder may surrender a hand mid-play from the top bar — it settles as a full Hard Set (−2 per defender × multipliers).',
 ];
 
 export function StatsModal({ stats, onClose, onReset }) {
@@ -628,7 +663,7 @@ export function StatsModal({ stats, onClose, onReset }) {
   );
 }
 
-export function RulebookModal({ onClose }) {
+export function RulebookModal({ onClose, onOpenDedication }) {
   const [tab, setTab] = useState('rules');
   return (
     <Overlay testid="rulebook-modal">
@@ -641,7 +676,7 @@ export function RulebookModal({ onClose }) {
           <X size={16} />
         </button>
         <div className="font-display font-black text-xl text-amber-400 uppercase tracking-wide mb-3">Rulebook &amp; Meld Reference</div>
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 flex-wrap">
           {[
             ['rules', 'Rules'],
             ['meld', 'Meld Values'],
@@ -656,6 +691,15 @@ export function RulebookModal({ onClose }) {
               {label}
             </button>
           ))}
+          {onOpenDedication && (
+            <button
+              data-testid="dedication-btn-rules"
+              onClick={onOpenDedication}
+              className="ml-auto px-3 py-1.5 rounded-lg text-xs font-semibold border bg-amber-500/10 border-amber-500/50 text-amber-200 hover:bg-amber-500/20 flex items-center gap-1"
+            >
+              <Heart size={12} /> Yard Dedication
+            </button>
+          )}
         </div>
         {tab === 'rules' ? (
           <ol className="space-y-2 list-decimal list-inside">
@@ -748,7 +792,7 @@ export function NewGameConfirmModal({ onRedeal, onMainMenu, onCancel }) {
       <div className={`${GTA_PANEL} p-6 sm:p-7 w-full max-w-sm pop-in text-center`}>
         <RefreshCw size={36} className="mx-auto text-amber-400 mb-3" />
         <div className="font-display font-black text-xl text-amber-300 uppercase tracking-wide mb-2">New Game</div>
-        <p className="text-sm text-slate-300 mb-5">Choose how you want to restart. Both options reset all bankrolls to <b className="text-emerald-300">$100.00</b>.</p>
+        <p className="text-sm text-slate-300 mb-5">Choose how you want to restart. Both options reset all bankrolls to <b className="text-emerald-300">$140.00</b>.</p>
         <div className="flex flex-col gap-2.5">
           <button
             data-testid="redeal-table-btn"
@@ -774,6 +818,98 @@ export function NewGameConfirmModal({ onRedeal, onMainMenu, onCancel }) {
         </div>
       </div>
     </Overlay>
+  );
+}
+
+// "Throw It In" — 2-button confirmation before the bidder surrenders the hand as a Hard Set.
+export function ThrowInConfirmModal({ onCancel, onConfirm }) {
+  return (
+    <Overlay testid="throw-in-modal">
+      <div className={`${GTA_PANEL} p-6 sm:p-7 w-full max-w-sm pop-in text-center border-rose-500/60`}>
+        <Flag size={36} className="mx-auto text-rose-400 mb-3" />
+        <div className="font-display font-black text-xl text-rose-300 uppercase tracking-wide mb-2">Throw It In?</div>
+        <p className="text-sm text-slate-300 mb-5">
+          Surrender hand and concede <b className="text-rose-300">Hard Set</b> (−2× per defender, scaled by table stakes &amp; multipliers).
+        </p>
+        <div className="grid grid-cols-2 gap-2.5">
+          <button
+            data-testid="throw-in-cancel-btn"
+            onClick={onCancel}
+            className="py-3 rounded-xl bg-zinc-800 border border-zinc-600 text-slate-200 font-display font-bold uppercase tracking-wide hover:bg-zinc-700 active:scale-95"
+          >
+            Cancel
+          </button>
+          <button
+            data-testid="throw-in-confirm-btn"
+            onClick={onConfirm}
+            className="py-3 rounded-xl bg-rose-600 border-2 border-rose-300/50 text-white font-display font-black uppercase tracking-wide hover:bg-rose-500 active:scale-95 shadow-[0_4px_0_rgba(0,0,0,0.6)]"
+          >
+            Surrender Hand
+          </button>
+        </div>
+      </div>
+    </Overlay>
+  );
+}
+
+const DEDICATION_BODY = [
+  "'Bus' a Lead' isn't a studio concept or a generic card game. It is a living recreation of the games we played across concrete picnic tables inside California prisons—played for coffee, soup, and survival.",
+  'Every character at this table—G2, Baby Boy, Scrap—is a real man. We spent decades inside study-tanks reframing constraints into tools. Today, we are home. We are free, thriving with our families, and building software that matters.',
+  'To our brothers who lived the rules, kept their heads high, and made it across the line: this game is dedicated to you.',
+  'Thank you for pulling up to the table.',
+];
+
+// Post-match Dedication & Origin tribute (also reachable from the Title Screen + Rulebook).
+export function DedicationModal({ onPlayAgain, onClose }) {
+  return (
+    <div data-testid="dedication-modal" className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+      <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl border-2 border-amber-500/70 bg-neutral-950 shadow-[0_0_0_2px_rgba(0,0,0,0.9),0_30px_80px_rgba(0,0,0,0.85)] pop-in">
+        <div className="absolute inset-0 pointer-events-none opacity-[0.07] chain-link" />
+        <button
+          data-testid="dedication-close-btn"
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 p-1.5 rounded-lg bg-zinc-900 border border-amber-500/30 text-amber-200 hover:text-white"
+          aria-label="Close"
+        >
+          <X size={16} />
+        </button>
+        <div className="relative px-6 sm:px-8 pt-7 pb-6">
+          <div className="text-[10px] font-sub font-black uppercase tracking-[0.3em] text-amber-500/90 mb-2">BUS' A LEAD: DEDICATION &amp; ORIGIN</div>
+          <h2 data-testid="dedication-headline" className="font-display font-black text-base md:text-lg text-white leading-snug uppercase tracking-wide mb-5">
+            We played these hands when freedom felt like a myth.
+          </h2>
+          <div className="space-y-3.5">
+            {DEDICATION_BODY.map((p) => (
+              <p key={p.slice(0, 24)} className="text-sm text-slate-300 leading-relaxed font-sub">
+                {p}
+              </p>
+            ))}
+          </div>
+          <div className="mt-6 pl-4 border-l-2 border-amber-500/70 text-sm text-amber-100 font-sub">
+            <div className="font-display font-bold">— Ron Scott (G2)</div>
+            <div className="text-slate-400 text-xs mt-0.5">Founder, Get2 Studios | get2.one</div>
+          </div>
+          <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <button
+              data-testid="dedication-play-again-btn"
+              onClick={onPlayAgain}
+              className="py-3 rounded-xl bg-amber-500 border-2 border-black/70 text-black font-display font-black uppercase tracking-wide hover:bg-amber-400 active:scale-95 flex items-center justify-center gap-2 shadow-[0_5px_0_rgba(0,0,0,0.6)]"
+            >
+              <Play size={16} /> Play Again
+            </button>
+            <a
+              data-testid="dedication-get2-link"
+              href={GET2_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="py-3 rounded-xl bg-zinc-900 border border-amber-500/50 text-amber-200 font-display font-bold uppercase tracking-wide hover:bg-zinc-800 active:scale-95 flex items-center justify-center gap-2"
+            >
+              Visit Get2 Studios <ExternalLink size={14} />
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

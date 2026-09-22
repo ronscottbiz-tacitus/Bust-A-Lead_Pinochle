@@ -6,36 +6,36 @@ import { Card } from './Card';
 // (SPA 404 -> text/html) is skipped by the browser, falling back to the next
 // basename, then finally auto-dismissing so the game never blocks.
 const FILE = {
-  // Blocking (full-screen) — rare, major moments.
-  doolow_set: ['doolow_taunt_1'],
-  papacap_set: ['doolow_taunt_2'],
-  g2_hardset: ['papacap_taunt_2'],
+  // Blocking (full-screen) — rare, major moments. Pooled keys (sweep / renege / hardset /
+  // portal / game_over) receive their concrete clip from the CutsceneManager shuffle-bag via
+  // cutscene.data.clip; the list here is only the safety fallback.
   renege: ['g2_renege_2', 'g2_renege', 'cutscene_renege_busted'],
   falseaccuse: ['papacap_taunt_2', 'cutscene_trashtalk_smirk'],
   sweep: ['g2_sweep', 'canteen_sweep'],
   portal: ['g2_portal_2', 'g2_portal'],
+  game_over: ['game_over_1', 'game_over_2'],
   concession: ['cutscene_hand_concede'],
   aces1000: ['cutscene_1000_aces'],
   nuts90: ['cutscene_90_nuts'],
   kittyprayer: ['cutscene_kitty_prayer'],
-  hardset: ['cutscene_hardset_canteen'],
-  // Non-blocking taunt layer — frequent events (rendered in avatar frames / transparent overlay).
-  doolow_bid: ['doolow_taunt_2'],
-  papacap_bid: ['papacap_taunt_1'],
-  papacap_bigbid: ['papacap_taunt_2'],
+  hardset: ['cutscene_hardset_canteen', 'break_yo_self'],
+  // Ambient flair pools (DooLow / PapaCap) — rotated by the CutsceneManager.
   papacap_scene_1: ['papacap_scene_1'],
   papacap_scene_2: ['papacap_scene_2'],
   papacap_scene_3: ['papacap_scene_3'],
   papacap_scene_4: ['papacap_scene_4'],
+  papacap_taunt_1: ['papacap_taunt_1'],
+  papacap_taunt_2: ['papacap_taunt_2'],
+  doolow_scene_takeover: ['doolow_scene_takeover'],
+  doolow_scene_cut: ['doolow_scene_cut'],
+  doolow_scene_renege: ['doolow_scene_renege'],
+  doolow_taunt_1: ['doolow_taunt_1'],
+  doolow_taunt_2: ['doolow_taunt_2'],
+  // Earned signature moments + tutorial.
   g2_3bang: ['g2_3bang'],
   g2_teeth: ['g2_teeth'],
   newbooty_intro: ['g2_newbooty_intro'],
   renege_lesson: ['g2_renege_lesson'],
-  doolow_scene_takeover: ['doolow_scene_takeover'],
-  doolow_scene_cut: ['doolow_scene_cut'],
-  doolow_scene_renege: ['doolow_scene_renege'],
-  game_over_1: ['game_over_1'],
-  game_over_2: ['game_over_2'],
   // Character-specific cutscenes (Baby Boy / Scrap).
   babyboy_taunt: ['cutscene_babyboy_taunt'],
   babyboy_hardset: ['cutscene_babyboy_hardset'],
@@ -43,8 +43,9 @@ const FILE = {
   scrap_hardset: ['cutscene_scrap_hardset'],
 };
 
-export function sourcesFor(key) {
-  return (FILE[key] || []).flatMap((b) => [
+export function sourcesFor(key, clip) {
+  const bases = clip ? [clip] : FILE[key] || [];
+  return bases.flatMap((b) => [
     { src: `/assets/cutscenes/${b}.webm`, type: 'video/webm' },
     { src: `/assets/cutscenes/${b}.mp4`, type: 'video/mp4' },
   ]);
@@ -97,13 +98,11 @@ export const CUTSCENE_LIBRARY = [
 ];
 
 const BANNER = {
-  doolow_set: "DOOLOW GOT SET — TALKIN' NOISE ANYWAY",
-  papacap_set: 'SOMEBODY GOT SET IN THE YARD',
-  g2_hardset: "PAPACAP: \u201CBROUGHT THAT ASS TO THE GRINDER\u201D",
   renege: "RENEGE! CAUGHT SLIPPIN' IN THE YARD",
   falseaccuse: "PAPACAP: \u201CTHAT ALL YOU GOT?\u201D",
-  sweep: 'THE CANTEEN SWEEP — G2 CASHES OUT',
+  sweep: 'THE CANTEEN SWEEP — CONTRACT MADE',
   portal: 'THE GET 2 — MATCH WON',
+  game_over: 'MATCH OVER — THE YARD COLLECTS',
   concession: 'HAND CONCEDED',
   aces1000: '1,000 ACES — LEGEND DROP',
   nuts90: '90 NUTZ! TRIPLE PINOCHLE',
@@ -115,13 +114,15 @@ const BANNER = {
   papacap_scene_2: "PAPACAP TALKIN' NOISE",
   papacap_scene_3: "PAPACAP TALKIN' NOISE",
   papacap_scene_4: "PAPACAP TALKIN' NOISE",
+  papacap_taunt_1: "PAPACAP TALKIN' NOISE",
+  papacap_taunt_2: "PAPACAP TALKIN' NOISE",
   newbooty_intro: 'WELCOME TO THE YARD — NEW FISH 101',
   renege_lesson: 'RENEGE 101 — KNOW THE PENALTY',
   doolow_scene_takeover: 'DOOLOW SEIZES THE CONTRACT',
   doolow_scene_cut: 'DOOLOW CUTS — COUNTERS SNATCHED',
   doolow_scene_renege: 'DOOLOW CATCHES THE RENEGE',
-  game_over_1: 'THE GET-2 — MATCH WON',
-  game_over_2: 'THE GET-2 — MATCH WON',
+  doolow_taunt_1: "DOOLOW RUNNIN' HIS MOUTH",
+  doolow_taunt_2: "DOOLOW RUNNIN' HIS MOUTH",
   babyboy_taunt: "BABY BOY: \u201CTOO SMOOTH, HOMEY\u201D",
   babyboy_hardset: 'BABY BOY GOT SET — SMOOTH RUNS OUT',
   scrap_slam: 'SCRAP SLAMS THE TRUMP — CONCRETE',
@@ -173,7 +174,7 @@ export function CutsceneOverlay({ cutscene, onDone, muted = false }) {
       {/* Dark vignette backdrop behind the centered cinematic. */}
       <div className="absolute inset-0 bg-black/85" style={{ background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.94) 100%)' }} />
       <video
-        key={key}
+        key={cutscene?.data?.clip || key}
         autoPlay
         muted={muted}
         playsInline
@@ -191,7 +192,7 @@ export function CutsceneOverlay({ cutscene, onDone, muted = false }) {
         }}
         className="relative w-full h-full max-w-[100vw] max-h-[100vh] object-contain"
       >
-        {sourcesFor(key).map((s) => (
+        {sourcesFor(key, cutscene?.data?.clip).map((s) => (
           <source key={s.src} src={s.src} type={s.type} />
         ))}
       </video>

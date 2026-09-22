@@ -145,9 +145,118 @@ function pickStrongSuit(cards, trump) {
   return best;
 }
 
+// "Skillz" tactical rating: probability a defender executes the Anti-Bidder Syndicate
+// matrix on any given play (else it falls back to standard suit-following heuristics).
+export const SKILL_RATING = { dumptruck: 0.65, alight: 0.75, shooter: 1.0 };
+
+const isVoid = (voids, seat, suit) => !!(voids && voids[seat] && voids[seat].includes(suit));
+
+// Suit voids inferred from the public play log: a legal off-suit play on a non-lead means
+// that seat is out of the led suit (defenders track this for both partner and bidder).
+export function seatVoids(playLog = []) {
+  const v = { W: [], E: [], P: [] };
+  for (const e of playLog) {
+    if (e.playIndex > 0 && e.legal && e.card.suit !== e.leadCard.suit && !v[e.seat].includes(e.leadCard.suit)) v[e.seat].push(e.leadCard.suit);
+  }
+  return v;
+}
+const acesSeen = (played, suit) => (played || []).filter((id) => id.startsWith(`${suit}-A-`)).length;
+const nonCounters = (cards) => cards.filter((c) => !COUNTER_RANKS.has(c.rank));
+
+// Anti-Bidder Syndicate: coordinated defensive play against the bidder. Returns a card
+// or null (fall through to the standard heuristics).
+//   a. Counter Starvation  — never volunteer 10s/Ks under a bidder who still holds the master;
+//                            push Q/J to make him burn Aces for nothing.
+//   b. Void Exploitation   — lead a suit the partner is void in so he can cut the bidder's Ace.
+//   c. Ace-Hunting         — when the contract is on the line, take every book the bidder
+//                            is winning with the cheapest winner, even a low trump.
+function syndicatePlay(seat, hand, trick, trump, bidWinner, legal, played, ctx) {
+  const partner = ['W', 'E', 'P'].find((x) => x !== seat && x !== bidWinner);
+  const voids = ctx.voids || {};
+  const offSuit = legal.filter((c) => c.suit !== trump);
+
+  if (trick.length === 0) {
+    // b. Void exploitation — partner void (and bidder NOT void) in a side suit I hold.
+    for (const s of SUIT_KEYS) {
+      if (s === trump || !isVoid(voids, partner, s) || isVoid(voids, bidWinner, s)) continue;
+      const cards = offSuit.filter((c) => c.suit === s);
+      if (cards.length) {
+        const cheap = nonCounters(cards);
+        return lowest(cheap.length ? cheap : cards);
+      }
+    }
+    // a. Counter starvation — lead an Ace only where it is still the master and the bidder
+    //    must follow; otherwise push Queens / Jacks under him.
+    const safeAce = offSuit.find((c) => c.rank === 'A' && !isVoid(voids, bidWinner, c.suit) && acesSeen(played, c.suit) < 4);
+    if (safeAce) return safeAce;
+    const pushers = offSuit.filter((c) => c.rank === 'Q' || c.rank === 'J');
+    if (pushers.length) return lowest(pushers);
+    const cheap = nonCounters(legal);
+    if (cheap.length) return lowest(cheap);
+    return null;
+  }
+
+  const winIdx = currentWinnerIndex(trick, trump);
+  const winnerSeat = trick[winIdx].seat;
+  const winners = legal.filter((c) => wouldWin(c, trick, trump, seat));
+  const bidderToPlay = !trick.some((p) => p.seat === bidWinner);
+  const bidderWinning = winnerSeat === bidWinner;
+  const led = trick[0].card.suit;
+  const remaining = (ctx.bench ?? 20) - (ctx.bidderBooks ?? 0);
+  const onTheLine = remaining <= 6;
+
+  // c. Ace-hunting / book starvation — the bidder is winning: take it as cheaply as possible.
+  if (bidderWinning && winners.length) {
+    if (onTheLine) return lowest(winners);
+    const cheapWin = nonCounters(winners);
+    if (cheapWin.length) return lowest(cheapWin);
+    return lowest(winners);
+  }
+  // a. Counter starvation — the bidder still has to play behind me and the master of the
+  //    led suit is unaccounted for: do not volunteer a 10 / King he can snatch with an Ace.
+  if (bidderToPlay && !bidderWinning) {
+    const aceWin = winners.find((c) => c.rank === 'A');
+    if (aceWin && led === aceWin.suit) return aceWin;
+    const bidderMayHoldAce = led !== trump && acesSeen(played, led) < 4 && !isVoid(voids, bidWinner, led);
+    if (bidderMayHoldAce) {
+      const cheap = nonCounters(legal);
+      if (cheap.length) return lowest(cheap);
+    }
+  }
+  return null;
+}
+
+// Convict card-counting bidder lead (trump bleed) — unchanged strategy, extracted for clarity.
+function convictBidderLead(hand, legal, trump, played) {
+  const trumps = legal.filter((c) => c.suit === trump);
+  if (trumps.length) {
+    const myTrumps = hand.filter((c) => c.suit === trump).length;
+    const seenTrumps = (played || []).filter((id) => id[0] === trump).length;
+    const outstanding = Math.max(0, 20 - myTrumps - seenTrumps);
+    const topTrump = trumps.some((c) => c.rank === 'A' || c.rank === '10');
+    if (outstanding > 0 && (topTrump || trumps.length >= 3)) return highest(trumps);
+  }
+  const offAcesH = legal.filter((c) => c.rank === 'A' && c.suit !== trump);
+  if (offAcesH.length) return offAcesH[0];
+  return null;
+}
+
+// Naive play (New Fish / Dump Truck lapses): no cooperation, bleeds counters, selfish wins.
+function naivePlay(seat, legal, trick, trump) {
+  if (trick.length === 0) {
+    const nonCounter = nonCounters(legal);
+    return lowest(nonCounter.length ? nonCounter : legal);
+  }
+  const winnersE = legal.filter((c) => wouldWin(c, trick, trump, seat));
+  if (winnersE.length && Math.random() < 0.6) return lowest(winnersE);
+  const nonCounterE = nonCounters(legal);
+  return lowest(nonCounterE.length ? nonCounterE : legal);
+}
+
 // AI card selection during trick play. Defenders cooperate against the bidder.
 // `played` is the list of card ids seen so far this hand (for Convict card counting).
-export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit, difficulty = 'normal', played = [], renegeRate = 0.02) {
+// `ctx` = { voids: { seat: [suits] }, bidderBooks, bench, skill } — Skillz defensive context.
+export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit, difficulty = 'normal', played = [], renegeRate = 0.02, ctx = {}) {
   const legal = legalPlays(hand, trick, trump);
   if (legal.length === 1) return legal[0];
   const isDefender = bidWinner != null && seat !== bidWinner;
@@ -163,32 +272,25 @@ export function aiPlay(seat, hand, trick, trump, bidWinner, signalSuit, difficul
   }
 
   // Easy AI ("New Fish"): naive play, no defender cooperation or signalling.
-  if (difficulty === 'easy') {
-    if (trick.length === 0) {
-      const nonCounter = legal.filter((c) => !COUNTER_RANKS.has(c.rank));
-      return lowest(nonCounter.length ? nonCounter : legal);
+  if (difficulty === 'easy') return naivePlay(seat, legal, trick, trump);
+
+  // Skillz weighting — defenders roll against their tactical rating on every play.
+  if (isDefender) {
+    const rating = ctx.skill ? SKILL_RATING[ctx.skill] ?? 1 : 1;
+    const optimal = Math.random() < rating;
+    if (optimal) {
+      const pick = syndicatePlay(seat, hand, trick, trump, bidWinner, legal, played, ctx);
+      if (pick) return pick;
+    } else if (ctx.skill === 'dumptruck') {
+      return naivePlay(seat, legal, trick, trump);
     }
-    const winnersE = legal.filter((c) => wouldWin(c, trick, trump, seat));
-    if (winnersE.length && Math.random() < 0.6) return lowest(winnersE);
-    const nonCounterE = legal.filter((c) => !COUNTER_RANKS.has(c.rank));
-    return lowest(nonCounterE.length ? nonCounterE : legal);
   }
 
   if (trick.length === 0) {
     // Convict ("Yard Master"): bidder bleeds trump aggressively using card counting.
     if (difficulty === 'hard' && !isDefender) {
-      const trumps = legal.filter((c) => c.suit === trump);
-      if (trumps.length) {
-        // 20 trump cards exist (4× A,10,K,Q,J). Estimate how many the defenders still hold.
-        const myTrumps = hand.filter((c) => c.suit === trump).length;
-        const seenTrumps = (played || []).filter((id) => id[0] === trump).length;
-        const outstanding = Math.max(0, 20 - myTrumps - seenTrumps);
-        const topTrump = trumps.some((c) => c.rank === 'A' || c.rank === '10');
-        if (outstanding > 0 && (topTrump || trumps.length >= 3)) return highest(trumps);
-      }
-      // No trump left to strip — cash a guaranteed off-suit Ace for counters.
-      const offAcesH = legal.filter((c) => c.rank === 'A' && c.suit !== trump);
-      if (offAcesH.length) return offAcesH[0];
+      const lead = convictBidderLead(hand, legal, trump, played);
+      if (lead) return lead;
     }
     // Defender "come-back": lead the suit partner signalled for, if held.
     if (isDefender && signalSuit) {

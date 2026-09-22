@@ -1,19 +1,28 @@
 // Centralized cutscene rotation + cooldown manager.
 // Keeps AI-opponent taunts balanced (equal selection), throttled (global 3-trick
 // cooldown + per-character 2-round lockout) and non-repeating within a single match.
+// Also owns the anti-repeat "shuffle-bag" pools used by settlement / match-over clips.
 //
 // IMPORTANT: only the AI opponents (PapaCap, Doolow) participate in the ambient rotation.
 // G2's cutscenes are EARNED — g2_teeth / g2_3bang fire ONLY on their specific trick
-// achievements and g2_hardset only at settlement. They are NEVER selectable by requestFlair,
-// so they can never fire on load / during the auction.
+// achievements. They are NEVER selectable by requestFlair.
 
 export const CHAR_POOLS = {
-  PapaCap: ['papacap_scene_1', 'papacap_scene_2', 'papacap_scene_3', 'papacap_scene_4', 'papacap_set'],
-  Doolow: ['doolow_scene_takeover', 'doolow_scene_cut', 'doolow_scene_renege', 'doolow_set'],
+  PapaCap: ['papacap_scene_1', 'papacap_scene_2', 'papacap_scene_3', 'papacap_scene_4', 'papacap_taunt_1', 'papacap_taunt_2'],
+  Doolow: ['doolow_scene_takeover', 'doolow_scene_cut', 'doolow_scene_renege', 'doolow_taunt_1', 'doolow_taunt_2'],
+};
+
+// Shuffle-bag rotation pools (asset basenames) for logical settlement keys.
+export const ROTATION_POOLS = {
+  sweep: ['g2_sweep', 'canteen_sweep'],
+  renege: ['g2_renege_2', 'g2_renege', 'cutscene_renege_busted'],
+  hardset: ['cutscene_hardset_canteen', 'break_yo_self'],
+  portal: ['g2_portal_2', 'g2_portal'],
+  game_over: ['game_over_1', 'game_over_2'],
 };
 
 // G2 clips — logged + tracked for anti-repeat, but excluded from the ambient rotation.
-const G2_CLIPS = ['g2_3bang', 'g2_hardset', 'g2_teeth'];
+const G2_CLIPS = ['g2_3bang', 'g2_teeth'];
 
 const CHARS = Object.keys(CHAR_POOLS); // ambient rotation participants (PapaCap + Doolow)
 const AMBIENT_CLIPS = CHARS.flatMap((c) => CHAR_POOLS[c]);
@@ -28,21 +37,49 @@ const GLOBAL_TRICK_COOLDOWN = 3; // no ambient cutscene more than once per 3 tri
 const CHAR_ROUND_LOCKOUT = 2; // a character is locked out for the next 2 full rounds (hands)
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const shuffle = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
 
 export function createCutsceneManager() {
   let lastTrick = -Infinity; // global trick index of the last ambient cutscene
   let charUnlock = { PapaCap: 0, Doolow: 0 }; // hand index each character is free again
   let played = new Set(); // clips already played this match (anti-repeat)
+  let bags = {}; // pool -> remaining shuffled clips
+  let lastDrawn = {}; // pool -> last clip drawn (never repeated back-to-back)
 
   const reset = () => {
     lastTrick = -Infinity;
     charUnlock = { PapaCap: 0, Doolow: 0 };
     played = new Set();
+    bags = {};
+    lastDrawn = {};
   };
 
   const log = (clip, character) =>
     // eslint-disable-next-line no-console
     console.log(`[CutsceneManager] Triggered: ${clip} for ${character}`);
+
+  // Shuffle-bag draw: every clip in the pool plays once before any repeats, and a refilled
+  // bag never opens with the clip that just played. Returns an asset basename.
+  const rotate = (pool) => {
+    const clips = ROTATION_POOLS[pool];
+    if (!clips) return null;
+    if (!bags[pool] || bags[pool].length === 0) {
+      let bag = shuffle(clips);
+      if (clips.length > 1 && bag[0] === lastDrawn[pool]) bag = [...bag.slice(1), bag[0]];
+      bags[pool] = bag;
+    }
+    const clip = bags[pool].shift();
+    lastDrawn[pool] = clip;
+    log(clip, `POOL:${pool}`);
+    return clip;
+  };
 
   // Critical/contextual/earned cutscene fired outside the ambient rotation (settlement,
   // tutorial, meld milestones, G2 achievements). We record it for anti-repeat + log.
@@ -82,5 +119,5 @@ export function createCutsceneManager() {
     return clip;
   };
 
-  return { reset, requestFlair, notePriority };
+  return { reset, requestFlair, notePriority, rotate };
 }

@@ -15,7 +15,7 @@ export const CHARACTERS = {
     blurb: 'Calm, calculating, plays the long game.',
     avatar: '/assets/avatars/avatar_g2.png',
     aiProfile: { aggression: 0.65, concessionRate: 0.75, renegeDetection: 0.9 },
-    cutscenes: { hardSet: 'g2_hardset', win: 'sweep', taunt: 'g2_3bang', elimination: 'hardset', clutchWin: 'sweep' },
+    cutscenes: { hardSet: 'hardset', win: 'sweep', taunt: 'g2_3bang', elimination: 'hardset', clutchWin: 'sweep' },
   },
   babyboy: {
     id: 'babyboy',
@@ -42,7 +42,7 @@ export const CHARACTERS = {
     blurb: 'Balanced, mathematical, cuts his losses.',
     avatar: '/assets/avatars/avatar_doolow.png',
     aiProfile: { aggression: 0.65, concessionRate: 0.75, renegeDetection: 0.6 },
-    cutscenes: { hardSet: 'doolow_set' },
+    cutscenes: { hardSet: 'hardset' },
   },
   papacap: {
     id: 'papacap',
@@ -51,7 +51,7 @@ export const CHARACTERS = {
     blurb: 'Loose-aggressive OG who rides every contract out.',
     avatar: '/assets/avatars/avatar_papacap.png',
     aiProfile: { aggression: 0.75, concessionRate: 0.35, renegeDetection: 0.4 },
-    cutscenes: { hardSet: 'papacap_set' },
+    cutscenes: { hardSet: 'hardset' },
   },
 };
 

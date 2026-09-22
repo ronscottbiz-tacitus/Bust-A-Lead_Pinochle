@@ -13,6 +13,8 @@ import {
   YardCourtModal,
   MeldPhaseModal,
   CinematicsModal,
+  ThrowInConfirmModal,
+  DedicationModal,
 } from './components/Modals';
 import { legalPlays } from './game/trick';
 import { TABLE_BG_IMG } from './game/constants';
@@ -28,7 +30,7 @@ import { TutorialOverlay, RenegeNotice } from './components/Tutorial';
 const PLAYER_SEAT = ['P'];
 
 export default function BustALead() {
-  const { state, act, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt, lastCutscene, replayLastCutscene, playCutscene } = useGame();
+  const { state, act, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt, lastCutscene, replayLastCutscene, playCutscene, matchOutroDone } = useGame();
   const [showRules, setShowRules] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -36,11 +38,18 @@ export default function BustALead() {
   const [showMeld, setShowMeld] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
   const [showCinematics, setShowCinematics] = useState(false);
+  const [showThrowIn, setShowThrowIn] = useState(false);
+  const [showDedication, setShowDedication] = useState(false);
   const [renegeNotice, setRenegeNotice] = useState(false);
   const [tutorialKey, setTutorialKey] = useState(0);
   const introShownRef = useRef(false);
   const renegeLessonRef = useRef(false);
   const s = state;
+
+  // The final match outro just finished — roll the Dedication & Origin tribute.
+  useEffect(() => {
+    if (matchOutroDone) setShowDedication(true);
+  }, [matchOutroDone]);
 
   // New Fish match intro cinematic — once per session when a New Fish match launches.
   useEffect(() => {
@@ -112,6 +121,7 @@ export default function BustALead() {
             onNewGame={() => setShowNewGame(true)}
             onOpenMeld={() => setShowMeld(true)}
             onOpenCinematics={() => setShowCinematics(true)}
+            onThrowIn={() => setShowThrowIn(true)}
           />
           <Table state={s} onOpenHistory={() => setShowHistory(true)} taunt={taunt} onTauntDone={clearTaunt} />
           <HandTray state={s} onCardClick={onCardClick} />
@@ -124,6 +134,7 @@ export default function BustALead() {
         <ConfigScreen
           state={s}
           act={act}
+          onOpenDedication={() => setShowDedication(true)}
           onReplayTutorial={() => {
             introShownRef.current = false;
             renegeLessonRef.current = false;
@@ -133,7 +144,7 @@ export default function BustALead() {
         />
       )}
       {s.phase === 'settlement' && <SettlementModal state={s} act={act} onReplay={replayLastCutscene} canReplay={!!lastCutscene} />}
-      {showRules && <RulebookModal onClose={() => setShowRules(false)} />}
+      {showRules && <RulebookModal onClose={() => setShowRules(false)} onOpenDedication={() => { setShowRules(false); setShowDedication(true); }} />}
       {showStats && (
         <StatsModal
           stats={s.stats}
@@ -178,6 +189,24 @@ export default function BustALead() {
       )}
       <CutsceneOverlay cutscene={cutscene} onDone={clearCutscene} muted={s.settings.muteTaunts} />
       <TauntOverlay taunt={taunt} seats={PLAYER_SEAT} onDone={clearTaunt} />
+      {showThrowIn && (
+        <ThrowInConfirmModal
+          onCancel={() => setShowThrowIn(false)}
+          onConfirm={() => {
+            setShowThrowIn(false);
+            act({ type: 'THROW_IN' });
+          }}
+        />
+      )}
+      {showDedication && (
+        <DedicationModal
+          onClose={() => setShowDedication(false)}
+          onPlayAgain={() => {
+            setShowDedication(false);
+            if (s.phase !== 'config') act({ type: 'NEW_GAME' });
+          }}
+        />
+      )}
       {meldReveal && <MeldPhaseModal reveal={meldReveal} onClose={clearMeldReveal} />}
       <TutorialOverlay key={tutorialKey} state={s} />
       {renegeNotice && <RenegeNotice onDismiss={() => setRenegeNotice(false)} />}

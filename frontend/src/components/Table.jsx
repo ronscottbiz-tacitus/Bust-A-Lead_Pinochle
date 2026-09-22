@@ -6,10 +6,43 @@ import { sortHand } from '../game/deck';
 import { computeMeld } from '../game/meld';
 import { saveTarget, booksToMake } from '../game/scoring';
 import { AvatarTaunt } from './CutsceneOverlay';
-import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles, AlertTriangle, ChevronDown, MoreVertical, Film, Video, VideoOff } from 'lucide-react';
+import { Volume2, VolumeX, BookOpen, Coins, Layers, BarChart3, History, RefreshCw, Sparkles, AlertTriangle, ChevronDown, MoreVertical, Film, Video, VideoOff, Flag } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 const STAKE_LABEL = { 1: '$1/$2', 2: '$2/$4', 5: '$5/$10' };
+const CANTEEN_TIP = "Max Monthly Draw: $140. Don't lose your canteen.";
+
+// Compound stakes multiplier badge shown in the table status header.
+function MultiplierBadge({ mult, compact = false }) {
+  if (mult <= 1) return null;
+  return (
+    <span
+      data-testid="multiplier-badge"
+      className={`font-mono-stat font-black rounded-full border ${
+        mult >= 4 ? 'bg-rose-500/20 border-rose-400 text-rose-200 gold-pulse' : 'bg-fuchsia-500/20 border-fuchsia-400/70 text-fuchsia-200'
+      } ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px] lg:text-[11px] tracking-wide'}`}
+    >
+      {compact ? `×${mult}` : `[ MULTIPLIER: ${mult}x ]`}
+    </span>
+  );
+}
+
+// "Throw It In" — compact bidder-only forfeit control docked in the utility header.
+function ThrowInButton({ state, onThrowIn, compact = false }) {
+  if (state.phase !== 'play' || state.bidWinner !== 'P') return null;
+  return (
+    <button
+      data-testid="throw-in-btn"
+      onClick={onThrowIn}
+      title="Throw It In — surrender the hand (Hard Set)"
+      className={`rounded-md bg-rose-600/20 border border-rose-400/60 text-rose-200 hover:bg-rose-600/35 transition-colors flex items-center gap-1 font-bold ${
+        compact ? 'p-1.5' : 'px-2.5 py-2 text-[11px]'
+      }`}
+    >
+      <Flag size={compact ? 15 : 14} /> {!compact && <span className="hidden lg:inline">Throw It In</span>}
+    </button>
+  );
+}
 
 function useViewport() {
   const [vp, setVp] = useState(() => ({
@@ -129,7 +162,7 @@ function TrumpBadge({ trump }) {
   );
 }
 
-export function Header({ state, onToggleSound, onToggleTaunts, onOpenRules, onOpenStats, onNewGame, onOpenMeld, onOpenCinematics }) {
+export function Header({ state, onToggleSound, onToggleTaunts, onOpenRules, onOpenStats, onNewGame, onOpenMeld, onOpenCinematics, onThrowIn }) {
   const s = state;
   const { mobile } = useViewport();
   const [menu, setMenu] = useState(false);
@@ -164,12 +197,14 @@ export function Header({ state, onToggleSound, onToggleTaunts, onOpenRules, onOp
           className="flex items-center gap-1.5 text-[11px] font-mono-stat text-slate-200 bg-slate-900/70 rounded-full px-2.5 py-1 border border-slate-700"
         >
           <span className="text-emerald-300">Stake: ${pot}</span>
+          <MultiplierBadge mult={mult} compact />
           <span className="text-slate-600">•</span>
           <span style={{ color: su ? su.neon : '#64748b' }} className="text-sm font-black leading-none">
             {su ? su.symbol : '—'}
           </span>
         </div>
         <div className="flex items-center gap-1">
+          <ThrowInButton state={s} onThrowIn={onThrowIn} compact />
           {showMeldPill && (
             <button
               data-testid="meld-pill"
@@ -266,8 +301,8 @@ export function Header({ state, onToggleSound, onToggleTaunts, onOpenRules, onOp
           <span className="text-slate-600">•</span>
           <span className="text-slate-300">
             Table: {STAKE_LABEL[stakes] || `$${stakes}`}
-            {mult > 1 ? ` ×${mult}` : ''}
           </span>
+          <MultiplierBadge mult={mult} />
           {(s.phase === 'play' || s.phase === 'settlement') && (
             <>
               <span className="text-slate-600 hidden lg:inline">•</span>
@@ -321,6 +356,7 @@ export function Header({ state, onToggleSound, onToggleTaunts, onOpenRules, onOp
         >
           {s.settings.sound ? <Volume2 size={16} /> : <VolumeX size={16} />}
         </button>
+        <ThrowInButton state={s} onThrowIn={onThrowIn} />
         <button
           data-testid="taunt-audio-toggle"
           onClick={onToggleTaunts}
@@ -653,10 +689,12 @@ export function HandTray({ state, onCardClick }) {
   };
 
   // Mobile (<768px): 4-column vertical suit matrix pinned to the bottom, zero-scroll.
+  // Column height budget excludes the suit glyph row so 6–8 cards per suit never spill
+  // under the bottom status bar or open modals.
   if (isMobile) {
     const mdH = 74;
-    const availColH = Math.max(150, winH * 0.42 - 44);
-    const vStep = (m) => (m > 1 ? -Math.min(Math.max((m * mdH - availColH) / (m - 1), 26), mdH - 12) : 0);
+    const availColH = Math.max(140, winH * 0.42 - 52);
+    const vStep = (m) => (m > 1 ? -Math.min(Math.max((m * mdH - availColH) / (m - 1), 30), mdH - 12) : 0);
     return (
       <div
         data-testid="player-hand"
@@ -670,7 +708,7 @@ export function HandTray({ state, onCardClick }) {
             return (
               <div key={k} data-testid={`suit-col-${k}`} className="flex flex-col items-center overflow-hidden">
                 <div
-                  className={`text-sm font-black leading-none mb-0.5 ${k === s.trump ? 'gold-pulse rounded px-1' : ''}`}
+                  className={`text-xs font-black leading-none mb-0.5 ${k === s.trump ? 'gold-pulse rounded px-1' : ''}`}
                   style={{ color: k === s.trump ? '#facc15' : su.neon }}
                 >
                   {su.symbol}
@@ -932,9 +970,12 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
             </div>
             <div data-testid="seat-books-P" className="text-[11px] font-mono-stat text-cyan-300 leading-tight">
               <div className="text-slate-100 font-display font-black text-sm">{SEAT_LABEL.P}</div>
-              <div className="flex items-center gap-1 text-emerald-300">
+              <div className="flex items-center gap-1 text-emerald-300" title={CANTEEN_TIP} data-testid="bankroll-pill-P">
                 <Coins size={10} className="text-yellow-400" />
                 {money(s.bankrolls.P)}
+              </div>
+              <div data-testid="canteen-tip" className="text-[8px] font-sub text-slate-400/90 leading-none mt-0.5 whitespace-nowrap">
+                {CANTEEN_TIP}
               </div>
               {showBooks && (
                 <div>
@@ -1015,7 +1056,7 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
             )}
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <span data-testid="seat-books-P" className="text-[13px] font-mono-stat text-emerald-300 flex items-center gap-1">
+            <span data-testid="seat-books-P" title={CANTEEN_TIP} className="text-[13px] font-mono-stat text-emerald-300 flex items-center gap-1">
               <Coins size={11} className="text-yellow-400" />
               {money(s.bankrolls.P)}
             </span>

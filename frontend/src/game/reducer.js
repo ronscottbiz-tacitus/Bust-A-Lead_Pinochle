@@ -1,4 +1,4 @@
-import { SEATS, nextSeat, leftOf, isCounter } from './constants';
+import { SEATS, nextSeat, leftOf, isCounter, startingBankrolls } from './constants';
 import { dealDeck } from './deck';
 import { computeMeld, acesAround, suitsWithMarriage } from './meld';
 import { legalPlays, currentWinnerIndex, trickBooks, renegeReason } from './trick';
@@ -79,6 +79,7 @@ function emptyRound() {
     playLog: [],
     aiConcedeChecked: false,
     playedOut: false,
+    thrownIn: false,
   };
 }
 
@@ -100,9 +101,10 @@ export function initState() {
       playerChar: 'g2',
       oppW: null,
       oppE: null,
+      skill: 'alight',
       ...(saved?.settings || {}),
     },
-    bankrolls: saved?.bankrolls || { W: 100, E: 100, P: 100 },
+    bankrolls: saved?.bankrolls || startingBankrolls(),
     dealer: saved?.dealer || 'P',
     stats: { ...clone(EMPTY_STATS), ...(saved?.stats || {}) },
     ...emptyRound(),
@@ -248,7 +250,7 @@ function computeSettlement(s) {
       label = 'Soft Set (Conceded)';
     } else {
       unit = -2;
-      label = 'Hard Set';
+      label = s.thrownIn ? 'Threw It In — Hard Set' : 'Hard Set';
     }
     const per = unit * mult * stakes;
     for (const d of defenders) {
@@ -330,7 +332,7 @@ export function reducer(state, action) {
       return s;
 
     case 'NEW_GAME':
-      s.bankrolls = { W: 100, E: 100, P: 100 };
+      s.bankrolls = startingBankrolls();
       s.dealer = 'P';
       s.stats = clone(EMPTY_STATS);
       s.phase = 'config';
@@ -342,7 +344,7 @@ export function reducer(state, action) {
       return s;
 
     case 'RESET_TABLE':
-      s.bankrolls = { W: 100, E: 100, P: 100 };
+      s.bankrolls = startingBankrolls();
       s.dealer = 'P';
       s.stats = clone(EMPTY_STATS);
       return dealRound(s);
@@ -410,6 +412,16 @@ export function reducer(state, action) {
     case 'CONCEDE_PREPLAY':
       s.result = 'soft';
       s.conceded = true;
+      return settle(s);
+
+    // "Throw It In" — the human bidder surrenders mid-hand and eats a full Hard Set.
+    case 'THROW_IN':
+      if (s.phase !== 'play' || s.bidWinner !== 'P') return state;
+      s.result = 'hard';
+      s.conceded = true;
+      s.thrownIn = true;
+      s.trickPending = false;
+      s.turn = null;
       return settle(s);
 
     case 'LAYDOWN_RESPONSE': {
