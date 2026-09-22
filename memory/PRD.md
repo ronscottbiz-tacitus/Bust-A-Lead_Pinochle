@@ -684,3 +684,12 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - P1: Upload `get2_chopper.mp4/.webm` and wire a `chopper` key (P ≤ $0) if desired.
 - P2: Refactor `Modals.jsx` (>1300 lines) / `Table.jsx` / `ActionBar.jsx` (deferred to protect stability).
 - Known false-positives: `useGame.js` hook deps and `storage.js` localStorage warnings — do NOT "fix".
+
+## Updates (2026-06 — Mobile Optimization Pass)
+- **Action panels**: `ActionBar` Wrap now a full-width flex rail (`fixed inset-x-0`) — fixes a latent bug where the `float-up` keyframe `transform` cancelled `-translate-x-1/2` (panels were off-center on ALL sizes). Mobile (<768) docks every panel at `top-[136px]` between seats and felt; `md:` restores desktop placements. Buttons min-h-40px.
+- **Compact mobile seats**: horizontal avatar+stats card (no face-down fan; count pill keeps `facedown-fan-*` testid), corners `top-9 left-1/right-1`, bubbles below the card.
+- **Table zone (mobile)**: `top-12 bottom-[calc(40%+3.5rem)] justify-end` so the center felt/kitty/trick sits just above the hand; hand tray `h-[40%]`; CenterArea 240×172 on mobile.
+- **HUDs**: SaveHUD hidden on mobile (header book pill carries it); DiscardHUD is a slim 32px strip under the header on mobile (`discard-hud`, keeps discard-* testids; board-set warning inline).
+- **Header (mobile)**: 36px tap targets, Yard Reels moved into the kebab menu (`cinematics-btn` still present), compact stake pill (nowrap), throw-in 36px.
+- **Config**: Choice buttons 44px tall on mobile; Feedback link padded; Settlement modal `max-h-[92vh] overflow-y-auto`; Call Renege button lifted above the hand on mobile.
+- Verified via Playwright at 390×844: config, auction, trump, discard, play (bidder + trick), settlement — no overlaps, zero horizontal overflow; desktop auction panel centered at x=960.

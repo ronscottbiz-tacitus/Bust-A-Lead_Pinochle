@@ -109,7 +109,7 @@ function Choice({ label, options, value, onChange, testidPrefix }) {
             key={o.value}
             data-testid={`${testidPrefix}-${o.value}`}
             onClick={() => onChange(o.value)}
-            className={`px-2 py-2 rounded-lg border text-xs font-bold transition-all active:scale-95 ${
+            className={`px-2 py-3 md:py-2 min-h-[44px] md:min-h-0 rounded-lg border text-xs font-bold transition-all active:scale-95 ${
               value === o.value
                 ? 'bg-amber-500 border-amber-400 text-black shadow-[0_3px_0_rgba(0,0,0,0.6)]'
                 : 'bg-neutral-900/80 border-neutral-700 text-neutral-300 hover:border-neutral-500'
@@ -286,7 +286,7 @@ export function ConfigScreen({ state, act, onReplayTutorial, onOpenDedication })
             href={FEEDBACK_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="absolute bottom-2 right-3 z-10 text-xs font-sub font-bold text-amber-300/90 hover:text-amber-200 underline underline-offset-2 decoration-amber-400/50 hover:decoration-amber-300 transition-colors"
+            className="absolute bottom-1 right-1 z-10 px-3 py-2 text-xs font-sub font-bold text-amber-300/90 hover:text-amber-200 underline underline-offset-2 decoration-amber-400/50 hover:decoration-amber-300 transition-colors"
           >
             Feedback
           </a>
@@ -425,7 +425,7 @@ export function SettlementModal({ state, act, onReplay, canReplay }) {
   return (
     <Overlay testid="settlement-modal">
       <div
-        className={`rounded-3xl p-6 sm:p-8 w-full max-w-md pop-in border-2 ${
+        className={`rounded-3xl p-5 sm:p-8 w-full max-w-md max-h-[92vh] overflow-y-auto pop-in border-2 ${
           busted
             ? 'bg-gradient-to-b from-red-950 to-slate-950 border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.6)]'
             : win

@@ -35,11 +35,11 @@ function ThrowInButton({ state, onThrowIn, compact = false }) {
       data-testid="throw-in-btn"
       onClick={onThrowIn}
       title="Throw It In — surrender the hand (Hard Set)"
-      className={`rounded-md bg-rose-600/20 border border-rose-400/60 text-rose-200 hover:bg-rose-600/35 transition-colors flex items-center gap-1 font-bold ${
-        compact ? 'p-1.5' : 'px-2.5 py-2 text-[11px]'
+      className={`rounded-lg bg-rose-600/20 border border-rose-400/60 text-rose-200 hover:bg-rose-600/35 transition-colors flex items-center justify-center gap-1 font-bold ${
+        compact ? 'w-9 h-9' : 'px-2.5 py-2 text-[11px] rounded-md'
       }`}
     >
-      <Flag size={compact ? 15 : 14} /> {!compact && <span className="hidden lg:inline">Throw It In</span>}
+      <Flag size={compact ? 16 : 14} /> {!compact && <span className="hidden lg:inline">Throw It In</span>}
     </button>
   );
 }
@@ -194,54 +194,61 @@ export function Header({ state, onToggleSound, onToggleTaunts, onOpenRules, onOp
         </a>
         <div
           data-testid="mobile-status-pill"
-          className="flex items-center gap-1.5 text-[11px] font-mono-stat text-slate-200 bg-slate-900/70 rounded-full px-2.5 py-1 border border-slate-700"
+          className="flex items-center gap-1 text-[10px] font-mono-stat text-slate-200 bg-slate-900/70 rounded-full px-2 h-8 border border-slate-700 min-w-0 whitespace-nowrap shrink"
         >
-          <span className="text-emerald-300">Stake: ${pot}</span>
+          <span className="text-emerald-300">${pot}</span>
           <MultiplierBadge mult={mult} compact />
           <span className="text-slate-600">•</span>
           <span style={{ color: su ? su.neon : '#64748b' }} className="text-sm font-black leading-none">
             {su ? su.symbol : '—'}
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <ThrowInButton state={s} onThrowIn={onThrowIn} compact />
           {showMeldPill && (
             <button
               data-testid="meld-pill"
               onClick={onOpenMeld}
-              className="px-2 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 border border-amber-400/60 text-amber-200"
+              className="h-9 px-2 rounded-lg text-[11px] font-bold bg-amber-500/15 border border-amber-400/60 text-amber-200"
             >
               {pillTotal}p
             </button>
           )}
-          <button data-testid="cinematics-btn" onClick={onOpenCinematics} className="p-1.5 rounded-md bg-amber-500/15 border border-amber-400/50 text-amber-200" aria-label="Yard Reels">
-            <Film size={15} />
+          <button data-testid="rules-btn" onClick={onOpenRules} className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-800/70 border border-slate-700 text-slate-300 active:bg-slate-700" aria-label="Rules">
+            <BookOpen size={17} />
           </button>
-          <button data-testid="rules-btn" onClick={onOpenRules} className="p-1.5 rounded-md bg-slate-800/70 border border-slate-700 text-slate-300">
-            <BookOpen size={15} />
-          </button>
-          <button data-testid="stats-btn" onClick={onOpenStats} className="p-1.5 rounded-md bg-slate-800/70 border border-slate-700 text-slate-300">
-            <BarChart3 size={15} />
+          <button data-testid="stats-btn" onClick={onOpenStats} className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-800/70 border border-slate-700 text-slate-300 active:bg-slate-700" aria-label="Stats">
+            <BarChart3 size={17} />
           </button>
           <div className="relative">
-            <button data-testid="menu-btn" onClick={() => setMenu((m) => !m)} className="p-1.5 rounded-md bg-slate-800/70 border border-slate-700 text-slate-300">
-              <MoreVertical size={15} />
+            <button data-testid="menu-btn" onClick={() => setMenu((m) => !m)} className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-800/70 border border-slate-700 text-slate-300 active:bg-slate-700" aria-label="Menu">
+              <MoreVertical size={17} />
             </button>
             {menu && (
-              <div className="absolute right-0 top-9 z-50 w-40 glass rounded-xl border border-white/10 p-1.5 flex flex-col gap-1">
+              <div className="absolute right-0 top-11 z-50 w-48 glass rounded-xl border border-white/10 p-1.5 flex flex-col gap-0.5">
+                <button
+                  data-testid="cinematics-btn"
+                  onClick={() => {
+                    setMenu(false);
+                    onOpenCinematics();
+                  }}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-amber-200 hover:bg-white/5"
+                >
+                  <Film size={15} /> Yard Reels
+                </button>
                 <button
                   data-testid="sound-toggle"
                   onClick={onToggleSound}
-                  className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-slate-200 hover:bg-white/5"
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-slate-200 hover:bg-white/5"
                 >
-                  {s.settings.sound ? <Volume2 size={14} /> : <VolumeX size={14} />} Sound: {s.settings.sound ? 'On' : 'Off'}
+                  {s.settings.sound ? <Volume2 size={15} /> : <VolumeX size={15} />} Sound: {s.settings.sound ? 'On' : 'Off'}
                 </button>
                 <button
                   data-testid="taunt-audio-toggle"
                   onClick={onToggleTaunts}
-                  className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-slate-200 hover:bg-white/5"
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-slate-200 hover:bg-white/5"
                 >
-                  {s.settings.muteTaunts ? <VideoOff size={14} /> : <Video size={14} />} Cutscenes: {s.settings.muteTaunts ? 'Muted' : 'On'}
+                  {s.settings.muteTaunts ? <VideoOff size={15} /> : <Video size={15} />} Cutscenes: {s.settings.muteTaunts ? 'Muted' : 'On'}
                 </button>
                 <button
                   data-testid="new-game-header-btn"
@@ -249,17 +256,17 @@ export function Header({ state, onToggleSound, onToggleTaunts, onOpenRules, onOp
                     setMenu(false);
                     onNewGame();
                   }}
-                  className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-fuchsia-200 hover:bg-fuchsia-500/10"
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-fuchsia-200 hover:bg-fuchsia-500/10"
                 >
-                  <RefreshCw size={14} /> New Game
+                  <RefreshCw size={15} /> New Game
                 </button>
               </div>
             )}
           </div>
         </div>
         {(s.phase === 'play' || s.phase === 'settlement') && (
-          <div className="absolute top-12 inset-x-0 flex justify-center pointer-events-none">
-            <div className="mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono-stat bg-slate-900/80 border border-slate-700 text-slate-200">
+          <div className="absolute top-12 inset-x-0 h-8 flex items-center justify-center pointer-events-none">
+            <div data-testid="mobile-book-pill" className="px-2.5 py-0.5 rounded-full text-[10px] font-mono-stat bg-slate-900/80 border border-slate-700 text-slate-200">
               Book {Math.min(s.trickNo, 25)}/25 · Bidder {bidderBooks}/{bench}
             </div>
           </div>
@@ -430,6 +437,79 @@ function Seat({ state, seat, corner, reaction, taunt, onTauntDone }) {
         : null
       : null;
   const aces = s.defenderAces[seat];
+  const { mobile } = useViewport();
+  const ringCls = isTurn ? 'ring-2 ring-cyan-400 neon-cyan' : isBidder ? 'ring-2 ring-yellow-400/70' : '';
+
+  // Mobile (<768px): compact horizontal seat card (avatar + stats) — no face-down fan —
+  // so both opponents fit in a ~90px strip under the header and never collide with panels.
+  if (mobile) {
+    const left = seat === 'W';
+    return (
+      <div
+        data-testid={`seat-${seat}`}
+        className={`absolute ${corner} flex flex-col ${left ? 'items-start' : 'items-end'} gap-1 z-20 max-w-[48vw]`}
+      >
+        <div
+          className={`relative flex items-center gap-2 glass rounded-xl pl-1.5 pr-2 py-1.5 transition-all duration-200 ${ringCls} ${isActiveBidder ? 'bid-glow' : ''}`}
+        >
+          <ReactionBadge reaction={reaction} testid={`reaction-${seat}`} className="-top-3 left-1/2 -translate-x-1/2" />
+          <div
+            className={`relative w-11 h-11 rounded-lg overflow-hidden border-2 bg-slate-900 flex items-center justify-center font-display font-black text-lg shrink-0 ${
+              isTurn ? 'border-cyan-300' : isBidder ? 'border-yellow-400/80' : left ? 'border-fuchsia-500/60 text-fuchsia-300' : 'border-cyan-500/50 text-cyan-300'
+            }`}
+          >
+            <span className="absolute inset-0 flex items-center justify-center text-slate-500 select-none pointer-events-none">{SEAT_LABEL[seat][0]}</span>
+            <img src={SEAT_AVATAR[seat]} alt={SEAT_LABEL[seat]} className="relative w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <AvatarTaunt taunt={taunt} seat={seat} onDone={onTauntDone} />
+            {isBidder && <div className="absolute top-0 right-0 bg-yellow-400 text-black text-[7px] font-black px-1 rounded-bl shadow">BID</div>}
+          </div>
+          <div className="flex flex-col leading-tight min-w-0">
+            <div className={`font-display font-black text-xs tracking-tight truncate ${left ? 'text-fuchsia-300' : 'text-cyan-300'}`}>{SEAT_LABEL[seat]}</div>
+            <div data-testid={`seat-bankroll-${seat}`} className="flex items-center gap-1 font-mono-stat text-[10px] font-bold text-emerald-300">
+              <Coins size={9} className="text-yellow-400" /> {money(s.bankrolls[seat])}
+            </div>
+            <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+              {seat === s.dealer && (
+                <span data-testid={`dealer-chip-${seat}`} className="text-[7px] font-black uppercase px-1 py-px rounded-full bg-yellow-500/20 border border-yellow-400/60 text-yellow-200">D</span>
+              )}
+              {showBooks && (
+                <span data-testid={`seat-books-${seat}`} className="text-[9px] font-mono-stat text-cyan-300">
+                  Bk {s.books[seat]}{seat === s.bidWinner ? `/${bench}` : ''}
+                </span>
+              )}
+              <span data-testid={`facedown-fan-${seat}`} className="text-[9px] font-mono-stat text-slate-400">{count}♠</span>
+              {status && (
+                <span data-testid={`seat-status-${seat}`} className={`text-[8px] font-bold px-1.5 py-px rounded-full ${status === 'PASS' ? 'bg-slate-700 text-slate-400' : 'bg-cyan-500/20 text-cyan-200'}`}>
+                  {status}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        {bubbleText && (
+          <div
+            data-testid={`bubble-${seat}`}
+            className={`pop-in px-2 py-0.5 rounded-xl text-[10px] font-sub font-bold border shadow-lg ${
+              bubbleText === 'Pass' ? 'bg-slate-800 border-slate-600 text-slate-300' : bubbleText === 'Thinking…' ? 'bg-slate-800/80 border-cyan-500/40 text-cyan-200' : 'bg-yellow-500/20 border-yellow-400/70 text-yellow-200'
+            }`}
+          >
+            {bubbleText}
+          </div>
+        )}
+        {(aces === 'single' || aces === 'double') && (
+          <div data-testid={`aces-badge-${seat}`} className="pop-in px-1.5 py-px rounded-full text-[9px] font-bold bg-yellow-500/20 border border-yellow-400 text-yellow-200 flex items-center gap-1">
+            <Sparkles size={9} /> {aces === 'double' ? '1000 Aces!' : 'Aces'}
+          </div>
+        )}
+        {seat === s.bidWinner && s.bidderAcesDeclared && (
+          <div data-testid={`bidder-aces-badge-${seat}`} className="pop-in px-1.5 py-px rounded-full text-[9px] font-bold bg-amber-500/25 border border-amber-400 text-amber-100 flex items-center gap-1">
+            <Sparkles size={9} /> Aces
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       data-testid={`seat-${seat}`}
@@ -582,9 +662,9 @@ function CenterArea({ state }) {
   const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
   const su = s.trump ? SUIT_BY_KEY[s.trump] : null;
   return (
-    <div className="relative w-[240px] h-[190px] sm:w-[300px] sm:h-[210px] rounded-[40%] border border-white/5 bg-white/[0.02] flex items-center justify-center">
+    <div className="relative w-[240px] h-[172px] sm:w-[300px] sm:h-[210px] rounded-[40%] border border-white/5 bg-white/[0.02] flex items-center justify-center">
       {(s.phase === 'auction' || showKitty) && (
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-1 sm:gap-2">
           {s.phase === 'auction' && (
             <div data-testid="auction-log" className="flex flex-col items-center gap-1">
               <div className="text-[10px] font-sub uppercase tracking-widest text-cyan-300/70">Auction</div>
@@ -693,12 +773,12 @@ export function HandTray({ state, onCardClick }) {
   // under the bottom status bar or open modals.
   if (isMobile) {
     const mdH = 74;
-    const availColH = Math.max(140, winH * 0.42 - 52);
+    const availColH = Math.max(140, winH * 0.4 - 52);
     const vStep = (m) => (m > 1 ? -Math.min(Math.max((m * mdH - availColH) / (m - 1), 30), mdH - 12) : 0);
     return (
       <div
         data-testid="player-hand"
-        className="fixed inset-x-0 bottom-14 z-30 h-[42%] px-1 pb-[env(safe-area-inset-bottom)] pointer-events-auto overflow-hidden"
+        className="fixed inset-x-0 bottom-14 z-30 h-[40%] px-1 pb-[env(safe-area-inset-bottom)] pointer-events-auto overflow-hidden"
       >
         <div className="grid grid-cols-4 gap-1 h-full">
           {SUIT_KEYS.map((k) => {
@@ -761,7 +841,9 @@ export function HandTray({ state, onCardClick }) {
 
 export function SaveHUD({ state }) {
   const s = state;
-  if (!['play', 'settlement'].includes(s.phase) || !s.bidWinner) return null;
+  const { mobile } = useViewport();
+  // Mobile: the header book pill ("Book x/25 · Bidder n/bench") already carries this; skip the panel.
+  if (mobile || !['play', 'settlement'].includes(s.phase) || !s.bidWinner) return null;
   const meldTotal = s.meld[s.bidWinner]?.total || 0;
   const needed = booksToMake({ bid: s.bid, meldTotal });
   const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
@@ -807,6 +889,7 @@ export function SaveHUD({ state }) {
 
 export function DiscardHUD({ state }) {
   const s = state;
+  const { mobile } = useViewport();
   if (s.phase !== 'discard' || s.bidWinner !== 'P') return null;
   const discardSet = new Set(s.discards);
   const kept = s.hands.P.filter((c) => !discardSet.has(c.id));
@@ -817,6 +900,34 @@ export function DiscardHUD({ state }) {
   const booksToSave = Math.max(floor, diff);
   const safetyFloor = diff <= floor;
   const boardWarn = diff > 50;
+  // Mobile: a single slim strip directly under the header (seats sit below it).
+  if (mobile) {
+    return (
+      <div
+        data-testid="discard-hud"
+        className={`fixed top-12 inset-x-0 z-30 h-8 flex items-center justify-center gap-2 text-[10px] font-mono-stat border-b ${
+          boardWarn ? 'red-flash text-rose-100 border-rose-500/60' : 'bg-slate-950/80 backdrop-blur border-white/10 text-slate-300'
+        }`}
+      >
+        {boardWarn ? (
+          <span data-testid="board-set-warning" className="font-display font-black flex items-center gap-1"><AlertTriangle size={12} /> BOARD SET WARNING (&gt;50)</span>
+        ) : (
+          <>
+            <span>Bid <b className="text-yellow-300">{s.bid}</b></span>
+            <span className="text-slate-600">·</span>
+            <span>Meld <b data-testid="discard-active-meld" className="text-cyan-300">{activeMeld}</b></span>
+            <span className="text-slate-600">·</span>
+            <span>Need <b data-testid="discard-books-needed" className="text-emerald-300">{booksNeeded}</b></span>
+            <span className="text-slate-600">·</span>
+            <span data-testid="discard-books-to-save" className={`px-1.5 rounded border font-bold ${safetyFloor ? 'border-emerald-400/70 bg-emerald-500/15 text-emerald-200' : 'border-slate-600 text-slate-200'}`}>
+              Save {booksToSave}{safetyFloor ? ' ✓' : ''}
+            </span>
+            {safetyFloor && <span data-testid="safety-floor-badge" className="sr-only">Max Safety Floor</span>}
+          </>
+        )}
+      </div>
+    );
+  }
   return (
     <div
       data-testid="discard-hud"
@@ -901,15 +1012,19 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
   const pActiveBidder = s.phase === 'auction' && s.currentBidder === 'P';
   const { mobile: isMobile } = useViewport();
   return (
-    <div className="absolute inset-0 top-16 bottom-28 flex flex-col items-center justify-center">
+    <div
+      className={`absolute inset-0 flex flex-col items-center ${
+        isMobile ? 'top-12 bottom-[calc(40%+3.5rem)] justify-end pb-1' : 'top-16 bottom-28 justify-center'
+      }`}
+    >
       <img
         src="/assets/get2-logo_bal_blk.png"
         alt=""
         data-testid="table-watermark"
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-15 mix-blend-luminosity pointer-events-none w-96 max-w-full z-0"
       />
-      <Seat state={state} seat="W" corner="top-2 left-2 sm:top-4 sm:left-6" reaction={reactions.W} taunt={taunt} onTauntDone={onTauntDone} />
-      <Seat state={state} seat="E" corner="top-2 right-2 sm:top-4 sm:right-6" reaction={reactions.E} taunt={taunt} onTauntDone={onTauntDone} />
+      <Seat state={state} seat="W" corner={isMobile ? 'top-9 left-1' : 'top-2 left-2 sm:top-4 sm:left-6'} reaction={reactions.W} taunt={taunt} onTauntDone={onTauntDone} />
+      <Seat state={state} seat="E" corner={isMobile ? 'top-9 right-1' : 'top-2 right-2 sm:top-4 sm:right-6'} reaction={reactions.E} taunt={taunt} onTauntDone={onTauntDone} />
       <CenterArea state={state} />
       <SaveHUD state={state} />
       <DiscardHUD state={state} />

@@ -159,7 +159,7 @@ export default function BustALead() {
         <button
           data-testid="call-renege-btn"
           onClick={() => setShowAudit(true)}
-          className="fixed bottom-6 right-6 z-[70] px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 border-2 border-rose-300/50 text-white font-display font-black tracking-wide flex items-center gap-2 shadow-[0_6px_0_rgba(0,0,0,0.5)] active:scale-95 animate-pulse"
+          className="fixed bottom-[calc(40%+4rem)] right-2 md:bottom-6 md:right-6 z-[70] px-3 py-2 md:px-5 md:py-3 text-xs md:text-base rounded-2xl bg-rose-600 hover:bg-rose-500 border-2 border-rose-300/50 text-white font-display font-black tracking-wide flex items-center gap-2 shadow-[0_6px_0_rgba(0,0,0,0.5)] active:scale-95 animate-pulse"
         >
           <Zap size={18} /> CALL RENEGE!
         </button>

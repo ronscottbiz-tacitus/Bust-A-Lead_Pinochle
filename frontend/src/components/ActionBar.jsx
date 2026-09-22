@@ -15,24 +15,29 @@ const Btn = ({ children, onClick, disabled, tone = 'cyan', testid, className = '
       data-testid={testid}
       onClick={onClick}
       disabled={disabled}
-      className={`px-4 py-2 rounded-xl border font-sub font-semibold text-sm transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 ${tones[tone]} ${className}`}
+      className={`px-3 py-2 md:px-4 rounded-xl border font-sub font-semibold text-xs md:text-sm min-h-[40px] transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 ${tones[tone]} ${className}`}
     >
       {children}
     </button>
   );
 };
 
+// Mobile (<768px): every panel docks in the strip between the compact seats and the center
+// felt so it never covers an avatar or the hand. Tablet/desktop keep their placements.
+// Centering uses a full-width flex rail (not translate-x) because the float-up keyframe
+// animation owns `transform` and would otherwise cancel the horizontal centering.
+const MOBILE_DOCK = 'fixed inset-x-0 top-[136px]';
 const WRAP_POS = {
-  bottom: 'fixed bottom-48 left-1/2 -translate-x-1/2',
-  center: 'fixed top-[16%] sm:top-[40%] left-1/2 -translate-x-1/2 sm:-translate-y-1/2',
-  upper: 'fixed top-[15%] left-1/2 -translate-x-1/2',
-  banner: 'fixed top-28 left-1/2 -translate-x-1/2',
+  bottom: `${MOBILE_DOCK} md:top-auto md:bottom-48`,
+  center: `${MOBILE_DOCK} md:top-[40%] md:-translate-y-1/2`,
+  upper: `${MOBILE_DOCK} md:top-[15%]`,
+  banner: `${MOBILE_DOCK} md:top-28`,
 };
 
 const Wrap = ({ children, hint, pos = 'bottom' }) => (
-  <div className={`${WRAP_POS[pos]} z-40 float-up`} data-testid="action-bar">
-    <div className="glass rounded-2xl px-4 py-3 flex flex-col items-center gap-2 neon-cyan max-w-[95vw]">
-      {hint && <div className="text-[11px] font-sub uppercase tracking-widest text-cyan-300/80">{hint}</div>}
+  <div className={`${WRAP_POS[pos]} z-40 flex justify-center pointer-events-none px-2`} data-testid="action-bar">
+    <div className="float-up pointer-events-auto glass rounded-2xl px-3 py-2.5 md:px-4 md:py-3 flex flex-col items-center gap-2 neon-cyan max-w-full">
+      {hint && <div className="text-[10px] md:text-[11px] font-sub uppercase tracking-widest text-cyan-300/80 text-center">{hint}</div>}
       <div className="flex flex-wrap items-center justify-center gap-2">{children}</div>
     </div>
   </div>
