@@ -44,18 +44,23 @@ function ThrowInButton({ state, onThrowIn, compact = false }) {
   );
 }
 
+// Viewport classes: mobile (<768 wide, portrait matrix hand), landscape (short sideways phone —
+// compact chrome + full fan hand), desktop (>=1024).
+const readVp = () => {
+  const w = typeof window !== 'undefined' ? window.innerWidth : 1280;
+  const h = typeof window !== 'undefined' ? window.innerHeight : 800;
+  return { w, h, desktop: w >= 1024, mobile: w < 768, landscape: w > h && h < 520 };
+};
 function useViewport() {
-  const [vp, setVp] = useState(() => ({
-    w: typeof window !== 'undefined' ? window.innerWidth : 1280,
-    h: typeof window !== 'undefined' ? window.innerHeight : 800,
-    desktop: typeof window !== 'undefined' ? window.innerWidth >= 1024 : true,
-    mobile: typeof window !== 'undefined' ? window.innerWidth < 768 : false,
-  }));
+  const [vp, setVp] = useState(readVp);
   useEffect(() => {
-    const onResize = () =>
-      setVp({ w: window.innerWidth, h: window.innerHeight, desktop: window.innerWidth >= 1024, mobile: window.innerWidth < 768 });
+    const onResize = () => setVp(readVp());
     window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+    };
   }, []);
   return vp;
 }
@@ -164,7 +169,8 @@ function TrumpBadge({ trump }) {
 
 export function Header({ state, onToggleSound, onToggleTaunts, onOpenRules, onOpenStats, onNewGame, onOpenMeld, onOpenCinematics, onThrowIn }) {
   const s = state;
-  const { mobile } = useViewport();
+  const vp = useViewport();
+  const mobile = vp.mobile || vp.landscape;
   const [menu, setMenu] = useState(false);
   const mult = liveMultiplier(s);
   const meldTotal = s.meld[s.bidWinner]?.total || 0;
@@ -437,7 +443,8 @@ function Seat({ state, seat, corner, reaction, taunt, onTauntDone }) {
         : null
       : null;
   const aces = s.defenderAces[seat];
-  const { mobile } = useViewport();
+  const vp = useViewport();
+  const mobile = vp.mobile || vp.landscape;
   const ringCls = isTurn ? 'ring-2 ring-cyan-400 neon-cyan' : isBidder ? 'ring-2 ring-yellow-400/70' : '';
 
   // Mobile (<768px): compact horizontal seat card (avatar + stats) — no face-down fan —
@@ -737,7 +744,8 @@ export function HandTray({ state, onCardClick }) {
   const selecting = s.phase === 'discard' && s.bidWinner === 'P';
   const n = hand.length;
   const idx = new Map(hand.map((c, i) => [c.id, i]));
-  const { w: winW, h: winH, desktop: isDesktop, mobile: isMobile } = useViewport();
+  const { w: winW, h: winH, desktop: isDesktop, mobile: vpMobile, landscape } = useViewport();
+  const isMobile = vpMobile && !landscape; // sideways phones get the full fan
   // Zero-scroll dynamic overlap: fit all cards inside the available width.
   // Desktop uses larger cards; tablet/landscape uses medium cards for the same clean fan.
   const fanSize = isDesktop ? 'lg' : 'md';
@@ -808,16 +816,16 @@ export function HandTray({ state, onCardClick }) {
     );
   }
 
-  // Tablet / landscape / desktop (>=768px): one clean zero-scroll dynamic fan.
+  // Tablet / landscape / desktop (>=768px, or a sideways phone): one clean zero-scroll dynamic fan.
   return (
-    <div data-testid="player-hand" className="fixed bottom-3 inset-x-0 z-30 px-2 pb-[env(safe-area-inset-bottom)] pointer-events-none">
-      <div className="flex items-end justify-center overflow-visible pb-6 pointer-events-auto">
+    <div data-testid="player-hand" className={`fixed inset-x-0 z-30 px-2 pb-[env(safe-area-inset-bottom)] pointer-events-none ${landscape ? 'bottom-2' : 'bottom-3'}`}>
+      <div className={`flex items-end justify-center overflow-visible pointer-events-auto ${landscape ? 'pb-4' : 'pb-6'}`}>
         <div className="flex items-end justify-center">
           {hand.map((c) => {
             const i = idx.get(c.id);
             const mid = (n - 1) / 2;
-            const rot = (i - mid) * 1.6;
-            const lift = Math.abs(i - mid) * 2.0;
+            const rot = (i - mid) * (landscape ? 1.1 : 1.6);
+            const lift = Math.abs(i - mid) * (landscape ? 0.9 : 2.0);
             return (
               <div
                 key={c.id}
@@ -841,7 +849,8 @@ export function HandTray({ state, onCardClick }) {
 
 export function SaveHUD({ state }) {
   const s = state;
-  const { mobile } = useViewport();
+  const vp = useViewport();
+  const mobile = vp.mobile || vp.landscape;
   // Mobile: the header book pill ("Book x/25 · Bidder n/bench") already carries this; skip the panel.
   if (mobile || !['play', 'settlement'].includes(s.phase) || !s.bidWinner) return null;
   const meldTotal = s.meld[s.bidWinner]?.total || 0;
@@ -889,7 +898,8 @@ export function SaveHUD({ state }) {
 
 export function DiscardHUD({ state }) {
   const s = state;
-  const { mobile } = useViewport();
+  const vp = useViewport();
+  const mobile = vp.mobile || vp.landscape;
   if (s.phase !== 'discard' || s.bidWinner !== 'P') return null;
   const discardSet = new Set(s.discards);
   const kept = s.hands.P.filter((c) => !discardSet.has(c.id));
@@ -1010,11 +1020,17 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
   const pTurn = s.phase === 'play' && s.turn === 'P' && !s.trickPending;
   const pBidder = s.bidWinner === 'P';
   const pActiveBidder = s.phase === 'auction' && s.currentBidder === 'P';
-  const { mobile: isMobile } = useViewport();
+  const { mobile: vpMobile, landscape } = useViewport();
+  const isMobile = vpMobile && !landscape;
+  const compact = vpMobile || landscape;
   return (
     <div
       className={`absolute inset-0 flex flex-col items-center ${
-        isMobile ? 'top-12 bottom-[calc(40%+3.5rem)] justify-end pb-1' : 'top-16 bottom-28 justify-center'
+        isMobile
+          ? 'top-12 bottom-[calc(40%+3.5rem)] justify-end pb-1'
+          : landscape
+          ? 'top-12 bottom-[96px] justify-end pb-1'
+          : 'top-16 bottom-28 justify-center'
       }`}
     >
       <img
@@ -1023,8 +1039,8 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
         data-testid="table-watermark"
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-15 mix-blend-luminosity pointer-events-none w-96 max-w-full z-0"
       />
-      <Seat state={state} seat="W" corner={isMobile ? 'top-9 left-1' : 'top-2 left-2 sm:top-4 sm:left-6'} reaction={reactions.W} taunt={taunt} onTauntDone={onTauntDone} />
-      <Seat state={state} seat="E" corner={isMobile ? 'top-9 right-1' : 'top-2 right-2 sm:top-4 sm:right-6'} reaction={reactions.E} taunt={taunt} onTauntDone={onTauntDone} />
+      <Seat state={state} seat="W" corner={compact ? 'top-9 left-1' : 'top-2 left-2 sm:top-4 sm:left-6'} reaction={reactions.W} taunt={taunt} onTauntDone={onTauntDone} />
+      <Seat state={state} seat="E" corner={compact ? 'top-9 right-1' : 'top-2 right-2 sm:top-4 sm:right-6'} reaction={reactions.E} taunt={taunt} onTauntDone={onTauntDone} />
       <CenterArea state={state} />
       <SaveHUD state={state} />
       <DiscardHUD state={state} />
@@ -1052,7 +1068,7 @@ export function Table({ state, onOpenHistory, taunt, onTauntDone }) {
         </div>
       )}
       {s.phase !== 'config' && !isMobile && (
-        <div className="absolute bottom-2 left-2 sm:left-6 flex items-center gap-2 z-40">
+        <div className={`absolute bottom-2 left-2 sm:left-6 flex items-center gap-2 z-40 ${landscape ? 'scale-[0.8] origin-bottom-left' : ''}`}>
           <div
             className={`relative glass rounded-2xl pl-2 pr-3 py-2 flex items-center gap-2.5 transition-all duration-200 ${
               pTurn ? 'ring-4 ring-cyan-400 neon-cyan' : pBidder ? 'ring-2 ring-yellow-400/70' : ''

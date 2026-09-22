@@ -693,3 +693,8 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - **Header (mobile)**: 36px tap targets, Yard Reels moved into the kebab menu (`cinematics-btn` still present), compact stake pill (nowrap), throw-in 36px.
 - **Config**: Choice buttons 44px tall on mobile; Feedback link padded; Settlement modal `max-h-[92vh] overflow-y-auto`; Call Renege button lifted above the hand on mobile.
 - Verified via Playwright at 390×844: config, auction, trump, discard, play (bidder + trick), settlement — no overlaps, zero horizontal overflow; desktop auction panel centered at x=960.
+
+## Updates (2026-06 — Landscape Phone Layout)
+- `useViewport()` now exposes `landscape` (w > h && h < 520) and listens to `orientationchange`. Sideways phones get: compact mobile header + compact seats + slim Discard strip (`compact = mobile || landscape`), the FULL fan hand (`md` cards, flatter rot/lift, `bottom-2 pb-4`), the desktop-style player dock scaled 0.8 bottom-left, table zone `top-12 bottom-[96px] justify-end`, no bottom G2 bar / no suit matrix.
+- CSS media override `@media (orientation: landscape) and (max-height: 520px)`: `.action-rail` docks at top 140px; `.renege-fab` sits above the fan.
+- Verified at 844×390 and 667×375 (auction, discard, play) — fan fully inside viewport, zero overflow; live rotation back to 390×844 restores portrait layout.
