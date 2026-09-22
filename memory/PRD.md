@@ -667,3 +667,20 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
     "Give Feedback (2 Min) 📝" (data-testid feedback-btn-gameover) below the New Game button.
 - Verified: compiles clean; menu link confirmed on-screen with correct href/target; Game Over
   button uses the identical anchor pattern.
+
+## Updates (2026-06 — $140 Economy, Throw It In, Skillz Defensive AI, Cutscene Pools, Dedication)
+- **$140 economy**: `START_BANKROLL`/`startingBankrolls()` in `constants.js`; reducer init/NEW_GAME/RESET_TABLE use it. Config label `starting-bankroll-label` "Starting Bankroll: $140.00 (CDCR Max Monthly Canteen Draw)"; HUD `bankroll-pill-P` tooltip + `canteen-tip` subtext "Max Monthly Draw: $140. Don't lose your canteen." Rules/New Game copy updated.
+- **Multiplier badge**: `MultiplierBadge` (`multiplier-badge`) in header status capsule — "[ MULTIPLIER: Nx ]" desktop / "×N" mobile; compounding unchanged (Going Double ×2 · Lay-Down CHALLENGED ×2 · Spades ×2 → up to ×8). User chose to keep Lay-Down ×2 only when challenged.
+- **Throw It In**: reducer `THROW_IN` (play phase, human bidder only) → result 'hard', conceded, thrownIn, label "Threw It In — Hard Set", −2×mult×stakes per defender. Header `throw-in-btn` (desktop icon cluster next to sound; mobile compact) → `ThrowInConfirmModal` (`throw-in-modal`, cancel/confirm) → `concession` cutscene. Verified in-browser end to end.
+- **Skillz — Defensive AI** (new config section, independent of Difficulty): `settings.skill` = dumptruck 0.65 / alight 0.75 (default) / shooter 1.0 (`SKILL_RATING` in `ai.js`). `syndicatePlay()` = counter starvation, partner-void exploitation (`seatVoids(playLog)`), ace-hunting/book starvation; `aiPlay(..., ctx)` rolls against the rating per defender play; Dump Truck lapses into naive selfish play. `useGame.drive()` passes ctx {voids,bidderBooks,bench,skill}.
+- **Cutscene pools**: `ROTATION_POOLS` + `mgr.rotate()` shuffle-bag (sweep, renege, hardset, portal, game_over) — every clip once per cycle, never back-to-back; `requestCutscene` attaches `data.clip`, `sourcesFor(key, clip)`. Ambient pools now DooLow (takeover/cut/renege/taunt_1/2) + PapaCap (scene_1-4/taunt_1/2). Generic hard sets (G2/DooLow/PapaCap) → `hardset` pool; Scrap/Baby Boy keep overrides. Dead keys removed (doolow_set, papacap_set, g2_hardset, doolow_bid, papacap_bid, papacap_bigbid, game_over_1/2 as keys). Widow Prayer strictly bid > 95.
+- **Match over**: `humanWonMatch()` (P > 0 AND highest bankroll) → `portal` + portalHum; else `game_over` pool. Chopper easter egg SKIPPED per user (asset `get2_chopper.mp4` not uploaded).
+- **Dedication & Origin modal** (`DedicationModal`, `dedication-modal`): auto-pops after the match-over cutscene ends (`matchOutroDone` from useGame.clearCutscene); also via `dedication-btn-title` (title screen) and `dedication-btn-rules` (Rulebook). Play Again → NEW_GAME; Visit Get2 Studios link. Chain-link watermark CSS `.chain-link`.
+- **Mobile**: suit-column budget tightened (winH*0.42−52, min overlap 30, smaller suit glyph). No horizontal overflow at 390px.
+- **Tests**: 24/24 Jest (`skillz.test.js` new: THROW_IN math, ×8 compounding, seatVoids, syndicate behaviours, legality across all skill tiers; `gameover.test.js` rewritten for portal/game_over + rotation).
+- Testing agent timed out this iteration (no report file); flows self-verified via Playwright (config, dedication, deal, Throw It In full flow, mobile overflow check).
+
+## Backlog
+- P1: Upload `get2_chopper.mp4/.webm` and wire a `chopper` key (P ≤ $0) if desired.
+- P2: Refactor `Modals.jsx` (>1300 lines) / `Table.jsx` / `ActionBar.jsx` (deferred to protect stability).
+- Known false-positives: `useGame.js` hook deps and `storage.js` localStorage warnings — do NOT "fix".
