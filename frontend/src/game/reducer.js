@@ -45,6 +45,7 @@ function emptyRound() {
     goingDouble: false,
     laydown: false,
     laydownResp: {},
+    laydownOutcome: null,
     laydownChallenged: false,
     laydownUnchallenged: false,
     bidderExposed: false,
@@ -434,6 +435,12 @@ export function reducer(state, action) {
       const defs = SEATS.filter((x) => x !== s.bidWinner);
       if (defs.every((d) => s.laydownResp[d] != null)) {
         const challenged = defs.some((d) => s.laydownResp[d] === true);
+        s.laydownOutcome = {
+          id: Date.now(),
+          result: challenged ? 'challenged' : 'conceded',
+          challengers: defs.filter((d) => s.laydownResp[d] === true),
+          responses: { ...s.laydownResp },
+        };
         if (challenged) {
           s.laydownChallenged = true;
           s.bidderExposed = true;

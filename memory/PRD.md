@@ -713,3 +713,9 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - **HUD (d)**: `discard-losers` chip "Losers X/Y ✓ Lay-Down" in desktop Discard HUD (nowrap, 680px) and mobile strip.
 - **Buried counters**: `seatBooks()` in Table.jsx adds `buriedBooks` to the bidder's displayed books everywhere (dock, seats, mobile bar, compact seat) — e.g. "Books: 4 / 20" right after burying 4 counters.
 - 32/32 Jest (`laydown.test.js` new: reference hand = 30 losers, safe/unsafe, AI pressure tiers, reducer gate).
+
+## Updates (2026-06 — Lay-Down Showdown UX)
+- Reducer `LAYDOWN_RESPONSE` records `laydownOutcome {id, result: 'challenged'|'conceded', challengers, responses}` (reset per round).
+- Seat speech bubbles during `laydown` phase: defenders show "Thinking…" → "CHALLENGE!" (rose pulse) / "Concede".
+- `LaydownVerdictModal` (Modals.jsx, `laydown-verdict-modal`): two variants — CONCEDED (emerald; defender cards, "+$X from …" payout chips, Collect) and CHALLENGED (rose; "X calls your bluff", HAND EXPOSED + STAKES ×N tiles with bench, Play It Out / Throw It In). Chain-link watermark, GTA panel styling.
+- BustALead: `showVerdict` (once per outcome id, hidden while a cutscene plays) pauses the loop via `setPaused`, hides SettlementModal + MeldPhaseModal until acknowledged. Visuals verified desktop + 390px; normal hands unaffected.

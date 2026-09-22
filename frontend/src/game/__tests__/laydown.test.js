@@ -52,6 +52,37 @@ test('laydownChallenge reads the laid-down hand: borderline → challenge, clear
   expect(laydownChallenge(weakDef, 'S')).toBe(false);
 });
 
+test('LAYDOWN_RESPONSE records the showdown outcome for the verdict modal', () => {
+  const base = () => {
+    let s = reducer(initState(), { type: 'START_ROUND' });
+    s = reducer(s, { type: 'DEAL_DONE' });
+    s.phase = 'laydown';
+    s.bidWinner = 'P';
+    s.bid = 60;
+    s.trump = 'H';
+    s.laydown = true;
+    s.laydownResp = {};
+    s.meld = { W: null, E: null, P: { total: 30, items: [], allCards: [] } };
+    return s;
+  };
+  let s = base();
+  s = reducer(s, { type: 'LAYDOWN_RESPONSE', seat: 'W', challenge: false });
+  expect(s.laydownOutcome).toBeNull();
+  s = reducer(s, { type: 'LAYDOWN_RESPONSE', seat: 'E', challenge: true });
+  expect(s.laydownOutcome).toMatchObject({ result: 'challenged', challengers: ['E'], responses: { W: false, E: true } });
+  expect(s.phase).toBe('play');
+  expect(s.laydownChallenged).toBe(true);
+  expect(s.bidderExposed).toBe(true);
+
+  let t = base();
+  t = reducer(t, { type: 'LAYDOWN_RESPONSE', seat: 'W', challenge: false });
+  t = reducer(t, { type: 'LAYDOWN_RESPONSE', seat: 'E', challenge: false });
+  expect(t.laydownOutcome).toMatchObject({ result: 'conceded', challengers: [] });
+  expect(t.phase).toBe('settlement');
+  expect(t.laydownUnchallenged).toBe(true);
+  expect(t.settlement.transfers.every((x) => x.to === 'P')).toBe(true);
+});
+
 test('CONFIRM_DISCARD drops an unsafe Lay-Down claim instead of entering the laydown phase', () => {
   let s = reducer(initState(), { type: 'START_ROUND' });
   s = reducer(s, { type: 'DEAL_DONE' });

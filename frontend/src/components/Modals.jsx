@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { SEAT_LABEL, SEATS } from '../game/constants';
+import { SEAT_LABEL, SEATS, SEAT_AVATAR, SUIT_BY_KEY } from '../game/constants';
+import { saveTarget } from '../game/scoring';
 import { CHARACTERS, PLAYER_PICKS, ROSTER_IDS, buildSeatChars } from '../config/characters';
 import { computeMeld } from '../game/meld';
 import { Card } from './Card';
 import { videoSources, CUTSCENE_LIBRARY } from './CutsceneOverlay';
-import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers, Gavel, ShieldAlert, Film, SkipForward, ChevronLeft, ChevronRight, LayoutGrid, PlayCircle, Coins, Heart, Flag } from 'lucide-react';
+import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers, Gavel, ShieldAlert, Film, SkipForward, ChevronLeft, ChevronRight, LayoutGrid, PlayCircle, Coins, Heart, Flag, Eye, Zap, Swords, HandMetal, Check } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 
@@ -1321,6 +1322,137 @@ export function CinematicsModal({ onClose }) {
           slideshow={slideshow}
         />
       )}
+    </div>
+  );
+}
+
+
+function VerdictSeat({ seat, challenged }) {
+  return (
+    <div
+      data-testid={`verdict-seat-${seat}`}
+      className={`relative flex items-center gap-3 rounded-xl border px-3 py-2.5 ${
+        challenged ? 'border-rose-500/70 bg-rose-950/40' : 'border-zinc-700 bg-zinc-900/70'
+      }`}
+    >
+      <div className={`w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 ${challenged ? 'border-rose-400' : 'border-zinc-600 grayscale-[0.5]'}`}>
+        <img src={SEAT_AVATAR[seat]} alt={SEAT_LABEL[seat]} className="w-full h-full object-cover" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="font-display font-black text-sm text-zinc-100 truncate">{SEAT_LABEL[seat]}</div>
+        <div className="text-[10px] font-sub text-zinc-400">{challenged ? 'Wants to see it played' : 'Folds the hand'}</div>
+      </div>
+      <span
+        data-testid={`verdict-chip-${seat}`}
+        className={`px-2.5 py-1 rounded-full text-[10px] font-display font-black tracking-wider ${
+          challenged ? 'bg-rose-600 text-white gold-pulse' : 'bg-zinc-800 border border-zinc-600 text-zinc-300'
+        }`}
+      >
+        {challenged ? 'CHALLENGE!' : 'CONCEDE'}
+      </span>
+    </div>
+  );
+}
+
+// Lay-Down showdown result — shown once the defenders have answered the bidder's claim.
+export function LaydownVerdictModal({ state, onContinue, onThrowIn }) {
+  const s = state;
+  const o = s.laydownOutcome;
+  if (!o) return null;
+  const challenged = o.result === 'challenged';
+  const defs = SEATS.filter((x) => x !== s.bidWinner);
+  const bidderName = SEAT_LABEL[s.bidWinner];
+  const humanBidder = s.bidWinner === 'P';
+  const meldTotal = s.meld?.[s.bidWinner]?.total || 0;
+  const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
+  const mult = (s.goingDouble ? 2 : 1) * 2 * (s.trump === 'S' ? 2 : 1);
+  const su = SUIT_BY_KEY[s.trump];
+  const names = o.challengers.map((x) => SEAT_LABEL[x]);
+  const headline = challenged
+    ? `${names.join(' & ')} ${names.length > 1 ? 'call' : 'calls'} ${humanBidder ? 'your' : `${bidderName}'s`} bluff.`
+    : 'They folded.';
+  const gain = (s.settlement?.transfers || []).filter((t) => t.to === s.bidWinner);
+
+  return (
+    <div data-testid="laydown-verdict-modal" className="fixed inset-0 z-[105] flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+      <div
+        className={`relative w-full max-w-md rounded-2xl border-2 bg-neutral-950 shadow-[0_0_0_2px_rgba(0,0,0,0.9),0_30px_80px_rgba(0,0,0,0.85)] pop-in overflow-hidden ${
+          challenged ? 'border-rose-500/80' : 'border-emerald-500/80'
+        }`}
+      >
+        <div className={`absolute inset-0 pointer-events-none opacity-[0.08] chain-link`} />
+        <div
+          className={`relative px-5 py-3 flex items-center gap-2 font-display font-black tracking-[0.2em] text-xs uppercase border-b ${
+            challenged ? 'bg-rose-950/60 text-rose-200 border-rose-500/40' : 'bg-emerald-950/60 text-emerald-200 border-emerald-500/40'
+          }`}
+        >
+          {challenged ? <Swords size={16} /> : <HandMetal size={16} />}
+          {challenged ? 'Lay-Down Challenged' : 'Lay-Down Conceded'}
+        </div>
+
+        <div className="relative px-5 sm:px-6 pt-5 pb-5">
+          <div className="text-[10px] font-sub uppercase tracking-[0.3em] text-zinc-500 mb-1">
+            {bidderName} laid down · Contract {s.bid} · <span style={{ color: su?.neon }}>{su?.symbol}</span> trump
+          </div>
+          <h2
+            data-testid="laydown-verdict-headline"
+            className={`font-display font-black text-base md:text-lg uppercase tracking-wide leading-snug mb-4 ${challenged ? 'text-rose-100' : 'text-emerald-100'}`}
+          >
+            {headline}
+          </h2>
+
+          <div className="space-y-2 mb-4">
+            {defs.map((d) => (
+              <VerdictSeat key={d} seat={d} challenged={o.responses[d] === true} />
+            ))}
+          </div>
+
+          {challenged ? (
+            <div className="grid grid-cols-2 gap-2 mb-5">
+              <div data-testid="verdict-exposed-tile" className="rounded-xl border border-amber-500/50 bg-amber-500/10 p-3">
+                <div className="flex items-center gap-1.5 text-amber-300 font-display font-black text-[11px] sm:text-xs tracking-wide whitespace-nowrap"><Eye size={14} /> HAND EXPOSED</div>
+                <div className="text-[11px] font-sub text-amber-100/80 mt-1 leading-snug">{humanBidder ? 'Your' : `${bidderName}'s`} 25 cards play face-up.</div>
+              </div>
+              <div data-testid="verdict-stakes-tile" className="rounded-xl border border-fuchsia-500/50 bg-fuchsia-500/10 p-3">
+                <div className="flex items-center gap-1.5 text-fuchsia-300 font-display font-black text-[11px] sm:text-xs tracking-wide whitespace-nowrap"><Zap size={14} /> STAKES ×{mult}</div>
+                <div className="text-[11px] font-sub text-fuchsia-100/80 mt-1 leading-snug">Save <b className="text-white">{bench}</b> books or eat a doubled Hard Set.</div>
+              </div>
+            </div>
+          ) : (
+            <div data-testid="verdict-payout" className="rounded-xl border border-emerald-500/50 bg-emerald-500/10 p-3 mb-5">
+              <div className="flex items-center gap-1.5 text-emerald-300 font-display font-black text-xs tracking-wide"><Check size={14} /> CONTRACT MADE — NOT A CARD PLAYED</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {gain.map((t) => (
+                  <span key={t.from} className="px-2 py-1 rounded-lg bg-black/40 border border-emerald-500/40 text-emerald-200 font-mono-stat text-xs">
+                    +{money(t.amount)} from {SEAT_LABEL[t.from]}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className={`grid gap-2.5 ${challenged && humanBidder ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {challenged && humanBidder && (
+              <button
+                data-testid="verdict-throw-in-btn"
+                onClick={onThrowIn}
+                className="py-3 rounded-xl bg-zinc-900 border border-rose-500/60 text-rose-200 font-display font-bold uppercase tracking-wide text-sm hover:bg-rose-950/60 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <Flag size={15} /> Throw It In
+              </button>
+            )}
+            <button
+              data-testid="verdict-continue-btn"
+              onClick={onContinue}
+              className={`py-3 rounded-xl border-2 border-black/70 text-black font-display font-black uppercase tracking-wide text-sm active:scale-95 flex items-center justify-center gap-2 shadow-[0_5px_0_rgba(0,0,0,0.6)] whitespace-nowrap ${
+                challenged ? 'bg-rose-400 hover:bg-rose-300' : 'bg-emerald-400 hover:bg-emerald-300'
+              }`}
+            >
+              {challenged ? <><Swords size={16} /> Play It Out</> : <><Coins size={16} /> Collect</>}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

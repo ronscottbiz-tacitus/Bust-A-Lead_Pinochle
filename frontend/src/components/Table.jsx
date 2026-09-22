@@ -436,6 +436,7 @@ function Seat({ state, seat, corner, reaction, taunt, onTauntDone }) {
   const expose = seat === s.bidWinner && s.bidderExposed;
   const showBooks = s.phase === 'play' || s.phase === 'settlement';
   const lastAction = [...(s.bidLog || [])].reverse().find((e) => e.seat === seat);
+  const laydownVerdict = s.laydownResp?.[seat];
   const bubbleText =
     s.phase === 'auction'
       ? s.currentBidder === seat && !s.passed[seat]
@@ -443,7 +444,21 @@ function Seat({ state, seat, corner, reaction, taunt, onTauntDone }) {
         : lastAction
         ? lastAction.text
         : null
+      : s.phase === 'laydown' && seat !== s.bidWinner
+      ? laydownVerdict === true
+        ? 'CHALLENGE!'
+        : laydownVerdict === false
+        ? 'Concede'
+        : 'Thinking…'
       : null;
+  const bubbleCls =
+    bubbleText === 'Pass' || bubbleText === 'Concede'
+      ? 'bg-slate-800 border-slate-600 text-slate-300'
+      : bubbleText === 'Thinking…'
+      ? 'bg-slate-800/80 border-cyan-500/40 text-cyan-200'
+      : bubbleText === 'CHALLENGE!'
+      ? 'bg-rose-600/30 border-rose-400 text-rose-100 gold-pulse'
+      : 'bg-yellow-500/20 border-yellow-400/70 text-yellow-200';
   const aces = s.defenderAces[seat];
   const vp = useViewport();
   const mobile = vp.mobile || vp.landscape;
@@ -498,9 +513,7 @@ function Seat({ state, seat, corner, reaction, taunt, onTauntDone }) {
         {bubbleText && (
           <div
             data-testid={`bubble-${seat}`}
-            className={`pop-in px-2 py-0.5 rounded-xl text-[10px] font-sub font-bold border shadow-lg ${
-              bubbleText === 'Pass' ? 'bg-slate-800 border-slate-600 text-slate-300' : bubbleText === 'Thinking…' ? 'bg-slate-800/80 border-cyan-500/40 text-cyan-200' : 'bg-yellow-500/20 border-yellow-400/70 text-yellow-200'
-            }`}
+            className={`pop-in px-2 py-0.5 rounded-xl text-[10px] font-sub font-bold border shadow-lg ${bubbleCls}`}
           >
             {bubbleText}
           </div>
@@ -527,13 +540,7 @@ function Seat({ state, seat, corner, reaction, taunt, onTauntDone }) {
       {bubbleText && (
         <div
           data-testid={`bubble-${seat}`}
-          className={`pop-in mb-0.5 px-2.5 py-1 rounded-2xl text-[11px] font-sub font-bold border shadow-lg ${
-            bubbleText === 'Pass'
-              ? 'bg-slate-800 border-slate-600 text-slate-300'
-              : bubbleText === 'Thinking…'
-              ? 'bg-slate-800/80 border-cyan-500/40 text-cyan-200'
-              : 'bg-yellow-500/20 border-yellow-400/70 text-yellow-200'
-          }`}
+          className={`pop-in mb-0.5 px-2.5 py-1 rounded-2xl text-[11px] font-sub font-bold border shadow-lg ${bubbleCls}`}
         >
           {SEAT_LABEL[seat]}: {bubbleText}
         </div>

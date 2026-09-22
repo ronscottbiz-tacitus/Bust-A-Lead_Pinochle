@@ -15,6 +15,7 @@ import {
   CinematicsModal,
   ThrowInConfirmModal,
   DedicationModal,
+  LaydownVerdictModal,
 } from './components/Modals';
 import { legalPlays } from './game/trick';
 import { TABLE_BG_IMG } from './game/constants';
@@ -40,6 +41,7 @@ export default function BustALead() {
   const [showCinematics, setShowCinematics] = useState(false);
   const [showThrowIn, setShowThrowIn] = useState(false);
   const [showDedication, setShowDedication] = useState(false);
+  const [verdictSeen, setVerdictSeen] = useState(null);
   const [renegeNotice, setRenegeNotice] = useState(false);
   const [tutorialKey, setTutorialKey] = useState(0);
   const introShownRef = useRef(false);
@@ -50,6 +52,12 @@ export default function BustALead() {
   useEffect(() => {
     if (matchOutroDone) setShowDedication(true);
   }, [matchOutroDone]);
+
+  // Lay-Down showdown verdict: shown once per outcome, holds the table until acknowledged.
+  const showVerdict = !!s.laydownOutcome && verdictSeen !== s.laydownOutcome.id && !cutscene;
+  useEffect(() => {
+    setPaused(showVerdict || showAudit);
+  }, [showVerdict, showAudit, setPaused]);
 
   // New Fish match intro cinematic — once per session when a New Fish match launches.
   useEffect(() => {
@@ -66,9 +74,6 @@ export default function BustALead() {
   }, [s.phase]);
 
   // Pause the game engine while the Yard Court audit is open.
-  useEffect(() => {
-    setPaused(showAudit);
-  }, [showAudit, setPaused]);
 
   // The always-pinned CALL RENEGE button is available in Convict Mode during play.
   const showRenegeButton = s.settings.difficulty === 'hard' && s.phase === 'play';
@@ -143,7 +148,7 @@ export default function BustALead() {
           }}
         />
       )}
-      {s.phase === 'settlement' && <SettlementModal state={s} act={act} onReplay={replayLastCutscene} canReplay={!!lastCutscene} />}
+      {s.phase === 'settlement' && !showVerdict && <SettlementModal state={s} act={act} onReplay={replayLastCutscene} canReplay={!!lastCutscene} />}
       {showRules && <RulebookModal onClose={() => setShowRules(false)} onOpenDedication={() => { setShowRules(false); setShowDedication(true); }} />}
       {showStats && (
         <StatsModal
@@ -207,7 +212,17 @@ export default function BustALead() {
           }}
         />
       )}
-      {meldReveal && <MeldPhaseModal reveal={meldReveal} onClose={clearMeldReveal} />}
+      {meldReveal && !showVerdict && <MeldPhaseModal reveal={meldReveal} onClose={clearMeldReveal} />}
+      {showVerdict && (
+        <LaydownVerdictModal
+          state={s}
+          onContinue={() => setVerdictSeen(s.laydownOutcome.id)}
+          onThrowIn={() => {
+            setVerdictSeen(s.laydownOutcome.id);
+            setShowThrowIn(true);
+          }}
+        />
+      )}
       <TutorialOverlay key={tutorialKey} state={s} />
       {renegeNotice && <RenegeNotice onDismiss={() => setRenegeNotice(false)} />}
     </div>
