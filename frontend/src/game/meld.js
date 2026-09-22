@@ -38,8 +38,12 @@ export function computeMeld(hand, trump) {
     const q = cnt[s].Q - (s === trump ? usedTrumpQ : 0);
     availMarriage[s] = Math.max(0, Math.min(k, q));
   }
+  // Roundhouse (24) already includes Kings Around + Queens Around for its 8 cards — those
+  // K/Q must not be paid again as arounds.
+  let roundhouseKQ = 0;
   const marriageSuits = SUIT_KEYS.filter((s) => availMarriage[s] > 0);
   if (marriageSuits.length === 4 && SUIT_KEYS.every((s) => availMarriage[s] >= 1)) {
+    roundhouseKQ = 1;
     const cards = [];
     for (const s of SUIT_KEYS) {
       const kOff = s === trump ? usedTrumpK : 0;
@@ -47,6 +51,18 @@ export function computeMeld(hand, trump) {
       cards.push(...pickFrom(s, 'K', kOff, 1), ...pickFrom(s, 'Q', qOff, 1));
     }
     items.push({ name: '4-Suit Marriage (Roundhouse)', pts: 24, cards });
+    // Any second K+Q pair in a suit beyond the Roundhouse still scores as its own marriage.
+    for (const s of SUIT_KEYS) {
+      const extra = availMarriage[s] - 1;
+      if (extra <= 0) continue;
+      const kOff = (s === trump ? usedTrumpK : 0) + 1;
+      const qOff = (s === trump ? usedTrumpQ : 0) + 1;
+      items.push({
+        name: `${SUIT_BY_KEY[s].name} Marriage${s === trump ? ' (Royal)' : ''}`,
+        pts: (s === trump ? 4 : 2) * extra,
+        cards: [...pickFrom(s, 'K', kOff, extra), ...pickFrom(s, 'Q', qOff, extra)],
+      });
+    }
   } else {
     for (const s of marriageSuits) {
       const pairs = availMarriage[s];
@@ -74,19 +90,23 @@ export function computeMeld(hand, trump) {
     });
   }
 
-  // Arounds
-  const around = (rank, single, dbl, label) => {
-    const m = Math.min(cnt.S[rank], cnt.H[rank], cnt.D[rank], cnt.C[rank]);
+  // Arounds — one of a rank in every suit. Tiers: single / double / triple / quadruple.
+  const TIER_NAME = { 1: 'Around', 2: 'Double', 3: 'Triple', 4: 'Quadruple' };
+  const around = (rank, tiers, label) => {
+    // K/Q already paid inside a Roundhouse are excluded from the around count.
+    const off = rank === 'K' || rank === 'Q' ? roundhouseKQ : 0;
+    const m = Math.min(...SUIT_KEYS.map((s) => cnt[s][rank])) - off;
     if (m >= 1) {
-      const n = m >= 2 ? 2 : 1;
-      const cards = SUIT_KEYS.flatMap((s) => pick(s, rank, n));
-      items.push({ name: n === 2 ? `Double ${label} (${dbl})` : `${label} Around`, pts: n === 2 ? dbl : single, cards });
+      const n = Math.min(m, 4);
+      const cards = SUIT_KEYS.flatMap((s) => pickFrom(s, rank, off, n));
+      const name = n === 1 ? `${label} Around` : `${TIER_NAME[n]} ${label} (${tiers[n - 1]})`;
+      items.push({ name, pts: tiers[n - 1], cards });
     }
   };
-  around('A', 10, 100, 'Aces');
-  around('K', 8, 80, 'Kings');
-  around('Q', 6, 60, 'Queens');
-  around('J', 4, 40, 'Jacks');
+  around('A', [10, 100, 150, 200], 'Aces');
+  around('K', [8, 80, 120, 160], 'Kings');
+  around('Q', [6, 60, 90, 120], 'Queens');
+  around('J', [4, 40, 60, 80], 'Jacks');
 
   const total = items.reduce((s, i) => s + i.pts, 0);
   const seen = new Set();

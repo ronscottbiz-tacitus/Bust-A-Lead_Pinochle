@@ -575,19 +575,25 @@ export function SettlementModal({ state, act, onReplay, canReplay }) {
 const MELD_REF = [
   ['Off-Suit Marriage (K+Q)', '2'],
   ['Royal Trump Marriage', '4'],
-  ['4-Suit Marriage (Roundhouse)', '24'],
+  ['4-Suit Marriage (Roundhouse) — includes Kings & Queens Around', '24'],
   ['Trump Run (A 10 K Q J)', '15'],
   ['Double Trump Run', '150'],
   ['Pinochle (Q♠ + J♦)', '4'],
   ['Double Pinochle', '30'],
+  ['Triple Pinochle (90 Nuts!)', '90'],
+  ['Quadruple Pinochle', '300'],
   ['Aces Around', '10'],
   ['Double Aces (1000)', '100'],
+  ['Triple / Quadruple Aces', '150 / 200'],
   ['Kings Around', '8'],
   ['Double Kings', '80'],
+  ['Triple / Quadruple Kings', '120 / 160'],
   ['Queens Around', '6'],
   ['Double Queens', '60'],
+  ['Triple / Quadruple Queens', '90 / 120'],
   ['Jacks Around', '4'],
   ['Double Jacks', '40'],
+  ['Triple / Quadruple Jacks', '60 / 80'],
 ];
 
 const RULES = [

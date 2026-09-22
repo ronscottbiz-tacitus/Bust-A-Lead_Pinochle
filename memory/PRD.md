@@ -700,3 +700,8 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Verified at 844×390 and 667×375 (auction, discard, play) — fan fully inside viewport, zero overflow; live rotation back to 390×844 restores portrait layout.
 
 ## Fix (2026-06): Double Pinochle = 30 (was 40) in `game/meld.js` PIN_PTS and the Rulebook Meld Values table; unit assertion added in engine.test.js.
+
+## Updates (2026-06 — Meld Audit + Renege Integrity)
+- **Meld conventions (user-confirmed)**: Roundhouse 24 is flat — its K/Q are excluded from Kings/Queens Around (`roundhouseKQ` offset); extra K+Q pairs beyond the Roundhouse still score as marriages (bug fix). Arounds now tiered single/double/triple/quad: Aces 10/100/150/200, Kings 8/80/120/160, Queens 6/60/90/120, Jacks 4/40/60/80 (names `Triple Aces (150)` etc.; aces-detection regexes updated in reducer + useGame). Rulebook Meld Values lists all tiers + Triple/Quad Pinochle.
+- **Renege integrity**: `PLAY_CARD` now hard-guards `phase==='play' && !trickPending && turn===seat && seat holds card` — fixes false "renege" busts from stale double-taps (UI checked legality against the previous trick). Bust reasons now include the exact rule broken (`renegeReason`) in all difficulties. `CALL_RENEGE` ignored outside play.
+- 28/28 Jest (new: roundhouse absorption, double roundhouse, tiered arounds, out-of-turn guard).

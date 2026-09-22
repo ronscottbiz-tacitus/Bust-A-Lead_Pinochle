@@ -310,7 +310,7 @@ export function useGame() {
       const items = [...(meld?.items || []), ...(state.bidderAcesItem ? [state.bidderAcesItem] : [])];
       const total = items.reduce((n, i) => n + i.pts, 0);
       const has1000 =
-        items.some((i) => i.name.startsWith('Double Aces')) ||
+        items.some((i) => /^(Double|Triple|Quadruple) Aces/.test(i.name)) ||
         Object.values(state.defenderAces || {}).includes('double');
       const has90 = items.some((i) => i.name.includes('90 Nuts'));
       const reveal = { bidder: state.bidWinner, items, total };

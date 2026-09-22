@@ -163,7 +163,7 @@ function finalizeDiscard(s) {
   }
   // Aces Around must be DECLARED before the bidder leads an Ace, or it is forfeited.
   const meld = s.meld[s.bidWinner];
-  const acesIdx = meld.items.findIndex((i) => i.name === 'Aces Around' || i.name.startsWith('Double Aces'));
+  const acesIdx = meld.items.findIndex((i) => /^(Aces Around|(Double|Triple|Quadruple) Aces)/.test(i.name));
   if (acesIdx >= 0) {
     s.bidderAcesItem = meld.items[acesIdx];
     s.bidderAcesPending = true;
@@ -465,6 +465,7 @@ export function reducer(state, action) {
     }
 
     case 'CALL_RENEGE': {
+      if (s.phase !== 'play') return state;
       const { accuseSeat, book } = action;
       // Yard Court audit: accuse a specific opponent for a specific book.
       if (accuseSeat != null && book != null) {
@@ -500,6 +501,10 @@ export function reducer(state, action) {
 
     case 'PLAY_CARD': {
       const { seat, card } = action;
+      // Hard guard: only the seat whose turn it is may play, once, from cards it actually holds.
+      // Blocks stale double-taps that would otherwise be judged against the wrong trick state.
+      if (s.phase !== 'play' || s.trickPending || s.turn !== seat) return state;
+      if (!s.hands[seat].some((c) => c.id === card.id)) return state;
       if (seat === 'P' && s.humanAcesPending)
         return bust(s, 'P', 'Failed to declare Aces before playing card 1');
       // Bidder forfeits undeclared Aces Around the instant they LEAD an Ace.
@@ -511,11 +516,12 @@ export function reducer(state, action) {
       const isLegal = legal.some((c) => c.id === card.id);
       if (!isLegal) {
         const hard = s.settings.difficulty === 'hard';
-        if (!hard) return bust(s, seat, 'Reneged — illegal card played');
+        const why = renegeReason(s.hands[seat], s.trick, s.trump, card) || 'Illegal play';
+        if (!hard) return bust(s, seat, `Reneged — ${why}`);
         if (seat === 'P') {
           // Player renege: the yard inspects (~95% catch).
           if (Math.random() < 0.95)
-            return bust(s, seat, "BUS' A LEAD VIOLATION (RENEGE) — caught by the yard");
+            return bust(s, seat, `BUS' A LEAD VIOLATION (RENEGE) — ${why}`);
           s.renegeSlipped = (s.renegeSlipped || 0) + 1;
         } else {
           // AI renege in Convict: the illegal card stands unless the human Calls Renege.
