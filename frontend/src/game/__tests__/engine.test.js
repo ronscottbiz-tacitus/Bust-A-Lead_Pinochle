@@ -68,8 +68,8 @@ test('full hand simulation reaches settlement with conserved bankroll', () => {
     expect(s.phase).toBe('settlement');
     expect(s.settlement).toBeTruthy();
     const total = SEATS.reduce((n, k) => n + s.bankrolls[k], 0);
-    // zero-sum transfers keep total at 300 unless a bankroll was clamped at 0 (game over)
-    if (!s.gameOver) expect(total).toBe(300);
+    // zero-sum transfers keep total at 420 unless a bankroll was clamped at 0 (game over)
+    if (!s.gameOver) expect(total).toBe(420);
     // A played-out (non-conceded) hand must complete 25 tricks
     if (s.result === 'made' || s.result === 'hard') {
       if (!s.boardSet) {
@@ -169,11 +169,11 @@ test('AI never sloughs off-suit while holding the led suit or trump (strict lega
   }
 });
 
-test('auction records a bid log and RESET_TABLE re-deals a fresh $100 table', () => {
+test('auction records a bid log and RESET_TABLE re-deals a fresh $140 table', () => {
   let s = playHand(initState());
   expect(s.bidLog.length).toBeGreaterThan(0);
   s = reducer(s, { type: 'RESET_TABLE' });
-  expect(s.bankrolls).toEqual({ W: 100, E: 100, P: 100 });
+  expect(s.bankrolls).toEqual({ W: 140, E: 140, P: 140 });
   expect(s.stats.handsPlayed).toBe(0);
   expect(s.dealer).toBe('P');
   expect(s.phase).toBe('dealing');
@@ -225,7 +225,7 @@ test('MELD: trump run does not double-count the royal marriage (no phantom +4)',
   expect(m2.total).toBe(19); // 15 run + 4 royal marriage
 });
 
-test('MELD: Triple Pinochle scores 90 (not 4+40+...) and quad scores 300', () => {
+test('MELD: Double Pinochle scores 30, Triple 90 (flat, not stacked) and quad 300', () => {
   const { computeMeld } = require('../meld');
   const triple = [
     { id: 'S-Q-0', suit: 'S', rank: 'Q' }, { id: 'S-Q-1', suit: 'S', rank: 'Q' }, { id: 'S-Q-2', suit: 'S', rank: 'Q' },
@@ -236,7 +236,74 @@ test('MELD: Triple Pinochle scores 90 (not 4+40+...) and quad scores 300', () =>
   expect(pin.pts).toBe(90);
   expect(pin.name).toContain('90 Nuts');
 
+  const dbl = triple.filter((c) => !c.id.endsWith('-2'));
+  const md = computeMeld(dbl, 'H');
+  const dp = md.items.find((i) => i.name.includes('Pinochle'));
+  expect(dp.name).toBe('Double Pinochle');
+  expect(dp.pts).toBe(30);
+
   const quad = [...triple, { id: 'S-Q-3', suit: 'S', rank: 'Q' }, { id: 'D-J-3', suit: 'D', rank: 'J' }];
   const mq = computeMeld(quad, 'H');
   expect(mq.items.find((i) => i.name.includes('Pinochle')).pts).toBe(300);
+});
+
+test('MELD: Roundhouse (24) still scores a second marriage pair in the same suit', () => {
+  const { computeMeld } = require('../meld');
+  const hand = [];
+  for (const s of ['S', 'H', 'D', 'C']) hand.push({ id: `${s}-K-0`, suit: s, rank: 'K' }, { id: `${s}-Q-0`, suit: s, rank: 'Q' });
+  hand.push({ id: 'H-K-1', suit: 'H', rank: 'K' }, { id: 'H-Q-1', suit: 'H', rank: 'Q' });
+  const m = computeMeld(hand, 'C');
+  expect(m.items.find((i) => i.name.includes('Roundhouse')).pts).toBe(24);
+  const extra = m.items.find((i) => i.name === 'Hearts Marriage');
+  expect(extra.pts).toBe(2);
+  expect(extra.cards.map((c) => c.id).sort()).toEqual(['H-K-1', 'H-Q-1']);
+  expect(m.allCards).toHaveLength(10);
+  // Roundhouse absorbs Kings/Queens Around — they are NOT paid again for the same cards.
+  expect(m.items.some((i) => i.name.includes('Kings') || i.name.includes('Queens'))).toBe(false);
+  expect(m.total).toBe(26);
+});
+
+test('MELD: double Roundhouse cards pay 24 + 4 extra marriages + single Kings/Queens Around', () => {
+  const { computeMeld } = require('../meld');
+  const hand = [];
+  for (const s of ['S', 'H', 'D', 'C']) for (const i of [0, 1]) hand.push({ id: `${s}-K-${i}`, suit: s, rank: 'K' }, { id: `${s}-Q-${i}`, suit: s, rank: 'Q' });
+  const m = computeMeld(hand, 'C');
+  // 24 (roundhouse) + 2+2+2 off-suit + 4 royal + 8 kings around + 6 queens around = 48
+  expect(m.total).toBe(48);
+  expect(m.items.find((i) => i.name === 'Kings Around').pts).toBe(8);
+  expect(m.items.find((i) => i.name === 'Queens Around').pts).toBe(6);
+});
+
+test('MELD: triple / quadruple arounds pay the tiered values', () => {
+  const { computeMeld } = require('../meld');
+  const mk = (rank, n) => ['S', 'H', 'D', 'C'].flatMap((s) => Array.from({ length: n }, (_, i) => ({ id: `${s}-${rank}-${i}`, suit: s, rank })));
+  expect(computeMeld(mk('A', 3), 'H').items[0]).toMatchObject({ name: 'Triple Aces (150)', pts: 150 });
+  expect(computeMeld(mk('A', 4), 'H').items[0]).toMatchObject({ name: 'Quadruple Aces (200)', pts: 200 });
+  expect(computeMeld(mk('K', 3), 'H').total).toBe(120);
+  expect(computeMeld(mk('K', 4), 'H').total).toBe(160);
+  expect(computeMeld(mk('Q', 3), 'H').total).toBe(90);
+  expect(computeMeld(mk('Q', 4), 'H').total).toBe(120);
+  expect(computeMeld(mk('J', 3), 'H').total).toBe(60);
+  expect(computeMeld(mk('J', 4), 'H').total).toBe(80);
+  expect(computeMeld(mk('A', 2), 'H').items[0]).toMatchObject({ name: 'Double Aces (100)', pts: 100 });
+});
+
+test('RENEGE GUARD: out-of-turn / stale double-tap plays are ignored, never busted', () => {
+  let s = reducer(initState(), { type: 'START_ROUND' });
+  s = reducer(s, { type: 'DEAL_DONE' });
+  s.phase = 'play';
+  s.bidWinner = 'P';
+  s.trump = 'S';
+  s.turn = 'P';
+  s.trickNo = 1;
+  s.meld = { W: null, E: null, P: { total: 20, items: [], allCards: [] } };
+  const first = s.hands.P[0];
+  const second = s.hands.P.find((c) => c.suit !== first.suit) || s.hands.P[1];
+  s = reducer(s, { type: 'PLAY_CARD', seat: 'P', card: first });
+  expect(s.turn).toBe('W');
+  const after = reducer(s, { type: 'PLAY_CARD', seat: 'P', card: second });
+  expect(after).toBe(s); // ignored outright
+  expect(after.result).toBeNull();
+  // A card the seat does not hold is also ignored.
+  expect(reducer(s, { type: 'PLAY_CARD', seat: 'W', card: first })).toBe(s);
 });

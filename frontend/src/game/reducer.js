@@ -1,8 +1,8 @@
-import { SEATS, nextSeat, leftOf, isCounter } from './constants';
+import { SEATS, nextSeat, leftOf, isCounter, startingBankrolls } from './constants';
 import { dealDeck } from './deck';
 import { computeMeld, acesAround, suitsWithMarriage } from './meld';
 import { legalPlays, currentWinnerIndex, trickBooks, renegeReason } from './trick';
-import { saveTarget } from './scoring';
+import { saveTarget, laydownSafe } from './scoring';
 import { loadSave } from './storage';
 
 const clone = (o) =>
@@ -45,6 +45,7 @@ function emptyRound() {
     goingDouble: false,
     laydown: false,
     laydownResp: {},
+    laydownOutcome: null,
     laydownChallenged: false,
     laydownUnchallenged: false,
     bidderExposed: false,
@@ -79,6 +80,7 @@ function emptyRound() {
     playLog: [],
     aiConcedeChecked: false,
     playedOut: false,
+    thrownIn: false,
   };
 }
 
@@ -100,9 +102,10 @@ export function initState() {
       playerChar: 'g2',
       oppW: null,
       oppE: null,
+      skill: 'alight',
       ...(saved?.settings || {}),
     },
-    bankrolls: saved?.bankrolls || { W: 100, E: 100, P: 100 },
+    bankrolls: saved?.bankrolls || startingBankrolls(),
     dealer: saved?.dealer || 'P',
     stats: { ...clone(EMPTY_STATS), ...(saved?.stats || {}) },
     ...emptyRound(),
@@ -159,9 +162,14 @@ function finalizeDiscard(s) {
     s.result = 'hard';
     return settle(s);
   }
+  // Lay-Down gate: a lay-down must be provably safe on the kept hand (potential losers vs room).
+  if (s.laydown) {
+    const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
+    if (!laydownSafe(s.hands[s.bidWinner], s.trump, bench)) s.laydown = false;
+  }
   // Aces Around must be DECLARED before the bidder leads an Ace, or it is forfeited.
   const meld = s.meld[s.bidWinner];
-  const acesIdx = meld.items.findIndex((i) => i.name === 'Aces Around' || i.name.startsWith('Double Aces'));
+  const acesIdx = meld.items.findIndex((i) => /^(Aces Around|(Double|Triple|Quadruple) Aces)/.test(i.name));
   if (acesIdx >= 0) {
     s.bidderAcesItem = meld.items[acesIdx];
     s.bidderAcesPending = true;
@@ -248,7 +256,7 @@ function computeSettlement(s) {
       label = 'Soft Set (Conceded)';
     } else {
       unit = -2;
-      label = 'Hard Set';
+      label = s.thrownIn ? 'Threw It In — Hard Set' : 'Hard Set';
     }
     const per = unit * mult * stakes;
     for (const d of defenders) {
@@ -330,7 +338,7 @@ export function reducer(state, action) {
       return s;
 
     case 'NEW_GAME':
-      s.bankrolls = { W: 100, E: 100, P: 100 };
+      s.bankrolls = startingBankrolls();
       s.dealer = 'P';
       s.stats = clone(EMPTY_STATS);
       s.phase = 'config';
@@ -342,7 +350,7 @@ export function reducer(state, action) {
       return s;
 
     case 'RESET_TABLE':
-      s.bankrolls = { W: 100, E: 100, P: 100 };
+      s.bankrolls = startingBankrolls();
       s.dealer = 'P';
       s.stats = clone(EMPTY_STATS);
       return dealRound(s);
@@ -412,11 +420,27 @@ export function reducer(state, action) {
       s.conceded = true;
       return settle(s);
 
+    // "Throw It In" — the human bidder surrenders mid-hand and eats a full Hard Set.
+    case 'THROW_IN':
+      if (s.phase !== 'play' || s.bidWinner !== 'P') return state;
+      s.result = 'hard';
+      s.conceded = true;
+      s.thrownIn = true;
+      s.trickPending = false;
+      s.turn = null;
+      return settle(s);
+
     case 'LAYDOWN_RESPONSE': {
       s.laydownResp = { ...s.laydownResp, [action.seat]: action.challenge };
       const defs = SEATS.filter((x) => x !== s.bidWinner);
       if (defs.every((d) => s.laydownResp[d] != null)) {
         const challenged = defs.some((d) => s.laydownResp[d] === true);
+        s.laydownOutcome = {
+          id: Date.now(),
+          result: challenged ? 'challenged' : 'conceded',
+          challengers: defs.filter((d) => s.laydownResp[d] === true),
+          responses: { ...s.laydownResp },
+        };
         if (challenged) {
           s.laydownChallenged = true;
           s.bidderExposed = true;
@@ -453,6 +477,7 @@ export function reducer(state, action) {
     }
 
     case 'CALL_RENEGE': {
+      if (s.phase !== 'play') return state;
       const { accuseSeat, book } = action;
       // Yard Court audit: accuse a specific opponent for a specific book.
       if (accuseSeat != null && book != null) {
@@ -488,6 +513,10 @@ export function reducer(state, action) {
 
     case 'PLAY_CARD': {
       const { seat, card } = action;
+      // Hard guard: only the seat whose turn it is may play, once, from cards it actually holds.
+      // Blocks stale double-taps that would otherwise be judged against the wrong trick state.
+      if (s.phase !== 'play' || s.trickPending || s.turn !== seat) return state;
+      if (!s.hands[seat].some((c) => c.id === card.id)) return state;
       if (seat === 'P' && s.humanAcesPending)
         return bust(s, 'P', 'Failed to declare Aces before playing card 1');
       // Bidder forfeits undeclared Aces Around the instant they LEAD an Ace.
@@ -499,11 +528,12 @@ export function reducer(state, action) {
       const isLegal = legal.some((c) => c.id === card.id);
       if (!isLegal) {
         const hard = s.settings.difficulty === 'hard';
-        if (!hard) return bust(s, seat, 'Reneged — illegal card played');
+        const why = renegeReason(s.hands[seat], s.trick, s.trump, card) || 'Illegal play';
+        if (!hard) return bust(s, seat, `Reneged — ${why}`);
         if (seat === 'P') {
           // Player renege: the yard inspects (~95% catch).
           if (Math.random() < 0.95)
-            return bust(s, seat, "BUS' A LEAD VIOLATION (RENEGE) — caught by the yard");
+            return bust(s, seat, `BUS' A LEAD VIOLATION (RENEGE) — ${why}`);
           s.renegeSlipped = (s.renegeSlipped || 0) + 1;
         } else {
           // AI renege in Convict: the illegal card stands unless the human Calls Renege.

@@ -2,10 +2,10 @@ import { useReducer, useEffect, useRef, useState } from 'react';
 import { reducer, initState } from '../game/reducer';
 import { saveGame } from '../game/storage';
 import { SEATS, SPEED, COUNTER_RANKS, applySeatRoster, SEAT_CHAR } from '../game/constants';
-import { evaluateBid, chooseTrump, chooseDiscards, shouldGoDouble, laydownChallenge, aiPlay, aiConcede } from '../game/ai';
+import { evaluateBid, chooseTrump, chooseDiscards, shouldGoDouble, laydownChallenge, aiPlay, aiConcede, seatVoids } from '../game/ai';
 import { saveTarget } from '../game/scoring';
 import { SoundEngine } from '../audio/sfx';
-import { createCutsceneManager, charOfClip } from '../game/cutsceneManager';
+import { createCutsceneManager, charOfClip, ROTATION_POOLS } from '../game/cutsceneManager';
 import { getChar, buildSeatChars } from '../config/characters';
 
 // Convict-tuning renege probabilities per play (settings.convictRenege).
@@ -21,16 +21,16 @@ const CHAR_BANNER = {
 
 // Cutscene priority tiers (lower = higher priority).
 const CUTSCENE_TIER = {
-  portal: 1, game_over_1: 1, game_over_2: 1,
+  portal: 1, game_over: 1,
   renege: 2, falseaccuse: 2, doolow_scene_renege: 2,
-  hardset: 2, doolow_set: 2, papacap_set: 2, g2_hardset: 2,
-  babyboy_hardset: 2, scrap_hardset: 2,
+  hardset: 2, babyboy_hardset: 2, scrap_hardset: 2, concession: 2,
   renege_lesson: 3, newbooty_intro: 3, g2_teeth: 3, g2_3bang: 3,
   babyboy_taunt: 3, scrap_slam: 3,
-  doolow_scene_takeover: 4, doolow_scene_cut: 4,
-  papacap_scene_1: 5, papacap_scene_2: 5, papacap_scene_3: 5, papacap_scene_4: 5,
+  doolow_scene_takeover: 4, doolow_scene_cut: 4, doolow_taunt_1: 4, doolow_taunt_2: 4,
+  papacap_scene_1: 5, papacap_scene_2: 5, papacap_scene_3: 5, papacap_scene_4: 5, papacap_taunt_1: 5, papacap_taunt_2: 5,
 };
 const tierOf = (key) => CUTSCENE_TIER[key] ?? 3;
+const MATCH_OVER_KEYS = ['portal', 'game_over'];
 
 function aiBidAction(s, seat) {
   const prof = getChar(SEAT_CHAR[seat]).aiProfile;
@@ -40,15 +40,22 @@ function aiBidAction(s, seat) {
   return { type: 'PASS', seat };
 }
 
-// Maps a settlement state to the cutscene { key, data } that should play (or null).
-// Priority: elimination > concession > renege/violation > win/hard-set milestones.
-export function settlementCutscene(s) {
-  // 0) Match over — random full-screen victory outro before the final score screen.
-  if (s.gameOver) {
-    return { key: Math.random() < 0.5 ? 'game_over_1' : 'game_over_2' };
-  }
+// True when the human finishes the match on top: still holding canteen AND the biggest
+// bankroll at the table (the match ends the moment any seat is wiped out).
+export function humanWonMatch(s) {
+  const b = s.bankrolls || {};
+  const p = b.P ?? 0;
+  return p > 0 && p >= Math.max(b.W ?? 0, b.E ?? 0);
+}
 
-  // 1) Fold / concede / soft set / board set (thrown in before completing the hand).
+// Maps a settlement state to the cutscene { key, data } that should play (or null).
+// Priority: match over > concession > renege/violation > win/hard-set milestones.
+// Keys with a ROTATION_POOL entry are resolved to a concrete clip (shuffle-bag) by the hook.
+export function settlementCutscene(s) {
+  // 0) Match over — The Get-2 portal for a human victory, else the outro rotation.
+  if (s.gameOver) return { key: humanWonMatch(s) ? 'portal' : 'game_over' };
+
+  // 1) Fold / concede / soft set / board set / Throw It In (hand ended before playing out).
   const isConcession = s.result === 'soft' || s.conceded || (s.result === 'hard' && s.boardSet);
   if (isConcession && s.result !== 'busted') return { key: 'concession' };
 
@@ -130,7 +137,8 @@ function drive(s, dispatch, sound) {
       if (pending.length) {
         const seat = pending[0];
         return setTimeout(() => {
-          const challenge = laydownChallenge(s.hands[seat], s.trump);
+          const bench = saveTarget({ bid: s.bid, meldTotal: s.meld[s.bidWinner]?.total || 0, goingDouble: s.goingDouble });
+          const challenge = laydownChallenge(s.hands[seat], s.trump, { bidderHand: s.hands[s.bidWinner], bench });
           dispatch({ type: 'LAYDOWN_RESPONSE', seat, challenge });
         }, d.think);
       }
@@ -161,7 +169,14 @@ function drive(s, dispatch, sound) {
       }
       if (s.turn && s.turn !== 'P') {
         return setTimeout(() => {
-          const card = aiPlay(s.turn, s.hands[s.turn], s.trick, s.trump, s.bidWinner, s.signals?.[s.turn], s.settings.difficulty, s.playedIds, RENEGE_RATE[s.settings.convictRenege] ?? 0.02);
+          const meldTotal = s.meld[s.bidWinner]?.total || 0;
+          const ctx = {
+            voids: seatVoids(s.playLog),
+            bidderBooks: (s.books[s.bidWinner] || 0) + (s.buriedBooks || 0),
+            bench: saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble }),
+            skill: s.settings.skill || 'alight',
+          };
+          const card = aiPlay(s.turn, s.hands[s.turn], s.trick, s.trump, s.bidWinner, s.signals?.[s.turn], s.settings.difficulty, s.playedIds, RENEGE_RATE[s.settings.convictRenege] ?? 0.02, ctx);
           sound.play();
           dispatch({ type: 'PLAY_CARD', seat: s.turn, card });
         }, d.think);
@@ -185,6 +200,7 @@ export function useGame() {
   const [paused, setPaused] = useState(false);
   const [meldReveal, setMeldReveal] = useState(null);
   const [lastCutscene, setLastCutscene] = useState(null);
+  const [matchOutroDone, setMatchOutroDone] = useState(false);
   const trashRef = useRef(state.completedBooks.length);
   const isInitialMount = useRef(true);
   const aiRenegeSeenRef = useRef(0);
@@ -203,10 +219,13 @@ export function useGame() {
     const tier = tierOf(key);
     const cur = cutsceneRef.current;
     if (cur && tierOf(cur.key) <= tier) return false;
-    const cs = { key, blocking: true, data: opts.data };
+    // Pooled keys resolve to a concrete clip via the anti-repeat shuffle-bag.
+    const clip = ROTATION_POOLS[key] ? mgrRef.current.rotate(key) : undefined;
+    const data = clip ? { ...(opts.data || {}), clip } : opts.data;
+    const cs = { key, blocking: true, data };
     cutsceneRef.current = cs;
     setCutscene(cs);
-    setLastCutscene({ key, data: opts.data });
+    setLastCutscene({ key, data });
     return true;
   };
 
@@ -242,6 +261,7 @@ export function useGame() {
       meldPendingRef.current = null;
       setMeldReveal(null);
       setLastCutscene(null);
+      setMatchOutroDone(false);
     }
   }, [state.phase]);
 
@@ -256,11 +276,12 @@ export function useGame() {
         if (cs.key === 'renege' || cs.key === 'falseaccuse') {
           snd.renege();
           if (cs.key === 'renege') snd.tableSlamThunder();
-        } else if (cs.key === 'hardset' || cs.key === 'doolow_set' || cs.key === 'papacap_set' || cs.key === 'g2_hardset' || cs.key === 'babyboy_hardset' || cs.key === 'scrap_hardset') snd.busted();
+        } else if (cs.key === 'hardset' || cs.key === 'babyboy_hardset' || cs.key === 'scrap_hardset') snd.busted();
         else if (cs.key === 'sweep' || cs.key === 'portal') {
           snd.win();
           if (cs.key === 'portal') snd.portalHum();
-        } else if (cs.key === 'concession') snd.play();
+        } else if (cs.key === 'game_over') snd.lose();
+        else if (cs.key === 'concession') snd.play();
       } else if (state.result === 'busted') snd.busted();
       else if (state.settlement && state.settlement.transfers.some((t) => t.to === 'P')) snd.win();
       else snd.lose();
@@ -269,11 +290,11 @@ export function useGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase, state.result, state.settlement, state.busted]);
 
-  // "Kitty Prayer" — high bidder flips the kitty on a 90+ contract.
+  // "The Widow Prayer" — high bidder flips the kitty strictly on a 95+ contract.
   useEffect(() => {
     if (state.phase === 'discard' && state.kittyCollected && !kittyRef.current) {
       kittyRef.current = true;
-      if ((state.bid || 0) > 95 && !(state.bidWinner === 'W' && (state.bid || 0) >= 90)) {
+      if ((state.bid || 0) > 95) {
         requestCutscene('kittyprayer');
         mgrRef.current.notePriority('kittyprayer');
       }
@@ -290,7 +311,7 @@ export function useGame() {
       const items = [...(meld?.items || []), ...(state.bidderAcesItem ? [state.bidderAcesItem] : [])];
       const total = items.reduce((n, i) => n + i.pts, 0);
       const has1000 =
-        items.some((i) => i.name.startsWith('Double Aces')) ||
+        items.some((i) => /^(Double|Triple|Quadruple) Aces/.test(i.name)) ||
         Object.values(state.defenderAces || {}).includes('double');
       const has90 = items.some((i) => i.name.includes('90 Nuts'));
       const reveal = { bidder: state.bidWinner, items, total };
@@ -431,8 +452,11 @@ export function useGame() {
   }, [state, cutscene, paused, meldReveal]);
 
   const clearCutscene = () => {
+    const done = cutsceneRef.current;
     cutsceneRef.current = null;
     setCutscene(null);
+    // The final match outro just finished — hand off to the Dedication & Origin modal.
+    if (done && MATCH_OVER_KEYS.includes(done.key) && state.gameOver) setMatchOutroDone(true);
     if (meldPendingRef.current) {
       const reveal = meldPendingRef.current;
       meldPendingRef.current = null;
@@ -461,8 +485,9 @@ export function useGame() {
     if (action.type === 'PLACE_BID') snd.chip();
     else if (action.type === 'PLAY_CARD') snd.play();
     else if (action.type === 'DECLARE_TRUMP') snd.trump();
+    else if (action.type === 'THROW_IN') snd.busted();
     dispatch(action);
   };
 
-  return { state, act, sound: soundRef.current, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt, lastCutscene, replayLastCutscene, playCutscene };
+  return { state, act, sound: soundRef.current, cutscene, clearCutscene, setPaused, meldReveal, clearMeldReveal, taunt, clearTaunt, lastCutscene, replayLastCutscene, playCutscene, matchOutroDone };
 }

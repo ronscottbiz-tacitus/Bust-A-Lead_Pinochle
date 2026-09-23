@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { SEAT_LABEL, SEATS } from '../game/constants';
+import { SEAT_LABEL, SEATS, SEAT_AVATAR, SUIT_BY_KEY } from '../game/constants';
+import { saveTarget } from '../game/scoring';
 import { CHARACTERS, PLAYER_PICKS, ROSTER_IDS, buildSeatChars } from '../config/characters';
 import { computeMeld } from '../game/meld';
 import { Card } from './Card';
 import { videoSources, CUTSCENE_LIBRARY } from './CutsceneOverlay';
-import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers, Gavel, ShieldAlert, Film, SkipForward, ChevronLeft, ChevronRight, LayoutGrid, PlayCircle } from 'lucide-react';
+import { Play, Trophy, Skull, AlertTriangle, X, ArrowRight, RotateCcw, BarChart3, History, RefreshCw, Home, Layers, Gavel, ShieldAlert, Film, SkipForward, ChevronLeft, ChevronRight, LayoutGrid, PlayCircle, Coins, Heart, Flag, Eye, Zap, Swords, HandMetal, Check } from 'lucide-react';
 
 const money = (n) => `$${n.toFixed(2)}`;
 
@@ -109,7 +110,7 @@ function Choice({ label, options, value, onChange, testidPrefix }) {
             key={o.value}
             data-testid={`${testidPrefix}-${o.value}`}
             onClick={() => onChange(o.value)}
-            className={`px-2 py-2 rounded-lg border text-xs font-bold transition-all active:scale-95 ${
+            className={`px-2 py-3 md:py-2 min-h-[44px] md:min-h-0 rounded-lg border text-xs font-bold transition-all active:scale-95 ${
               value === o.value
                 ? 'bg-amber-500 border-amber-400 text-black shadow-[0_3px_0_rgba(0,0,0,0.6)]'
                 : 'bg-neutral-900/80 border-neutral-700 text-neutral-300 hover:border-neutral-500'
@@ -168,6 +169,18 @@ const CFG_STAKES = [
   { value: 2, label: 'Mid $2/$4' },
   { value: 5, label: 'High $5/$10' },
 ];
+// "Skillz" — defensive tactical rating of the AI syndicate (independent of Difficulty).
+const CFG_SKILL = [
+  { value: 'dumptruck', label: 'Dump Truck' },
+  { value: 'alight', label: "Al'ight" },
+  { value: 'shooter', label: 'Shooter' },
+];
+const SKILL_BLURB = {
+  dumptruck: 'Casual · 65% Tactical Rating — plays selfish, bleeds counters, ignores partner voids.',
+  alight: "Standard · 75% Tactical Rating — runs the syndicate playbook most of the time.",
+  shooter: 'Cutthroat · 100% Tactical Rating — counter starvation, void cuts, ace-hunting. Every book.',
+};
+const GET2_URL = 'https://get2.one';
 
 const FEEDBACK_URL = 'https://forms.gle/j9aMWdxqwYjYWjzz5';
 
@@ -254,7 +267,7 @@ function OpponentSelect({ seat, label, value, candidates, disabledId, onChange }
   );
 }
 
-export function ConfigScreen({ state, act, onReplayTutorial }) {
+export function ConfigScreen({ state, act, onReplayTutorial, onOpenDedication }) {
   const s = state.settings;
   const set = (patch) => act({ type: 'UPDATE_SETTINGS', settings: patch });
   const roster = buildSeatChars(s.playerChar || 'g2', s.oppW, s.oppE);
@@ -274,7 +287,7 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
             href={FEEDBACK_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="absolute bottom-2 right-3 z-10 text-xs font-sub font-bold text-amber-300/90 hover:text-amber-200 underline underline-offset-2 decoration-amber-400/50 hover:decoration-amber-300 transition-colors"
+            className="absolute bottom-1 right-1 z-10 px-3 py-2 text-xs font-sub font-bold text-amber-300/90 hover:text-amber-200 underline underline-offset-2 decoration-amber-400/50 hover:decoration-amber-300 transition-colors"
           >
             Feedback
           </a>
@@ -291,6 +304,18 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
               onChange={(v) => set({ difficulty: v, tutorialHints: v === 'easy' })}
               options={CFG_DIFFICULTY}
             />
+            <div data-testid="skillz-section" className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-3 space-y-2">
+              <Choice
+                label="Skillz — Defensive AI"
+                testidPrefix="cfg-skill"
+                value={s.skill || 'alight'}
+                onChange={(v) => set({ skill: v })}
+                options={CFG_SKILL}
+              />
+              <div data-testid="skillz-blurb" className="text-[10px] font-sub text-rose-100/80 leading-snug">
+                {SKILL_BLURB[s.skill || 'alight']}
+              </div>
+            </div>
             {s.difficulty === 'hard' && (
               <div data-testid="convict-tuning-dial" className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-3">
                 <div className="text-[11px] font-sub uppercase tracking-widest text-amber-400/90 font-bold">
@@ -361,6 +386,9 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
               onChange={(v) => set({ stakesBase: v })}
               options={CFG_STAKES}
             />
+            <div data-testid="starting-bankroll-label" className="text-[11px] font-sub text-emerald-200/90 flex items-center gap-1.5 -mt-1">
+              <Coins size={12} className="text-yellow-400 shrink-0" /> Starting Bankroll: <b className="text-emerald-300">$140.00</b> (CDCR Max Monthly Canteen Draw)
+            </div>
           </div>
           <button
             data-testid="replay-tutorial-btn"
@@ -368,6 +396,13 @@ export function ConfigScreen({ state, act, onReplayTutorial }) {
             className="mt-4 w-full py-2.5 rounded-xl bg-cyan-500/15 border border-cyan-400/60 text-cyan-100 font-display font-bold tracking-wide flex items-center justify-center gap-2 hover:bg-cyan-500/25 transition-all active:scale-95"
           >
             <RotateCcw size={16} /> Replay Tutorial
+          </button>
+          <button
+            data-testid="dedication-btn-title"
+            onClick={onOpenDedication}
+            className="mt-2 w-full py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/50 text-amber-200 font-display font-bold tracking-wide flex items-center justify-center gap-2 hover:bg-amber-500/20 transition-all active:scale-95"
+          >
+            <Heart size={16} /> Yard Dedication
           </button>
           <button
             data-testid="deal-btn"
@@ -391,7 +426,7 @@ export function SettlementModal({ state, act, onReplay, canReplay }) {
   return (
     <Overlay testid="settlement-modal">
       <div
-        className={`rounded-3xl p-6 sm:p-8 w-full max-w-md pop-in border-2 ${
+        className={`rounded-3xl p-5 sm:p-8 w-full max-w-md max-h-[92vh] overflow-y-auto pop-in border-2 ${
           busted
             ? 'bg-gradient-to-b from-red-950 to-slate-950 border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.6)]'
             : win
@@ -541,25 +576,31 @@ export function SettlementModal({ state, act, onReplay, canReplay }) {
 const MELD_REF = [
   ['Off-Suit Marriage (K+Q)', '2'],
   ['Royal Trump Marriage', '4'],
-  ['4-Suit Marriage (Roundhouse)', '24'],
+  ['4-Suit Marriage (Roundhouse) — includes Kings & Queens Around', '24'],
   ['Trump Run (A 10 K Q J)', '15'],
   ['Double Trump Run', '150'],
   ['Pinochle (Q♠ + J♦)', '4'],
-  ['Double Pinochle', '40'],
+  ['Double Pinochle', '30'],
+  ['Triple Pinochle (90 Nuts!)', '90'],
+  ['Quadruple Pinochle', '300'],
   ['Aces Around', '10'],
   ['Double Aces (1000)', '100'],
+  ['Triple / Quadruple Aces', '150 / 200'],
   ['Kings Around', '8'],
   ['Double Kings', '80'],
+  ['Triple / Quadruple Kings', '120 / 160'],
   ['Queens Around', '6'],
   ['Double Queens', '60'],
+  ['Triple / Quadruple Queens', '90 / 120'],
   ['Jacks Around', '4'],
   ['Double Jacks', '40'],
+  ['Triple / Quadruple Jacks', '60 / 80'],
 ];
 
 const RULES = [
   'Deck: 80 cards (two pinochle decks, 9s removed). 4 copies of 10-J-Q-K-A in every suit.',
   'Book (card) rank high→low: A > 10 > K > Q > J.',
-  'Each player is dealt 25 cards; 5 go to the Kitty. Everyone starts with $100.',
+  'Each player is dealt 25 cards; 5 go to the Kitty. Everyone starts with $140 — the CDCR Maximum Monthly Canteen Draw.',
   'Bidding opens left of the dealer in $5 steps. If both opponents pass, the bid drops on the dealer at base.',
   'The winning bidder must expose a Marriage (K+Q) to name trump before touching the kitty. No marriage = Soft Set.',
   'Bidder takes the 5-card kitty (30 cards) then buries exactly 5 before card 1.',
@@ -569,7 +610,8 @@ const RULES = [
   'Books to Save = Max(20, Bid − Meld) — 31 floor if Going Double. Fewer books = Hard Set.',
   'Busting a lead (out of turn / renege / undeclared aces) = immediate Hard Set on the offender.',
   'Settlement (scaled by table stakes): Made +1/defender · Soft Set −1/defender · Hard Set −2/defender.',
-  'Multipliers compound: Going Double ×2 · Lay-Down Challenged ×2 · Spades Trump ×2.',
+  'Multipliers compound: Going Double ×2 · Lay-Down Challenged ×2 · Spades Trump ×2 (Double + Lay-Down in Spades = ×8).',
+  'Throw It In: the bidder may surrender a hand mid-play from the top bar — it settles as a full Hard Set (−2 per defender × multipliers).',
 ];
 
 export function StatsModal({ stats, onClose, onReset }) {
@@ -628,7 +670,7 @@ export function StatsModal({ stats, onClose, onReset }) {
   );
 }
 
-export function RulebookModal({ onClose }) {
+export function RulebookModal({ onClose, onOpenDedication }) {
   const [tab, setTab] = useState('rules');
   return (
     <Overlay testid="rulebook-modal">
@@ -641,7 +683,7 @@ export function RulebookModal({ onClose }) {
           <X size={16} />
         </button>
         <div className="font-display font-black text-xl text-amber-400 uppercase tracking-wide mb-3">Rulebook &amp; Meld Reference</div>
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 flex-wrap">
           {[
             ['rules', 'Rules'],
             ['meld', 'Meld Values'],
@@ -656,6 +698,15 @@ export function RulebookModal({ onClose }) {
               {label}
             </button>
           ))}
+          {onOpenDedication && (
+            <button
+              data-testid="dedication-btn-rules"
+              onClick={onOpenDedication}
+              className="ml-auto px-3 py-1.5 rounded-lg text-xs font-semibold border bg-amber-500/10 border-amber-500/50 text-amber-200 hover:bg-amber-500/20 flex items-center gap-1"
+            >
+              <Heart size={12} /> Yard Dedication
+            </button>
+          )}
         </div>
         {tab === 'rules' ? (
           <ol className="space-y-2 list-decimal list-inside">
@@ -748,7 +799,7 @@ export function NewGameConfirmModal({ onRedeal, onMainMenu, onCancel }) {
       <div className={`${GTA_PANEL} p-6 sm:p-7 w-full max-w-sm pop-in text-center`}>
         <RefreshCw size={36} className="mx-auto text-amber-400 mb-3" />
         <div className="font-display font-black text-xl text-amber-300 uppercase tracking-wide mb-2">New Game</div>
-        <p className="text-sm text-slate-300 mb-5">Choose how you want to restart. Both options reset all bankrolls to <b className="text-emerald-300">$100.00</b>.</p>
+        <p className="text-sm text-slate-300 mb-5">Choose how you want to restart. Both options reset all bankrolls to <b className="text-emerald-300">$140.00</b>.</p>
         <div className="flex flex-col gap-2.5">
           <button
             data-testid="redeal-table-btn"
@@ -774,6 +825,100 @@ export function NewGameConfirmModal({ onRedeal, onMainMenu, onCancel }) {
         </div>
       </div>
     </Overlay>
+  );
+}
+
+// "Throw It In" — 2-button confirmation before the bidder surrenders the hand as a Hard Set.
+export function ThrowInConfirmModal({ onCancel, onConfirm }) {
+  return (
+    <Overlay testid="throw-in-modal">
+      <div className={`${GTA_PANEL} p-6 sm:p-7 w-full max-w-sm pop-in text-center border-rose-500/60`}>
+        <Flag size={36} className="mx-auto text-rose-400 mb-3" />
+        <div className="font-display font-black text-xl text-rose-300 uppercase tracking-wide mb-2">Throw It In?</div>
+        <p className="text-sm text-slate-300 mb-5">
+          Surrender hand and concede <b className="text-rose-300">Hard Set</b> (−2× per defender, scaled by table stakes &amp; multipliers).
+        </p>
+        <div className="grid grid-cols-2 gap-2.5">
+          <button
+            data-testid="throw-in-cancel-btn"
+            onClick={onCancel}
+            className="py-3 rounded-xl bg-zinc-800 border border-zinc-600 text-slate-200 font-display font-bold uppercase tracking-wide hover:bg-zinc-700 active:scale-95"
+          >
+            Cancel
+          </button>
+          <button
+            data-testid="throw-in-confirm-btn"
+            onClick={onConfirm}
+            className="py-3 rounded-xl bg-rose-600 border-2 border-rose-300/50 text-white font-display font-black uppercase tracking-wide hover:bg-rose-500 active:scale-95 shadow-[0_4px_0_rgba(0,0,0,0.6)]"
+          >
+            Surrender Hand
+          </button>
+        </div>
+      </div>
+    </Overlay>
+  );
+}
+
+const DEDICATION_BODY = [
+  "'Bus' a Lead' isn't a studio concept or a generic card game. It is a living recreation of the games we played across concrete picnic tables inside California prisons—played for coffee, soup, and survival.",
+  'Every character at this table—G2, Baby Boy, Scrap—is a real man. We spent decades inside study-tanks reframing constraints into tools. Today, we are home. We are free, thriving with our families, and building software that matters.',
+  'To our brothers who lived the rules, kept their heads high, and made it across the line: this game is dedicated to you.',
+  'Thank you for pulling up to the table.',
+];
+
+// Post-match Dedication & Origin tribute (also reachable from the Title Screen + Rulebook).
+export function DedicationModal({ onPlayAgain, onClose }) {
+  return (
+    <div data-testid="dedication-modal" className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+      <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl border-2 border-amber-500/70 bg-neutral-950 shadow-[0_0_0_2px_rgba(0,0,0,0.9),0_30px_80px_rgba(0,0,0,0.85)] pop-in">
+        <div className="absolute inset-0 pointer-events-none opacity-[0.07] chain-link" />
+        <button
+          data-testid="dedication-close-btn"
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 p-1.5 rounded-lg bg-zinc-900 border border-amber-500/30 text-amber-200 hover:text-white"
+          aria-label="Close"
+        >
+          <X size={16} />
+        </button>
+        <div className="relative px-6 sm:px-8 pt-7 pb-6">
+          <div className="text-[10px] font-sub font-black uppercase tracking-[0.3em] text-amber-500/90 mb-2">BUS' A LEAD: DEDICATION &amp; ORIGIN</div>
+          <h2 data-testid="dedication-headline" className="font-display font-black text-base md:text-lg text-white leading-snug uppercase tracking-wide mb-5">
+            We played these hands when freedom felt like a myth.
+          </h2>
+          <div className="space-y-3.5">
+            {DEDICATION_BODY.map((p) => (
+              <p key={p.slice(0, 24)} className="text-sm text-slate-300 leading-relaxed font-sub">
+                {p}
+              </p>
+            ))}
+          </div>
+          <div className="mt-6 pl-4 border-l-2 border-amber-500/70 text-sm text-amber-100 font-sub">
+            <div className="font-display font-bold">— Ron Scott (G2)</div>
+            <div className="text-slate-400 text-xs mt-0.5">Founder, Get2 Studios | get2.one</div>
+          </div>
+          <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <button
+              data-testid="dedication-play-again-btn"
+              onClick={onPlayAgain}
+              className="py-3 rounded-xl bg-amber-500 border-2 border-black/70 text-black font-display font-black uppercase tracking-wide hover:bg-amber-400 active:scale-95 flex items-center justify-center gap-2 shadow-[0_5px_0_rgba(0,0,0,0.6)]"
+            >
+              <Play size={16} /> Play Again
+            </button>
+            <a
+              data-testid="dedication-get2-link"
+              href={GET2_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Visit Get2 Studios"
+              title="Visit Get2 Studios"
+              className="group py-2 px-4 rounded-xl bg-zinc-900 border border-amber-500/50 hover:bg-zinc-800 hover:border-amber-400 hover:shadow-[0_0_22px_rgba(251,191,36,0.45)] active:scale-95 flex items-center justify-center transition-[background-color,border-color,box-shadow,transform] duration-200"
+            >
+              <img src="/assets/get2-logo.png" alt="Get2 Studios" className="h-9 w-auto object-contain transition-[filter,transform] duration-200 group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]" />
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1177,6 +1322,137 @@ export function CinematicsModal({ onClose }) {
           slideshow={slideshow}
         />
       )}
+    </div>
+  );
+}
+
+
+function VerdictSeat({ seat, challenged }) {
+  return (
+    <div
+      data-testid={`verdict-seat-${seat}`}
+      className={`relative flex items-center gap-3 rounded-xl border px-3 py-2.5 ${
+        challenged ? 'border-rose-500/70 bg-rose-950/40' : 'border-zinc-700 bg-zinc-900/70'
+      }`}
+    >
+      <div className={`w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 ${challenged ? 'border-rose-400' : 'border-zinc-600 grayscale-[0.5]'}`}>
+        <img src={SEAT_AVATAR[seat]} alt={SEAT_LABEL[seat]} className="w-full h-full object-cover" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="font-display font-black text-sm text-zinc-100 truncate">{SEAT_LABEL[seat]}</div>
+        <div className="text-[10px] font-sub text-zinc-400">{challenged ? 'Wants to see it played' : 'Folds the hand'}</div>
+      </div>
+      <span
+        data-testid={`verdict-chip-${seat}`}
+        className={`px-2.5 py-1 rounded-full text-[10px] font-display font-black tracking-wider ${
+          challenged ? 'bg-rose-600 text-white gold-pulse' : 'bg-zinc-800 border border-zinc-600 text-zinc-300'
+        }`}
+      >
+        {challenged ? 'CHALLENGE!' : 'CONCEDE'}
+      </span>
+    </div>
+  );
+}
+
+// Lay-Down showdown result — shown once the defenders have answered the bidder's claim.
+export function LaydownVerdictModal({ state, onContinue, onThrowIn }) {
+  const s = state;
+  const o = s.laydownOutcome;
+  if (!o) return null;
+  const challenged = o.result === 'challenged';
+  const defs = SEATS.filter((x) => x !== s.bidWinner);
+  const bidderName = SEAT_LABEL[s.bidWinner];
+  const humanBidder = s.bidWinner === 'P';
+  const meldTotal = s.meld?.[s.bidWinner]?.total || 0;
+  const bench = saveTarget({ bid: s.bid, meldTotal, goingDouble: s.goingDouble });
+  const mult = (s.goingDouble ? 2 : 1) * 2 * (s.trump === 'S' ? 2 : 1);
+  const su = SUIT_BY_KEY[s.trump];
+  const names = o.challengers.map((x) => SEAT_LABEL[x]);
+  const headline = challenged
+    ? `${names.join(' & ')} ${names.length > 1 ? 'call' : 'calls'} ${humanBidder ? 'your' : `${bidderName}'s`} bluff.`
+    : 'They folded.';
+  const gain = (s.settlement?.transfers || []).filter((t) => t.to === s.bidWinner);
+
+  return (
+    <div data-testid="laydown-verdict-modal" className="fixed inset-0 z-[105] flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+      <div
+        className={`relative w-full max-w-md rounded-2xl border-2 bg-neutral-950 shadow-[0_0_0_2px_rgba(0,0,0,0.9),0_30px_80px_rgba(0,0,0,0.85)] pop-in overflow-hidden ${
+          challenged ? 'border-rose-500/80' : 'border-emerald-500/80'
+        }`}
+      >
+        <div className={`absolute inset-0 pointer-events-none opacity-[0.08] chain-link`} />
+        <div
+          className={`relative px-5 py-3 flex items-center gap-2 font-display font-black tracking-[0.2em] text-xs uppercase border-b ${
+            challenged ? 'bg-rose-950/60 text-rose-200 border-rose-500/40' : 'bg-emerald-950/60 text-emerald-200 border-emerald-500/40'
+          }`}
+        >
+          {challenged ? <Swords size={16} /> : <HandMetal size={16} />}
+          {challenged ? 'Lay-Down Challenged' : 'Lay-Down Conceded'}
+        </div>
+
+        <div className="relative px-5 sm:px-6 pt-5 pb-5">
+          <div className="text-[10px] font-sub uppercase tracking-[0.3em] text-zinc-500 mb-1">
+            {bidderName} laid down · Contract {s.bid} · <span style={{ color: su?.neon }}>{su?.symbol}</span> trump
+          </div>
+          <h2
+            data-testid="laydown-verdict-headline"
+            className={`font-display font-black text-base md:text-lg uppercase tracking-wide leading-snug mb-4 ${challenged ? 'text-rose-100' : 'text-emerald-100'}`}
+          >
+            {headline}
+          </h2>
+
+          <div className="space-y-2 mb-4">
+            {defs.map((d) => (
+              <VerdictSeat key={d} seat={d} challenged={o.responses[d] === true} />
+            ))}
+          </div>
+
+          {challenged ? (
+            <div className="grid grid-cols-2 gap-2 mb-5">
+              <div data-testid="verdict-exposed-tile" className="rounded-xl border border-amber-500/50 bg-amber-500/10 p-3">
+                <div className="flex items-center gap-1.5 text-amber-300 font-display font-black text-[11px] sm:text-xs tracking-wide whitespace-nowrap"><Eye size={14} /> HAND EXPOSED</div>
+                <div className="text-[11px] font-sub text-amber-100/80 mt-1 leading-snug">{humanBidder ? 'Your' : `${bidderName}'s`} 25 cards play face-up.</div>
+              </div>
+              <div data-testid="verdict-stakes-tile" className="rounded-xl border border-fuchsia-500/50 bg-fuchsia-500/10 p-3">
+                <div className="flex items-center gap-1.5 text-fuchsia-300 font-display font-black text-[11px] sm:text-xs tracking-wide whitespace-nowrap"><Zap size={14} /> STAKES ×{mult}</div>
+                <div className="text-[11px] font-sub text-fuchsia-100/80 mt-1 leading-snug">Save <b className="text-white">{bench}</b> books or eat a doubled Hard Set.</div>
+              </div>
+            </div>
+          ) : (
+            <div data-testid="verdict-payout" className="rounded-xl border border-emerald-500/50 bg-emerald-500/10 p-3 mb-5">
+              <div className="flex items-center gap-1.5 text-emerald-300 font-display font-black text-xs tracking-wide"><Check size={14} /> CONTRACT MADE — NOT A CARD PLAYED</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {gain.map((t) => (
+                  <span key={t.from} className="px-2 py-1 rounded-lg bg-black/40 border border-emerald-500/40 text-emerald-200 font-mono-stat text-xs">
+                    +{money(t.amount)} from {SEAT_LABEL[t.from]}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className={`grid gap-2.5 ${challenged && humanBidder ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {challenged && humanBidder && (
+              <button
+                data-testid="verdict-throw-in-btn"
+                onClick={onThrowIn}
+                className="py-3 rounded-xl bg-zinc-900 border border-rose-500/60 text-rose-200 font-display font-bold uppercase tracking-wide text-sm hover:bg-rose-950/60 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <Flag size={15} /> Throw It In
+              </button>
+            )}
+            <button
+              data-testid="verdict-continue-btn"
+              onClick={onContinue}
+              className={`py-3 rounded-xl border-2 border-black/70 text-black font-display font-black uppercase tracking-wide text-sm active:scale-95 flex items-center justify-center gap-2 shadow-[0_5px_0_rgba(0,0,0,0.6)] whitespace-nowrap ${
+                challenged ? 'bg-rose-400 hover:bg-rose-300' : 'bg-emerald-400 hover:bg-emerald-300'
+              }`}
+            >
+              {challenged ? <><Swords size={16} /> Play It Out</> : <><Coins size={16} /> Collect</>}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

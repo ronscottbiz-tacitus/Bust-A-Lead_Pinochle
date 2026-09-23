@@ -21,6 +21,9 @@ export function applySeatRoster(seatChars = DEFAULT_SEAT_CHARS) {
   }
 }
 applySeatRoster(); // initialize with defaults at module load
+// CDCR historical Maximum Monthly Canteen Draw — every seat starts the match with it.
+export const START_BANKROLL = 140;
+export const startingBankrolls = () => ({ W: START_BANKROLL, E: START_BANKROLL, P: START_BANKROLL });
 export const CARD_BACK_IMG = '/assets/get2_cardback.png';
 export const TABLE_BG_IMG = '/assets/new_canteen_table.webp';
 // Clockwise seating order used for dealing and turn rotation

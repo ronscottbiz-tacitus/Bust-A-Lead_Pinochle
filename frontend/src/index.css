@@ -58,6 +58,20 @@ body {
   50% { box-shadow: 0 0 26px rgba(255, 199, 0, 0.95); }
 }
 .gold-pulse { animation: goldPulse 1.4s ease-in-out infinite; }
+/* Sideways phone (short landscape): dock action panels under the compact seats and keep the
+   Call Renege button clear of the fan hand. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .action-rail { top: 140px !important; bottom: auto !important; transform: none !important; }
+  .renege-fab { bottom: 100px !important; right: 8px !important; padding: 0.5rem 0.75rem !important; font-size: 0.75rem !important; }
+}
+/* Chain-link fence watermark (Dedication modal accent). */
+.chain-link {
+  background-image:
+    repeating-linear-gradient(45deg, rgba(251,191,36,0.9) 0 1px, transparent 1px 22px),
+    repeating-linear-gradient(-45deg, rgba(251,191,36,0.9) 0 1px, transparent 1px 22px);
+  mask-image: radial-gradient(ellipse at 70% 20%, #000 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 70% 20%, #000 0%, transparent 70%);
+}
 
 @keyframes dealIn {
   from { opacity: 0; transform: translateY(-40px) scale(0.7) rotate(-8deg); }

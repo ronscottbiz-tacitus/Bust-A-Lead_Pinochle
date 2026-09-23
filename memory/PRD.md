@@ -667,3 +667,55 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
     "Give Feedback (2 Min) 📝" (data-testid feedback-btn-gameover) below the New Game button.
 - Verified: compiles clean; menu link confirmed on-screen with correct href/target; Game Over
   button uses the identical anchor pattern.
+
+## Updates (2026-06 — $140 Economy, Throw It In, Skillz Defensive AI, Cutscene Pools, Dedication)
+- **$140 economy**: `START_BANKROLL`/`startingBankrolls()` in `constants.js`; reducer init/NEW_GAME/RESET_TABLE use it. Config label `starting-bankroll-label` "Starting Bankroll: $140.00 (CDCR Max Monthly Canteen Draw)"; HUD `bankroll-pill-P` tooltip + `canteen-tip` subtext "Max Monthly Draw: $140. Don't lose your canteen." Rules/New Game copy updated.
+- **Multiplier badge**: `MultiplierBadge` (`multiplier-badge`) in header status capsule — "[ MULTIPLIER: Nx ]" desktop / "×N" mobile; compounding unchanged (Going Double ×2 · Lay-Down CHALLENGED ×2 · Spades ×2 → up to ×8). User chose to keep Lay-Down ×2 only when challenged.
+- **Throw It In**: reducer `THROW_IN` (play phase, human bidder only) → result 'hard', conceded, thrownIn, label "Threw It In — Hard Set", −2×mult×stakes per defender. Header `throw-in-btn` (desktop icon cluster next to sound; mobile compact) → `ThrowInConfirmModal` (`throw-in-modal`, cancel/confirm) → `concession` cutscene. Verified in-browser end to end.
+- **Skillz — Defensive AI** (new config section, independent of Difficulty): `settings.skill` = dumptruck 0.65 / alight 0.75 (default) / shooter 1.0 (`SKILL_RATING` in `ai.js`). `syndicatePlay()` = counter starvation, partner-void exploitation (`seatVoids(playLog)`), ace-hunting/book starvation; `aiPlay(..., ctx)` rolls against the rating per defender play; Dump Truck lapses into naive selfish play. `useGame.drive()` passes ctx {voids,bidderBooks,bench,skill}.
+- **Cutscene pools**: `ROTATION_POOLS` + `mgr.rotate()` shuffle-bag (sweep, renege, hardset, portal, game_over) — every clip once per cycle, never back-to-back; `requestCutscene` attaches `data.clip`, `sourcesFor(key, clip)`. Ambient pools now DooLow (takeover/cut/renege/taunt_1/2) + PapaCap (scene_1-4/taunt_1/2). Generic hard sets (G2/DooLow/PapaCap) → `hardset` pool; Scrap/Baby Boy keep overrides. Dead keys removed (doolow_set, papacap_set, g2_hardset, doolow_bid, papacap_bid, papacap_bigbid, game_over_1/2 as keys). Widow Prayer strictly bid > 95.
+- **Match over**: `humanWonMatch()` (P > 0 AND highest bankroll) → `portal` + portalHum; else `game_over` pool. Chopper easter egg SKIPPED per user (asset `get2_chopper.mp4` not uploaded).
+- **Dedication & Origin modal** (`DedicationModal`, `dedication-modal`): auto-pops after the match-over cutscene ends (`matchOutroDone` from useGame.clearCutscene); also via `dedication-btn-title` (title screen) and `dedication-btn-rules` (Rulebook). Play Again → NEW_GAME; Get2 logo button (`/assets/get2-logo.png`, links to get2.one). Chain-link watermark CSS `.chain-link`.
+- **Mobile**: suit-column budget tightened (winH*0.42−52, min overlap 30, smaller suit glyph). No horizontal overflow at 390px.
+- **Tests**: 24/24 Jest (`skillz.test.js` new: THROW_IN math, ×8 compounding, seatVoids, syndicate behaviours, legality across all skill tiers; `gameover.test.js` rewritten for portal/game_over + rotation).
+- Testing agent timed out this iteration (no report file); flows self-verified via Playwright (config, dedication, deal, Throw It In full flow, mobile overflow check).
+
+## Backlog
+- P1: Upload `get2_chopper.mp4/.webm` and wire a `chopper` key (P ≤ $0) if desired.
+- P2: Refactor `Modals.jsx` (>1300 lines) / `Table.jsx` / `ActionBar.jsx` (deferred to protect stability).
+- Known false-positives: `useGame.js` hook deps and `storage.js` localStorage warnings — do NOT "fix".
+
+## Updates (2026-06 — Mobile Optimization Pass)
+- **Action panels**: `ActionBar` Wrap now a full-width flex rail (`fixed inset-x-0`) — fixes a latent bug where the `float-up` keyframe `transform` cancelled `-translate-x-1/2` (panels were off-center on ALL sizes). Mobile (<768) docks every panel at `top-[136px]` between seats and felt; `md:` restores desktop placements. Buttons min-h-40px.
+- **Compact mobile seats**: horizontal avatar+stats card (no face-down fan; count pill keeps `facedown-fan-*` testid), corners `top-9 left-1/right-1`, bubbles below the card.
+- **Table zone (mobile)**: `top-12 bottom-[calc(40%+3.5rem)] justify-end` so the center felt/kitty/trick sits just above the hand; hand tray `h-[40%]`; CenterArea 240×172 on mobile.
+- **HUDs**: SaveHUD hidden on mobile (header book pill carries it); DiscardHUD is a slim 32px strip under the header on mobile (`discard-hud`, keeps discard-* testids; board-set warning inline).
+- **Header (mobile)**: 36px tap targets, Yard Reels moved into the kebab menu (`cinematics-btn` still present), compact stake pill (nowrap), throw-in 36px.
+- **Config**: Choice buttons 44px tall on mobile; Feedback link padded; Settlement modal `max-h-[92vh] overflow-y-auto`; Call Renege button lifted above the hand on mobile.
+- Verified via Playwright at 390×844: config, auction, trump, discard, play (bidder + trick), settlement — no overlaps, zero horizontal overflow; desktop auction panel centered at x=960.
+
+## Updates (2026-06 — Landscape Phone Layout)
+- `useViewport()` now exposes `landscape` (w > h && h < 520) and listens to `orientationchange`. Sideways phones get: compact mobile header + compact seats + slim Discard strip (`compact = mobile || landscape`), the FULL fan hand (`md` cards, flatter rot/lift, `bottom-2 pb-4`), the desktop-style player dock scaled 0.8 bottom-left, table zone `top-12 bottom-[96px] justify-end`, no bottom G2 bar / no suit matrix.
+- CSS media override `@media (orientation: landscape) and (max-height: 520px)`: `.action-rail` docks at top 140px; `.renege-fab` sits above the fan.
+- Verified at 844×390 and 667×375 (auction, discard, play) — fan fully inside viewport, zero overflow; live rotation back to 390×844 restores portrait layout.
+
+## Fix (2026-06): Double Pinochle = 30 (was 40) in `game/meld.js` PIN_PTS and the Rulebook Meld Values table; unit assertion added in engine.test.js.
+
+## Updates (2026-06 — Meld Audit + Renege Integrity)
+- **Meld conventions (user-confirmed)**: Roundhouse 24 is flat — its K/Q are excluded from Kings/Queens Around (`roundhouseKQ` offset); extra K+Q pairs beyond the Roundhouse still score as marriages (bug fix). Arounds now tiered single/double/triple/quad: Aces 10/100/150/200, Kings 8/80/120/160, Queens 6/60/90/120, Jacks 4/40/60/80 (names `Triple Aces (150)` etc.; aces-detection regexes updated in reducer + useGame). Rulebook Meld Values lists all tiers + Triple/Quad Pinochle.
+- **Renege integrity**: `PLAY_CARD` now hard-guards `phase==='play' && !trickPending && turn===seat && seat holds card` — fixes false "renege" busts from stale double-taps (UI checked legality against the previous trick). Bust reasons now include the exact rule broken (`renegeReason`) in all difficulties. `CALL_RENEGE` ignored outside play.
+- 28/28 Jest (new: roundhouse absorption, double roundhouse, tiered arounds, out-of-turn guard).
+
+## Updates (2026-06 — Lay-Down Viability Heuristic + Buried Counters Display)
+- `scoring.js`: `TOTAL_POINTS=50`, `LAYDOWN_MARGIN=4`, `potentialLosers(hand,trump)` (off-trump Q/J=2, 10/K=3, A/trump=0), `laydownRoom(bench)=50−bench`, `laydownSafe()`.
+- **Gate (c)**: Lay-Down button disabled (tooltip explains) unless losers ≤ room−4 on the live kept hand; `finalizeDiscard` drops an unsafe `laydown` flag server-side too.
+- **AI challenge (c)**: `laydownChallenge(hand, trump, {bidderHand, bench})` reads the laid-down hand — pressure=losers/room: ≥0.85 always challenge; ≥0.65 challenge only if strong (4+ trump / 5+ Aces); else concede. useGame passes ctx.
+- **HUD (d)**: `discard-losers` chip "Losers X/Y ✓ Lay-Down" in desktop Discard HUD (nowrap, 680px) and mobile strip.
+- **Buried counters**: `seatBooks()` in Table.jsx adds `buriedBooks` to the bidder's displayed books everywhere (dock, seats, mobile bar, compact seat) — e.g. "Books: 4 / 20" right after burying 4 counters.
+- 32/32 Jest (`laydown.test.js` new: reference hand = 30 losers, safe/unsafe, AI pressure tiers, reducer gate).
+
+## Updates (2026-06 — Lay-Down Showdown UX)
+- Reducer `LAYDOWN_RESPONSE` records `laydownOutcome {id, result: 'challenged'|'conceded', challengers, responses}` (reset per round).
+- Seat speech bubbles during `laydown` phase: defenders show "Thinking…" → "CHALLENGE!" (rose pulse) / "Concede".
+- `LaydownVerdictModal` (Modals.jsx, `laydown-verdict-modal`): two variants — CONCEDED (emerald; defender cards, "+$X from …" payout chips, Collect) and CHALLENGED (rose; "X calls your bluff", HAND EXPOSED + STAKES ×N tiles with bench, Play It Out / Throw It In). Chain-link watermark, GTA panel styling.
+- BustALead: `showVerdict` (once per outcome id, hidden while a cutscene plays) pauses the loop via `setPaused`, hides SettlementModal + MeldPhaseModal until acknowledged. Visuals verified desktop + 390px; normal hands unaffected.
