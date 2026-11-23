@@ -1249,14 +1249,14 @@ export function CinematicsModal({ onClose }) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-amber-400">
             <Film size={20} />
-            <div className="font-display font-black text-xl uppercase tracking-wide">Yard Reels</div>
-            <span className="text-slate-500 text-xs font-sub">{CUTSCENE_LIBRARY.length} clips</span>
+            <div className="font-display font-black text-lg sm:text-xl uppercase tracking-wide whitespace-nowrap">Yard Reels</div>
+            <span className="text-slate-500 text-xs font-sub whitespace-nowrap">{CUTSCENE_LIBRARY.length} clips</span>
           </div>
           <div className="flex items-center gap-2">
             <button
               data-testid="play-all-btn"
               onClick={startSlideshow}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-sm font-display font-black uppercase tracking-wide transition-colors active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs sm:text-sm font-display font-black uppercase tracking-wide transition-colors active:scale-95 whitespace-nowrap"
             >
               <PlayCircle size={16} /> Play All
             </button>
@@ -1270,12 +1270,13 @@ export function CinematicsModal({ onClose }) {
           </div>
         </div>
         <div
-          className="overflow-y-auto pr-1"
+          className="overflow-y-auto pr-1 min-h-0"
           style={{
-            maxHeight: '85vh',
             WebkitOverflowScrolling: 'touch',
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+            gridAutoRows: 'max-content',
+            alignItems: 'start',
             gap: '0.75rem',
           }}
         >
@@ -1284,9 +1285,10 @@ export function CinematicsModal({ onClose }) {
               key={c.base}
               data-testid={`reel-thumb-${c.base}`}
               onClick={() => setSelected(c)}
-              className="group relative rounded-xl overflow-hidden border border-amber-500/20 bg-black/50 hover:border-amber-400/70 transition-all active:scale-95 text-left"
+              className="group relative block w-full rounded-xl overflow-hidden border border-amber-500/20 bg-black/50 hover:border-amber-400/70 transition-all active:scale-95 text-left"
             >
-              <div className="relative w-full aspect-video bg-slate-900 overflow-hidden" style={{ aspectRatio: '16 / 9' }}>
+              {/* Padding-box 16:9 frame — immune to grid/flex height collapse (aspect-ratio is not). */}
+              <div className="relative w-full bg-slate-900 overflow-hidden" style={{ paddingTop: '56.25%' }}>
                 <video muted playsInline preload="metadata" className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100">
                   <source src={`/assets/cutscenes/${c.base}.webm#t=0.5`} type="video/webm" />
                   <source src={`/assets/cutscenes/${c.base}.mp4#t=0.5`} type="video/mp4" />

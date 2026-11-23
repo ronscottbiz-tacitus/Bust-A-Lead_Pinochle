@@ -719,3 +719,5 @@ Tailwind CSS, Lucide-React icons, and the Web Audio API for procedural sound. Fr
 - Seat speech bubbles during `laydown` phase: defenders show "Thinking…" → "CHALLENGE!" (rose pulse) / "Concede".
 - `LaydownVerdictModal` (Modals.jsx, `laydown-verdict-modal`): two variants — CONCEDED (emerald; defender cards, "+$X from …" payout chips, Collect) and CHALLENGED (rose; "X calls your bluff", HAND EXPOSED + STAKES ×N tiles with bench, Play It Out / Throw It In). Chain-link watermark, GTA panel styling.
 - BustALead: `showVerdict` (once per outcome id, hidden while a cutscene plays) pauses the loop via `setPaused`, hides SettlementModal + MeldPhaseModal until acknowledged. Visuals verified desktop + 390px; normal hands unaffected.
+
+## Fix (2026-06): Yard Reels thumbnails squished — replaced `aspect-video` (collapsed inside the scrolling grid) with a padding-top 56.25% frame, `gridAutoRows: max-content`, `alignItems: start`; header nowrap on mobile.
